@@ -1,0 +1,89 @@
+.button-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.button-loading i {
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: solvatech-spin 0.7s linear infinite;
+}
+
+@keyframes solvatech-spin {
+  to { transform: rotate(360deg); }
+}
+
+.code-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.code-timer {
+  color: var(--orange) !important;
+}
+
+.code-value-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 8px 0 12px;
+}
+
+.pairing-for {
+  display: inline-block;
+  margin-bottom: 12px;
+  color: var(--muted);
+  font: 500 9px "DM Mono", monospace;
+  letter-spacing: .08em;
+}
+
+.copy-button {
+  background: var(--teal);
+  color: #fff;
+  padding: 10px 12px;
+  white-space: nowrap;
+  font-size: 11px;
+}
+
+.copy-button:hover {
+  background: var(--ink);
+}
+
+.copy-feedback {
+  display: block;
+  color: var(--teal) !important;
+  font-size: 10px !important;
+  margin-top: 9px;
+  min-height: 14px;
+}
+
+.badge.failed {
+  background: #f7e2df;
+  color: #a23e38;
+}
+
+.code-panel.expired {
+  border-left-color: #a23e38;
+}
+
+.code-panel.expired strong {
+  color: #9a5c55;
+}
+
+@media (max-width: 720px) {
+  .code-value-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .copy-button {
+    width: 100%;
+  }
+}

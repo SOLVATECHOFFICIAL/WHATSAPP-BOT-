@@ -1,1 +1,130 @@
-
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#102622" />
+    <title>SOLVATECH BOT — Pairing Console</title>
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="/pairing-enhancements.css" />
+  </head>
+  <body>
+    <div class="grain"></div>
+    <header class="topbar">
+      <a class="brand" href="/">
+        <span class="brand-mark">S/</span>
+        <span><strong>SOLVATECH BOT</strong><small>BY SOLVATECHOFFICIAL</small></span>
+      </a>
+      <span class="live-label">PAIRING CONSOLE / LIVE</span>
+    </header>
+    <main class="main">
+      <section class="hero">
+        <p class="eyebrow">WHATSAPP MULTI-DEVICE</p>
+        <h1>Connect your phone.<br /><em>Keep it clear.</em></h1>
+        <p class="lede">Request a pairing code, link your WhatsApp account, and see the connection come alive.</p>
+      </section>
+      <section class="grid">
+        <article class="surface pair-card">
+          <div class="card-top"><span>01 / START A SESSION</span><small>01—02</small></div>
+          <h2>Get your pairing code</h2>
+          <form id="pair-form">
+            <label for="number">Nigerian WhatsApp number</label>
+            <div class="phone-wrap"><span>NG</span><input id="number" type="tel" inputmode="numeric" placeholder="0901 234 5678" autocomplete="tel" required /></div>
+            <p class="hint">Enter your normal Nigerian number starting with 090, 080, 081, 070, 071, or 091. We convert it securely to +234 automatically.</p>
+            <button id="pair-button" type="submit">Get Pairing Code <span>→</span></button>
+          </form>
+          <div id="code-panel" class="code-panel hidden">
+            <div class="code-heading"><span>YOUR PAIRING CODE</span><span id="code-timer" class="code-timer">EXPIRES IN 5:00</span></div>
+            <div class="code-value-row"><strong id="pair-code">—</strong><button id="copy-code" class="copy-button" type="button">Copy code</button></div>
+            <div id="pairing-for" class="pairing-for"></div>
+            <p>Open WhatsApp → Linked Devices → Link a device → Link with phone number. Enter the 8-character code exactly as shown, then keep this page open while the session finishes connecting.</p>
+            <span id="copy-feedback" class="copy-feedback" role="status" aria-live="polite"></span>
+          </div>
+          <p id="error" class="error hidden" role="alert"></p>
+        </article>
+        <aside class="surface status-card" aria-live="polite">
+          <div class="card-top"><span>02 / LIVE STATUS</span><b id="badge" class="badge">Ready to pair</b></div>
+          <div class="status-line"><h2 id="state">Not connected</h2><span id="orbit" class="orbit">◉</span></div>
+          <p id="detail">Enter your WhatsApp number to start a secure pairing session.</p>
+          <hr />
+          <span class="muted-label">CONNECTED NUMBER</span>
+          <strong id="connected-number">—</strong>
+          <button id="disconnect" class="disconnect" disabled>Disconnect</button>
+        </aside>
+      </section>
+      <section class="surface instructions">
+        <div class="instruction-head"><h2>Pairing, in three clear moves.</h2><span>NO APP DOWNLOAD REQUIRED</span></div>
+        <ol>
+           <li><b>01</b><span><strong>Enter your number</strong>Use your Nigerian format, for example 09012345678. The country code is added automatically.</span></li>
+          <li><b>02</b><span><strong>Request a code</strong>Tap Get Pairing Code. Your one-time code will appear here when ready.</span></li>
+          <li><b>03</b><span><strong>Link in WhatsApp</strong>WhatsApp → Linked Devices → Link with phone number.</span></li>
+        </ol>
+        <div class="notice">ⓘ <span>Your number is used only to establish this session. Keep your pairing code private. Only the WhatsApp account linked here can run bot commands.</span></div>
+      </section>
+    </main>
+    <footer><span>© SOLVATECHOFFICIAL</span><span>SECURE SESSION / WHATSAPP MD</span></footer>
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const form = $("pair-form"), button = $("pair-button"), codePanel = $("code-panel"), code = $("pair-code");
+      const error = $("error"), state = $("state"), badge = $("badge"), detail = $("detail"), number = $("connected-number"), disconnect = $("disconnect");
+      const copyButton = $("copy-code"), copyFeedback = $("copy-feedback"), timer = $("code-timer"), pairingFor = $("pairing-for");
+      let expiresAt = 0, timerId, pairingActive = false;
+      function showError(message) { error.textContent = message; error.classList.toggle("hidden", !message); }
+      function formatTime(seconds) { return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`; }
+      function startTimer(value) {
+        expiresAt = Number(value || 0);
+        codePanel.classList.remove("expired");
+        clearInterval(timerId);
+        const tick = () => {
+          const remaining = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+          timer.textContent = remaining ? `EXPIRES IN ${formatTime(remaining)}` : "CODE EXPIRED";
+          copyButton.disabled = !remaining;
+          if (!remaining) { codePanel.classList.add("expired"); clearInterval(timerId); }
+        };
+        tick(); timerId = setInterval(tick, 1000);
+      }
+      function render(data) {
+        const connected = data.connected === true || data.status === "connected";
+        const pending = ["pairing", "connecting"].includes(data.status);
+        const failed = data.status === "error" || data.status === "disconnected";
+        pairingActive = connected || pending || failed;
+        badge.textContent = connected ? "Connected" : failed ? "Pairing failed" : pending ? "Waiting for phone" : "Ready to pair";
+        badge.className = "badge " + (connected ? "good" : pending ? "pending" : failed ? "failed" : "");
+        state.textContent = connected ? "✓ WHATSAPP CONNECTED" : failed ? "Connection stopped" : pending ? "Pairing in progress" : "Not connected";
+        detail.textContent = connected ? "The live WhatsApp socket reported an open state." : failed ? (data.lastError || "WhatsApp closed the pairing socket.") : pending ? "Open WhatsApp and enter the code shown here. This dashboard is watching the same live socket." : "Enter your WhatsApp number to start a secure pairing session.";
+        number.textContent = data.botNumber || data.number || "—";
+        button.disabled = pairingActive;
+        disconnect.disabled = data.status === "idle";
+        if (failed && data.lastError) showError(data.lastError);
+        if (!failed && data.status === "idle") showError("");
+        if (data.pairingNumber) { pairingFor.textContent = `PAIRING FOR +${data.pairingNumber}`; pairingFor.classList.remove("hidden"); }
+        if (data.pairingCode) { code.textContent = data.pairingCode; codePanel.classList.remove("hidden"); if (data.pairingCodeExpiresAt) startTimer(data.pairingCodeExpiresAt); }
+        if (connected) { codePanel.classList.add("hidden"); }
+      }
+      const apiPrefix = "/bot-api";
+      async function refresh() { try { const response = await fetch(apiPrefix + "/status"); render(await response.json()); } catch {} }
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault(); showError(""); copyFeedback.textContent = ""; codePanel.classList.add("hidden"); pairingActive = true; button.disabled = true; button.innerHTML = '<span class="button-loading"><i></i>Opening live socket…</span>';
+        try {
+          const response = await fetch(apiPrefix + "/pair", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({number: $("number").value}) });
+          const data = await response.json(); if (!response.ok) throw new Error(data.error || "Pairing code could not be generated.");
+          code.textContent = data.code; codePanel.classList.remove("hidden"); startTimer(data.expiresAt); render({...data, status:"pairing", pairingCode:data.code, pairingCodeExpiresAt:data.expiresAt, pairingNumber:data.pairingNumber});
+        } catch (e) { pairingActive = true; showError(e.message); } finally { button.disabled = pairingActive; button.innerHTML = "Get Pairing Code <span>→</span>"; }
+      });
+      copyButton.addEventListener("click", async () => {
+        const value = code.textContent.trim();
+        if (!value || copyButton.disabled) return;
+        try {
+          await navigator.clipboard.writeText(value);
+        } catch {
+          const helper = document.createElement("textarea"); helper.value = value; helper.style.position = "fixed"; helper.style.opacity = "0"; document.body.appendChild(helper); helper.select(); document.execCommand("copy"); helper.remove();
+        }
+        copyFeedback.textContent = "Code copied. Paste it into WhatsApp.";
+        copyButton.textContent = "Copied";
+        setTimeout(() => { copyButton.textContent = "Copy code"; }, 1800);
+      });
+      disconnect.addEventListener("click", async () => { disconnect.disabled = true; pairingActive = false; await fetch(apiPrefix + "/disconnect", {method:"POST"}); clearInterval(timerId); codePanel.classList.add("hidden"); await refresh(); });
+      refresh(); setInterval(refresh, 4000);
+    </script>
+  </body>
+</html>
