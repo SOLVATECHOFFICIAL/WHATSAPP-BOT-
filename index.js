@@ -6,7 +6,14 @@ import { fileURLToPath } from "node:url";
 import { PORT } from "./lib/config.js";
 import { logger } from "./lib/logger.js";
 import { getWhatsAppController } from "./lib/whatsapp.js";
-import { requireAuth } from "./lib/auth.js";
+import { requireAuth, requireAdmin } from "./lib/auth.js";
+import {
+  createLicenseRecord,
+  listAllLicenses,
+  redeemLicenseCode,
+  getUserLicenseStatus,
+  ADMIN_EMAIL,
+} from "./lib/license.js";
 
 process.on("uncaughtException", (error) => {
   logger.error("Process uncaught exception handled gracefully", error?.stack || error?.message);
@@ -139,6 +146,88 @@ for (const p of prefixes) {
     } catch (error) {
       logger.error(`Disconnect failed for verified user ${verifiedUid}`, error.stack || error.message);
       response.status(500).json({ error: "The WhatsApp session could not be cleared.", userId: verifiedUid });
+    }
+  });
+
+  // --------------------------------------------------------------------------
+  // USER LICENSE ROUTES (Authenticated)
+  // --------------------------------------------------------------------------
+  app.get(`${p}/license/status`, requireAuth, async (request, response) => {
+    try {
+      const verifiedUid = request.verifiedUid;
+      const status = await getUserLicenseStatus(verifiedUid);
+      response.json({
+        ...status,
+        userId: verifiedUid,
+        userEmail: request.auth.email,
+        isAdmin: request.auth.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase(),
+      });
+    } catch (error) {
+      logger.error("Failed to retrieve license status", error.stack || error.message);
+      response.status(500).json({ error: "Could not fetch license status." });
+    }
+  });
+
+  app.post(`${p}/license/redeem`, requireAuth, async (request, response) => {
+    try {
+      const code = request.body?.code;
+      if (!code) {
+        return response.status(400).json({ error: "Please enter a valid license code." });
+      }
+
+      // Verified user from authoritative Firebase token - NOT request body
+      const verifiedUser = {
+        uid: request.verifiedUid,
+        email: request.auth.email,
+      };
+
+      const result = await redeemLicenseCode(code, verifiedUser);
+      response.json(result);
+    } catch (error) {
+      logger.warn(`License redemption rejected for user ${request.verifiedUid}: ${error.message}`);
+      const statusCode = error.code === "LICENSE_NOT_FOUND" ? 404 : error.code === "LICENSE_ALREADY_USED" ? 409 : 400;
+      response.status(statusCode).json({
+        error: error.message || "License redemption failed.",
+        code: error.code || "REDEMPTION_FAILED",
+      });
+    }
+  });
+
+  // --------------------------------------------------------------------------
+  // ADMIN LICENSE MANAGEMENT ROUTES (Strictly Admin Email: awoyinfasolomon1@gmail.com)
+  // --------------------------------------------------------------------------
+  app.get(`${p}/admin/licenses`, requireAuth, requireAdmin, async (_request, response) => {
+    try {
+      const licenses = await listAllLicenses();
+      response.json({
+        licenses,
+        total: licenses.length,
+        admin: ADMIN_EMAIL,
+        serverTime: new Date().toISOString(),
+      });
+    } catch (error) {
+      logger.error("Admin list licenses error", error.stack || error.message);
+      response.status(500).json({ error: "Failed to list licenses." });
+    }
+  });
+
+  app.post(`${p}/admin/licenses/generate`, requireAuth, requireAdmin, async (request, response) => {
+    try {
+      const days = request.body?.days;
+      if (!days || isNaN(Number(days)) || Number(days) <= 0) {
+        return response.status(400).json({ error: "Valid duration in days is required (1-365)." });
+      }
+
+      const created = await createLicenseRecord(days, request.auth.email);
+      logger.info(`Admin generated new ${days}-day license: ${created.code}`);
+      response.json({
+        success: true,
+        license: created,
+        message: `Successfully generated ${days}-day license code.`,
+      });
+    } catch (error) {
+      logger.error("Admin generate license error", error.stack || error.message);
+      response.status(400).json({ error: error.message || "Failed to generate license." });
     }
   });
 }

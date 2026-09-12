@@ -682,6 +682,9 @@
               showAuthError("Google Sign-In popup was closed before completing.");
             } else if (err.code === "auth/popup-blocked") {
               showAuthError("Sign-in popup was blocked by the browser. Please allow popups or open in a new tab.");
+            } else if (err.code === "auth/unauthorized-domain") {
+              const currentHost = window.location.hostname || "your deployed domain";
+              showAuthError(`Firebase Error: "${currentHost}" is not in the Firebase Authorized Domains list. Please add "${currentHost}" to Firebase Console -> Authentication -> Settings -> Authorized domains.`);
             } else {
               showAuthError(err.message || "Failed to sign in with Google. Please try again.");
             }

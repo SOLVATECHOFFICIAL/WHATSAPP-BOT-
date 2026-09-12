@@ -172,6 +172,106 @@
           </aside>
         </section>
 
+        <!-- LICENSE STATUS & ONE-TIME REDEMPTION SECTION -->
+        <section class="grid" style="margin-top: 24px;">
+          <article class="surface license-card" style="grid-column: 1 / -1;">
+            <div class="card-top">
+              <span>03 / SOLVATECH LICENSE SYSTEM</span>
+              <span id="license-badge" class="license-badge none">Checking...</span>
+            </div>
+            <h2>Account License & Subscription</h2>
+
+            <div class="license-info-box">
+              <div class="license-stat-line">
+                <span class="muted-label">LICENSE STATUS</span>
+                <strong id="license-status-text">No active license</strong>
+              </div>
+              <div class="license-stat-line">
+                <span class="muted-label">REMAINING TIME</span>
+                <span id="license-countdown" class="license-countdown-display">—</span>
+              </div>
+              <div class="license-stat-line">
+                <span class="muted-label">EXPIRATION TIMESTAMP</span>
+                <span id="license-expiry" style="font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted);">—</span>
+              </div>
+            </div>
+
+            <!-- License Redemption Form -->
+            <form id="license-redeem-form">
+              <label for="license-code-input">Enter License Activation Code</label>
+              <div class="license-form-row">
+                <div class="license-input-wrap">
+                  <input id="license-code-input" type="text" placeholder="SOLVA-XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false" required />
+                </div>
+                <button id="license-redeem-btn" class="license-btn" type="submit">Activate Code</button>
+              </div>
+              <p id="license-msg" class="license-msg hidden"></p>
+            </form>
+          </article>
+        </section>
+
+        <!-- ADMIN ONLY LICENSE MANAGEMENT PANEL (Strictly for awoyinfasolomon1@gmail.com) -->
+        <section id="admin-panel" class="grid hidden" style="margin-top: 24px;">
+          <article class="surface admin-card" style="grid-column: 1 / -1;">
+            <div class="card-top">
+              <span>ADMINISTRATION CONSOLE</span>
+              <span class="license-badge active">ADMIN ONLY</span>
+            </div>
+            <h2>SOLVATECH License Generator & Audit</h2>
+            <p style="font-size: 12px; color: var(--muted); margin-bottom: 14px;">
+              Logged in as verified administrator: <strong>awoyinfasolomon1@gmail.com</strong>. Generate cryptographically random, unguessable license codes with one-time server binding.
+            </p>
+
+            <label>Select Preset Duration</label>
+            <div class="admin-preset-grid">
+              <button type="button" class="admin-preset-btn active" data-days="1">1 Day</button>
+              <button type="button" class="admin-preset-btn" data-days="3">3 Days</button>
+              <button type="button" class="admin-preset-btn" data-days="7">7 Days</button>
+              <button type="button" class="admin-preset-btn" data-days="14">14 Days</button>
+              <button type="button" class="admin-preset-btn" data-days="custom">Custom Days</button>
+            </div>
+
+            <div id="admin-custom-days-wrap" class="hidden" style="margin-bottom: 14px;">
+              <label for="admin-custom-days">Custom Duration (Days: 1 - 365)</label>
+              <input id="admin-custom-days" type="number" min="1" max="365" placeholder="e.g. 30" style="max-width: 200px;" />
+            </div>
+
+            <button id="admin-generate-btn" class="license-btn" type="button" style="padding: 10px 20px; font-size: 13px;">
+              Generate New License Code
+            </button>
+
+            <p id="admin-generate-msg" class="license-msg hidden"></p>
+
+            <!-- Audit Table -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 24px;">
+              <strong style="font-size: 13px; color: var(--ink);">Generated License Records</strong>
+              <button id="admin-refresh-licenses-btn" type="button" class="admin-preset-btn" style="padding: 4px 10px; font-size: 10px;">
+                ↻ Refresh Table
+              </button>
+            </div>
+
+            <div class="admin-table-wrap">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>License Code</th>
+                    <th>Duration</th>
+                    <th>Status</th>
+                    <th>Redeemed By (UID)</th>
+                    <th>Redeemed At</th>
+                    <th>Expires At</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-licenses-tbody">
+                  <tr>
+                    <td colspan="6" style="text-align: center; color: var(--muted); padding: 18px;">Loading license records...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
         <section class="surface instructions">
           <div class="instruction-head"><h2>Pairing, in three clear moves.</h2><span>DIRECT LINK</span></div>
           <ol>
@@ -584,8 +684,12 @@
 
           syncUserProfile(user);
           refresh();
+          refreshLicenseStatus();
           if (!statusIntervalId) {
-            statusIntervalId = setInterval(refresh, 4000);
+            statusIntervalId = setInterval(() => {
+              refresh();
+              refreshLicenseStatus();
+            }, 4000);
           }
         } else {
           currentUser = null;
@@ -593,6 +697,11 @@
           if (statusIntervalId) {
             clearInterval(statusIntervalId);
             statusIntervalId = null;
+          }
+
+          if (licenseCountdownTimerId) {
+            clearInterval(licenseCountdownTimerId);
+            licenseCountdownTimerId = null;
           }
 
           if (authView) authView.classList.remove("hidden");
@@ -682,6 +791,9 @@
               showAuthError("Google Sign-In popup was closed before completing.");
             } else if (err.code === "auth/popup-blocked") {
               showAuthError("Sign-in popup was blocked by the browser. Please allow popups or open in a new tab.");
+            } else if (err.code === "auth/unauthorized-domain") {
+              const currentHost = window.location.hostname || "your deployed domain";
+              showAuthError(`Firebase Error: "${currentHost}" is not in the Firebase Authorized Domains list. Please add "${currentHost}" to Firebase Console -> Authentication -> Settings -> Authorized domains.`);
             } else {
               showAuthError(err.message || "Failed to sign in with Google. Please try again.");
             }
@@ -872,6 +984,388 @@
             disconnect.textContent = "Disconnect Session";
           }
         });
+      }
+
+      // ======================================================================
+      // SOLVATECH LICENSE & ADMIN SYSTEM JAVASCRIPT
+      // ======================================================================
+      const ADMIN_EMAIL = "awoyinfasolomon1@gmail.com";
+      let licenseCountdownTimerId = null;
+      let cachedServerExpiryTime = null;
+      let cachedServerOffset = 0; // ms offset between local client clock and server time
+
+      // License Elements
+      const licenseBadge = $("license-badge");
+      const licenseStatusText = $("license-status-text");
+      const licenseCountdown = $("license-countdown");
+      const licenseExpiry = $("license-expiry");
+      const licenseRedeemForm = $("license-redeem-form");
+      const licenseCodeInput = $("license-code-input");
+      const licenseRedeemBtn = $("license-redeem-btn");
+      const licenseMsg = $("license-msg");
+
+      // Admin Elements
+      const adminPanel = $("admin-panel");
+      const adminPresetBtns = document.querySelectorAll(".admin-preset-btn");
+      const adminCustomDaysWrap = $("admin-custom-days-wrap");
+      const adminCustomDaysInput = $("admin-custom-days");
+      const adminGenerateBtn = $("admin-generate-btn");
+      const adminGenerateMsg = $("admin-generate-msg");
+      const adminRefreshLicensesBtn = $("admin-refresh-licenses-btn");
+      const adminLicensesTbody = $("admin-licenses-tbody");
+
+      let selectedAdminDays = 1;
+
+      // Format remaining milliseconds to readable string: "3 Days 6 Hours 20 Minutes left"
+      function formatRemainingCountdown(ms) {
+        if (ms <= 0) return "Expired";
+        const totalSeconds = Math.floor(ms / 1000);
+        const days = Math.floor(totalSeconds / 86400);
+        const hours = Math.floor((totalSeconds % 86400) / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+
+        const parts = [];
+        if (days > 0) parts.push(`${days} Day${days === 1 ? "" : "s"}`);
+        if (hours > 0 || days > 0) parts.push(`${hours} Hour${hours === 1 ? "" : "s"}`);
+        parts.push(`${minutes} Minute${minutes === 1 ? "" : "s"} left`);
+
+        return parts.join(" ");
+      }
+
+      function startLocalCountdownTick() {
+        if (licenseCountdownTimerId) clearInterval(licenseCountdownTimerId);
+        licenseCountdownTimerId = setInterval(() => {
+          if (!cachedServerExpiryTime) {
+            if (licenseCountdown) licenseCountdown.textContent = "—";
+            return;
+          }
+          const nowAdjusted = Date.now() + cachedServerOffset;
+          const remaining = cachedServerExpiryTime - nowAdjusted;
+
+          if (remaining <= 0) {
+            if (licenseCountdown) licenseCountdown.textContent = "Expired";
+            if (licenseBadge) {
+              licenseBadge.className = "license-badge expired";
+              licenseBadge.textContent = "EXPIRED";
+            }
+            if (licenseStatusText) licenseStatusText.textContent = "Expired License";
+            clearInterval(licenseCountdownTimerId);
+            licenseCountdownTimerId = null;
+          } else {
+            if (licenseCountdown) licenseCountdown.textContent = formatRemainingCountdown(remaining);
+          }
+        }, 1000);
+      }
+
+      // Fetch user's license status from backend
+      async function refreshLicenseStatus() {
+        if (!currentUser) return;
+        try {
+          let authHeader = await getAuthHeader();
+          if (!authHeader) return;
+
+          let res = await fetch(getApiUrl("/license/status"), {
+            headers: {
+              "Accept": "application/json",
+              "Authorization": authHeader,
+            },
+          });
+
+          if (res.status === 401) {
+            const refreshedToken = await getValidIdToken(true);
+            if (refreshedToken) {
+              authHeader = `Bearer ${refreshedToken}`;
+              res = await fetch(getApiUrl("/license/status"), {
+                headers: {
+                  "Accept": "application/json",
+                  "Authorization": authHeader,
+                },
+              });
+            }
+          }
+
+          if (!res.ok) return;
+          const data = await res.json();
+          updateLicenseUI(data);
+
+          // If current user is the administrator, reveal admin panel and populate records
+          if (data.isAdmin || currentUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+            if (adminPanel) adminPanel.classList.remove("hidden");
+            loadAdminLicenses();
+          } else {
+            if (adminPanel) adminPanel.classList.add("hidden");
+          }
+        } catch (err) {
+          console.debug("License poll error:", err.message);
+        }
+      }
+
+      function updateLicenseUI(data) {
+        if (data.serverTime) {
+          const serverMs = new Date(data.serverTime).getTime();
+          cachedServerOffset = serverMs - Date.now();
+        }
+
+        if (data.hasActiveLicense && data.expiresAt) {
+          cachedServerExpiryTime = new Date(data.expiresAt).getTime();
+          const nowAdjusted = Date.now() + cachedServerOffset;
+          const remaining = Math.max(0, cachedServerExpiryTime - nowAdjusted);
+
+          if (licenseBadge) {
+            licenseBadge.className = "license-badge active";
+            licenseBadge.textContent = "ACTIVE LICENSE";
+          }
+          if (licenseStatusText) {
+            licenseStatusText.textContent = `Active (${data.durationDays || ""} Days)`;
+          }
+          if (licenseCountdown) {
+            licenseCountdown.textContent = formatRemainingCountdown(remaining);
+          }
+          if (licenseExpiry) {
+            licenseExpiry.textContent = new Date(data.expiresAt).toLocaleString();
+          }
+
+          startLocalCountdownTick();
+        } else if (data.status === "expired") {
+          cachedServerExpiryTime = null;
+          if (licenseBadge) {
+            licenseBadge.className = "license-badge expired";
+            licenseBadge.textContent = "EXPIRED";
+          }
+          if (licenseStatusText) licenseStatusText.textContent = "Expired License";
+          if (licenseCountdown) licenseCountdown.textContent = "Expired";
+          if (licenseExpiry) {
+            licenseExpiry.textContent = data.expiresAt ? new Date(data.expiresAt).toLocaleString() : "—";
+          }
+        } else {
+          cachedServerExpiryTime = null;
+          if (licenseBadge) {
+            licenseBadge.className = "license-badge none";
+            licenseBadge.textContent = "NO LICENSE";
+          }
+          if (licenseStatusText) licenseStatusText.textContent = "No active license";
+          if (licenseCountdown) licenseCountdown.textContent = "—";
+          if (licenseExpiry) licenseExpiry.textContent = "—";
+        }
+      }
+
+      // Handle license redemption form submission
+      if (licenseRedeemForm) {
+        licenseRedeemForm.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const rawCode = (licenseCodeInput?.value || "").trim().toUpperCase();
+          if (!rawCode) return;
+
+          if (licenseRedeemBtn) {
+            licenseRedeemBtn.disabled = true;
+            licenseRedeemBtn.textContent = "Activating...";
+          }
+          if (licenseMsg) {
+            licenseMsg.className = "license-msg hidden";
+            licenseMsg.textContent = "";
+          }
+
+          try {
+            let authHeader = await getAuthHeader();
+            if (!authHeader) throw new Error("Authentication session expired. Please sign in again.");
+
+            let res = await fetch(getApiUrl("/license/redeem"), {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": authHeader,
+              },
+              body: JSON.stringify({ code: rawCode }),
+            });
+
+            if (res.status === 401) {
+              const refreshed = await getValidIdToken(true);
+              if (refreshed) {
+                authHeader = `Bearer ${refreshed}`;
+                res = await fetch(getApiUrl("/license/redeem"), {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": authHeader,
+                  },
+                  body: JSON.stringify({ code: rawCode }),
+                });
+              }
+            }
+
+            const data = await res.json();
+            if (!res.ok) {
+              throw new Error(data.error || "Redemption failed.");
+            }
+
+            if (licenseMsg) {
+              licenseMsg.className = "license-msg success";
+              licenseMsg.textContent = data.message || "License successfully activated!";
+              licenseMsg.classList.remove("hidden");
+            }
+            if (licenseCodeInput) licenseCodeInput.value = "";
+
+            await refreshLicenseStatus();
+          } catch (err) {
+            if (licenseMsg) {
+              licenseMsg.className = "license-msg error";
+              licenseMsg.textContent = err.message || "Activation failed.";
+              licenseMsg.classList.remove("hidden");
+            }
+          } finally {
+            if (licenseRedeemBtn) {
+              licenseRedeemBtn.disabled = false;
+              licenseRedeemBtn.textContent = "Activate Code";
+            }
+          }
+        });
+      }
+
+      // Admin: Setup preset buttons
+      adminPresetBtns.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          adminPresetBtns.forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          const val = btn.dataset.days;
+          if (val === "custom") {
+            if (adminCustomDaysWrap) adminCustomDaysWrap.classList.remove("hidden");
+            selectedAdminDays = "custom";
+          } else {
+            if (adminCustomDaysWrap) adminCustomDaysWrap.classList.add("hidden");
+            selectedAdminDays = parseInt(val, 10);
+          }
+        });
+      });
+
+      // Admin: Generate License Code
+      if (adminGenerateBtn) {
+        adminGenerateBtn.addEventListener("click", async () => {
+          let days = selectedAdminDays;
+          if (days === "custom") {
+            days = parseInt(adminCustomDaysInput?.value, 10);
+            if (isNaN(days) || days <= 0 || days > 365) {
+              if (adminGenerateMsg) {
+                adminGenerateMsg.className = "license-msg error";
+                adminGenerateMsg.textContent = "Please enter valid custom days between 1 and 365.";
+                adminGenerateMsg.classList.remove("hidden");
+              }
+              return;
+            }
+          }
+
+          adminGenerateBtn.disabled = true;
+          adminGenerateBtn.textContent = "Generating Code...";
+          if (adminGenerateMsg) {
+            adminGenerateMsg.className = "license-msg hidden";
+            adminGenerateMsg.textContent = "";
+          }
+
+          try {
+            let authHeader = await getAuthHeader();
+            if (!authHeader) throw new Error("Administrator authentication required.");
+
+            let res = await fetch(getApiUrl("/admin/licenses/generate"), {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": authHeader,
+              },
+              body: JSON.stringify({ days }),
+            });
+
+            if (res.status === 401) {
+              const refreshed = await getValidIdToken(true);
+              if (refreshed) {
+                authHeader = `Bearer ${refreshed}`;
+                res = await fetch(getApiUrl("/admin/licenses/generate"), {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": authHeader,
+                  },
+                  body: JSON.stringify({ days }),
+                });
+              }
+            }
+
+            const data = await res.json();
+            if (!res.ok) {
+              throw new Error(data.error || "License generation failed.");
+            }
+
+            if (adminGenerateMsg) {
+              adminGenerateMsg.className = "license-msg success";
+              adminGenerateMsg.innerHTML = `Created code: <strong style="user-select:all; color:var(--teal);">${data.license.code}</strong> (${data.license.durationDays} Days)`;
+              adminGenerateMsg.classList.remove("hidden");
+            }
+
+            loadAdminLicenses();
+          } catch (err) {
+            if (adminGenerateMsg) {
+              adminGenerateMsg.className = "license-msg error";
+              adminGenerateMsg.textContent = err.message || "Generation error.";
+              adminGenerateMsg.classList.remove("hidden");
+            }
+          } finally {
+            adminGenerateBtn.disabled = false;
+            adminGenerateBtn.textContent = "Generate New License Code";
+          }
+        });
+      }
+
+      // Admin: Refresh License Audit Table
+      if (adminRefreshLicensesBtn) {
+        adminRefreshLicensesBtn.addEventListener("click", () => {
+          loadAdminLicenses();
+        });
+      }
+
+      async function loadAdminLicenses() {
+        if (!currentUser || !adminLicensesTbody) return;
+        try {
+          let authHeader = await getAuthHeader();
+          if (!authHeader) return;
+
+          let res = await fetch(getApiUrl("/admin/licenses"), {
+            headers: {
+              "Accept": "application/json",
+              "Authorization": authHeader,
+            },
+          });
+
+          if (!res.ok) return;
+          const data = await res.json();
+          const licenses = data.licenses || [];
+
+          if (licenses.length === 0) {
+            adminLicensesTbody.innerHTML = `
+              <tr>
+                <td colspan="6" style="text-align: center; color: var(--muted); padding: 18px;">No licenses generated yet.</td>
+              </tr>
+            `;
+            return;
+          }
+
+          adminLicensesTbody.innerHTML = licenses.map((lic) => {
+            const isUsed = lic.status === "used";
+            const statusBadge = isUsed 
+              ? `<span style="color:#a23e38; font-weight:700;">● USED</span>`
+              : `<span style="color:var(--teal); font-weight:700;">● UNUSED</span>`;
+            
+            return `
+              <tr>
+                <td><span class="code-pill">${lic.code}</span></td>
+                <td>${lic.durationDays} Day(s)</td>
+                <td>${statusBadge}</td>
+                <td><span style="font-size:10px; color:var(--muted);">${lic.redeemedByUid || "—"}</span></td>
+                <td>${lic.redeemedAt ? new Date(lic.redeemedAt).toLocaleString() : "—"}</td>
+                <td>${lic.expiresAt ? new Date(lic.expiresAt).toLocaleString() : "—"}</td>
+              </tr>
+            `;
+          }).join("");
+        } catch (err) {
+          console.debug("Failed to load admin licenses table:", err.message);
+        }
       }
     </script>
   </body>

@@ -8,7 +8,34 @@
         "displayName": { "type": "string", "description": "User display name" },
         "photoURL": { "type": "string", "description": "Google avatar URL", "optional": true },
         "createdAt": { "type": "string", "description": "ISO timestamp of account creation" },
-        "lastLoginAt": { "type": "string", "description": "ISO timestamp of last login" }
+        "lastLoginAt": { "type": "string", "description": "ISO timestamp of last login" },
+        "activeLicense": { "type": "object", "description": "Active license information", "optional": true }
+      }
+    },
+    "License": {
+      "collection": "licenses",
+      "fields": {
+        "code": { "type": "string", "description": "Cryptographic unique license code" },
+        "durationDays": { "type": "number", "description": "Duration in days" },
+        "createdAt": { "type": "string", "description": "ISO timestamp when created by admin" },
+        "createdBy": { "type": "string", "description": "Admin email who created the license" },
+        "status": { "type": "string", "description": "unused or used" },
+        "redeemedByUid": { "type": "string", "description": "Verified UID of redeemer", "optional": true },
+        "redeemedByEmail": { "type": "string", "description": "Email of redeemer", "optional": true },
+        "redeemedAt": { "type": "string", "description": "ISO timestamp when redeemed", "optional": true },
+        "expiresAt": { "type": "string", "description": "ISO timestamp of expiry", "optional": true }
+      }
+    },
+    "UserLicense": {
+      "collection": "user_licenses",
+      "fields": {
+        "uid": { "type": "string", "description": "Verified UID of license holder" },
+        "email": { "type": "string", "description": "Account email" },
+        "lastLicenseCode": { "type": "string", "description": "Last redeemed license code" },
+        "durationDays": { "type": "number", "description": "Duration in days" },
+        "redeemedAt": { "type": "string", "description": "ISO timestamp when redeemed" },
+        "expiresAt": { "type": "string", "description": "ISO timestamp when license expires" },
+        "status": { "type": "string", "description": "active or expired" }
       }
     }
   }
