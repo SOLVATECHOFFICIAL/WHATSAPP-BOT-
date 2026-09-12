@@ -711,6 +711,21 @@
         }
       }
 
+      // Helper to parse JSON safely and handle unexpected HTML error responses gracefully
+      async function safeFetchJson(res) {
+        const text = await res.text();
+        let data = {};
+        try {
+          if (text) data = JSON.parse(text);
+        } catch {
+          if (text.trim().startsWith("<")) {
+            throw new Error("Server returned an HTML page instead of JSON. Please verify your backend API connection.");
+          }
+          throw new Error(`Invalid response from server (${res.status}).`);
+        }
+        return data;
+      }
+
       async function refresh() {
         if (!currentUser) return;
         try {
@@ -739,9 +754,8 @@
             });
           }
 
-          if (!response.ok) return;
-          const data = await response.json();
-          updateStatusUI(data);
+          const data = await safeFetchJson(response);
+          if (response.ok) updateStatusUI(data);
         } catch (err) {
           console.debug("Status poll:", err.message);
         }
@@ -907,7 +921,7 @@
               }
             }
 
-            const data = await response.json();
+            const data = await safeFetchJson(response);
             if (!response.ok) throw new Error(data.error || "Pairing code could not be generated.");
 
             if (code) code.textContent = data.code || data.pairingCode || "—";
@@ -1084,9 +1098,10 @@
             }
           }
 
-          if (!res.ok) return;
-          const data = await res.json();
-          updateLicenseUI(data);
+          const data = await safeFetchJson(res);
+          if (res.ok) {
+            updateLicenseUI(data);
+          }
 
           // If current user is the administrator, reveal admin panel and populate records
           if (data.isAdmin || currentUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
@@ -1106,7 +1121,28 @@
           cachedServerOffset = serverMs - Date.now();
         }
 
-        if (data.hasActiveLicense && data.expiresAt) {
+        const isUserAdmin = data.isAdmin || currentUser?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+
+        if (isUserAdmin || data.durationDays === "Unlimited") {
+          cachedServerExpiryTime = null;
+          if (licenseBadge) {
+            licenseBadge.className = "license-badge active";
+            licenseBadge.textContent = "ADMIN (UNLIMITED)";
+          }
+          if (licenseStatusText) {
+            licenseStatusText.textContent = "Active (Unlimited Admin)";
+          }
+          if (licenseCountdown) {
+            licenseCountdown.textContent = "Unlimited (Admin Access)";
+          }
+          if (licenseExpiry) {
+            licenseExpiry.textContent = "Never (Unlimited Admin Access)";
+          }
+          if (licenseCountdownTimerId) {
+            clearInterval(licenseCountdownTimerId);
+            licenseCountdownTimerId = null;
+          }
+        } else if (data.hasActiveLicense && data.expiresAt) {
           cachedServerExpiryTime = new Date(data.expiresAt).getTime();
           const nowAdjusted = Date.now() + cachedServerOffset;
           const remaining = Math.max(0, cachedServerExpiryTime - nowAdjusted);
@@ -1193,7 +1229,7 @@
               }
             }
 
-            const data = await res.json();
+            const data = await safeFetchJson(res);
             if (!res.ok) {
               throw new Error(data.error || "Redemption failed.");
             }
@@ -1288,7 +1324,7 @@
               }
             }
 
-            const data = await res.json();
+            const data = await safeFetchJson(res);
             if (!res.ok) {
               throw new Error(data.error || "License generation failed.");
             }
@@ -1333,8 +1369,8 @@
             },
           });
 
+          const data = await safeFetchJson(res);
           if (!res.ok) return;
-          const data = await res.json();
           const licenses = data.licenses || [];
 
           if (licenses.length === 0) {

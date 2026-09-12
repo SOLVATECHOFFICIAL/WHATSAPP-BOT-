@@ -116,8 +116,21 @@ for (const p of prefixes) {
   app.post(`${p}/pair`, requireAuth, async (request, response) => {
     const safeUserId = request.safeUserId;
     const verifiedUid = request.verifiedUid;
-    const controller = getWhatsAppController(safeUserId);
+    const userEmail = request.auth.email;
+
     try {
+      // License enforcement: Admin (awoyinfasolomon1@gmail.com) has automatic unlimited active status.
+      // Normal users must have an active, non-expired license.
+      const licenseStatus = await getUserLicenseStatus(verifiedUid, userEmail);
+      if (!licenseStatus.hasActiveLicense) {
+        return response.status(403).json({
+          error: "Active license required. Please enter and redeem a valid SOLVATECH activation code in your dashboard before pairing your WhatsApp account.",
+          code: "LICENSE_REQUIRED",
+          userId: verifiedUid,
+        });
+      }
+
+      const controller = getWhatsAppController(safeUserId);
       const result = await controller.requestPairingCode(request.body?.number);
       response.json({
         code: result.code,
@@ -155,7 +168,8 @@ for (const p of prefixes) {
   app.get(`${p}/license/status`, requireAuth, async (request, response) => {
     try {
       const verifiedUid = request.verifiedUid;
-      const status = await getUserLicenseStatus(verifiedUid);
+      const userEmail = request.auth.email;
+      const status = await getUserLicenseStatus(verifiedUid, userEmail);
       response.json({
         ...status,
         userId: verifiedUid,
@@ -233,7 +247,9 @@ for (const p of prefixes) {
 }
 
 app.use((request, response, next) => {
-  if (prefixes.some((p) => request.path.startsWith(`${p}/`))) return next();
+  if (prefixes.some((p) => request.path.startsWith(`${p}/`))) {
+    return response.status(404).json({ error: "API endpoint not found.", code: "ENDPOINT_NOT_FOUND" });
+  }
   response.sendFile(path.join(publicDir, "index.html"));
 });
 
