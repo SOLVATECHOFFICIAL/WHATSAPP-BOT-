@@ -5,7 +5,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { PORT } from "./lib/config.js";
 import { logger } from "./lib/logger.js";
-import { getWhatsAppController } from "./lib/whatsapp.js";
+import { getWhatsAppController, restoreAllSessions, auditActiveSessions } from "./lib/whatsapp.js";
+import { getLockedNumberForUid } from "./lib/number-lock.js";
 import { requireAuth, requireAdmin } from "./lib/auth.js";
 import {
   createLicenseRecord,
@@ -115,12 +116,21 @@ for (const p of prefixes) {
   // Protected Routes: Require valid Firebase Auth Bearer token
   // The verified Firebase UID is authoritative and determines the WhatsApp session.
   // Any client-supplied body.userId, query.userId, or header x-user-id is strictly ignored.
-  app.get(`${p}/status`, requireAuth, (request, response) => {
+  app.get(`${p}/status`, requireAuth, async (request, response) => {
     const safeUserId = request.safeUserId;
     const verifiedUid = request.verifiedUid;
-    const controller = getWhatsAppController(safeUserId);
+    const userEmail = request.auth.email;
+    const controller = getWhatsAppController(safeUserId, { verifiedUid, userEmail });
+    
+    const [lockedNumber, license] = await Promise.all([
+      getLockedNumberForUid(verifiedUid),
+      getUserLicenseStatus(verifiedUid, userEmail),
+    ]);
+
     response.json({
       ...controller.getStatus(),
+      lockedNumber,
+      license,
       userId: verifiedUid,
       user: {
         uid: request.auth.uid,
@@ -157,7 +167,7 @@ for (const p of prefixes) {
         });
       }
 
-      const controller = getWhatsAppController(safeUserId);
+      const controller = getWhatsAppController(safeUserId, { verifiedUid, userEmail });
       const result = await controller.requestPairingCode(request.body?.number);
       response.json({
         code: result.code,
@@ -168,8 +178,10 @@ for (const p of prefixes) {
       });
     } catch (error) {
       logger.error(`Pairing request failed for verified user ${verifiedUid}`, error.stack || error.message);
-      response.status(400).json({
+      const statusCode = error.code === "NUMBER_LOCKED_TO_ANOTHER_ACCOUNT" || error.code === "ACCOUNT_LOCKED_TO_DIFFERENT_NUMBER" ? 403 : 400;
+      response.status(statusCode).json({
         error: error.message || "Pairing code could not be generated.",
+        code: error.code || "PAIRING_FAILED",
         statusCode: error?.output?.statusCode ?? error?.statusCode ?? null,
         userId: verifiedUid,
       });
@@ -179,7 +191,7 @@ for (const p of prefixes) {
   app.post(`${p}/disconnect`, requireAuth, async (request, response) => {
     const safeUserId = request.safeUserId;
     const verifiedUid = request.verifiedUid;
-    const controller = getWhatsAppController(safeUserId);
+    const controller = getWhatsAppController(safeUserId, { verifiedUid, userEmail: request.auth.email });
     try {
       await controller.disconnect();
       response.json({ ok: true, status: "idle", userId: verifiedUid });
@@ -223,6 +235,19 @@ for (const p of prefixes) {
       };
 
       const result = await redeemLicenseCode(code, verifiedUser);
+
+      // Auto-reconnect existing saved session if present and valid
+      const controller = getWhatsAppController(request.safeUserId, {
+        verifiedUid: request.verifiedUid,
+        userEmail: request.auth.email,
+      });
+      if (controller.hasSavedSession() && !controller.isConnected()) {
+        logger.info(`Auto-reconnecting WhatsApp session for user ${request.verifiedUid} after license redemption`);
+        controller.start().catch((err) => {
+          logger.warn("Auto-reconnect after license redemption notice", err.message);
+        });
+      }
+
       response.json(result);
     } catch (error) {
       logger.warn(`License redemption rejected for user ${request.verifiedUid}: ${error.message}`);
@@ -287,4 +312,13 @@ app.use((error, _request, response, _next) => {
 
 app.listen(PORT, "0.0.0.0", () => {
   logger.info("SOLVATECH BOT web server listening", String(PORT));
+  restoreAllSessions().catch((error) => {
+    logger.warn("Auto-restore session error", error.message);
+  });
+  // Audit active WhatsApp sessions every 30 seconds for license expiry
+  setInterval(() => {
+    auditActiveSessions().catch((err) => {
+      logger.debug("Background license audit notice", err.message);
+    });
+  }, 30000).unref();
 });
