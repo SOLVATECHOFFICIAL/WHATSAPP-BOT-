@@ -9,9 +9,9 @@ COPY . .
 RUN mkdir -p /app/runtime/sessions /app/runtime/data /app/runtime/logs
 
 ENV NODE_ENV=production
-ENV PORT=8000
+ENV PORT=3000
 ENV BOT_DATA_DIR=/app/runtime
 
-EXPOSE 8000
+EXPOSE 3000
 
 CMD ["npm", "start"]

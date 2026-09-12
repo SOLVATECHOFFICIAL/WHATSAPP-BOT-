@@ -68,7 +68,14 @@ async function readResponse(response: Response) {
   return payload;
 }
 
-const DEFAULT_BACKEND_URL = typeof window !== 'undefined' ? window.location.origin : 'https://web-production-3c1de8.up.railway.app';
+const RAILWAY_URL = 'https://web-production-3c1de8.up.railway.app';
+const isSelfHosted = typeof window !== 'undefined' && (
+  window.location.hostname.includes('railway.app') ||
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '127.0.0.1' ||
+  window.location.hostname.includes('run.app')
+);
+const DEFAULT_BACKEND_URL = isSelfHosted ? window.location.origin : RAILWAY_URL;
 function getApiUrl(path: string) {
   const custom = typeof window !== 'undefined' ? localStorage.getItem('solvatech_backend_url') : '';
   const baseUrl = (custom || DEFAULT_BACKEND_URL).replace(/\/$/, '');

@@ -30,8 +30,9 @@ const rootDir = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(rootDir, "public");
 const apiPrefix = String(process.env.BOT_API_PREFIX || "/bot-api").replace(/\/$/, "");
 
-// Explicit CORS configuration for GitHub Pages frontend and local development
+// Explicit CORS configuration for Railway, GitHub Pages frontend, and local development
 const allowedOrigins = [
+  "https://web-production-3c1de8.up.railway.app",
   "https://solvatechofficial.github.io",
   "http://localhost:3000",
   "http://127.0.0.1:3000",
@@ -40,12 +41,22 @@ const allowedOrigins = [
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   if (origin) {
-    if (allowedOrigins.includes(origin) || origin.endsWith(".github.io") || process.env.ALLOWED_ORIGINS?.split(",").includes(origin)) {
+    if (
+      allowedOrigins.includes(origin) ||
+      origin.endsWith(".railway.app") ||
+      origin.endsWith(".github.io") ||
+      origin.endsWith(".run.app") ||
+      process.env.ALLOWED_ORIGINS?.split(",").includes(origin)
+    ) {
       res.setHeader("Access-Control-Allow-Origin", origin);
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+    } else {
+      res.setHeader("Access-Control-Allow-Origin", "https://web-production-3c1de8.up.railway.app");
       res.setHeader("Access-Control-Allow-Credentials", "true");
     }
   } else {
-    res.setHeader("Access-Control-Allow-Origin", "https://solvatechofficial.github.io");
+    res.setHeader("Access-Control-Allow-Origin", "https://web-production-3c1de8.up.railway.app");
+    res.setHeader("Access-Control-Allow-Credentials", "true");
   }
 
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
