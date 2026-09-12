@@ -1,5 +1,10 @@
 import { BOT_NAME, OWNER_NAME } from "../lib/config.js";
 
+const SOLVATECH_LOGO_URL = "https://solvatechofficial.github.io/WHATSAPP-BOT-/solva.webp";
+
 export default async function alive({ reply }) {
-  await reply(`${BOT_NAME} is online. Owner: ${OWNER_NAME}`);
+  await reply({
+    image: SOLVATECH_LOGO_URL,
+    caption: `⚡ *${BOT_NAME} IS ONLINE*\n👤 *Owner:* ${OWNER_NAME}\n🟢 *Status:* Active & Listening`,
+  });
 }

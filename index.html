@@ -23,14 +23,14 @@
     <div class="grain"></div>
     <header class="topbar">
       <a class="brand" href="/">
-        <span class="brand-mark">S/</span>
+        <span class="brand-mark"><img src="./solva.webp" alt="SOLVATECH BOT" class="solva-brand-logo" /></span>
         <span><strong>SOLVATECH BOT</strong><small>BY SOLVATECHOFFICIAL</small></span>
       </a>
       <div id="topbar-right" class="topbar-actions">
         <span id="auth-top-badge" class="live-label">SECURE CONSOLE</span>
         <div id="user-bar" class="user-bar hidden">
           <div class="user-badge">
-            <div id="user-avatar" class="user-avatar">U</div>
+            <div id="user-avatar" class="user-avatar"><img src="./solva.webp" alt="SOLVATECH BOT" class="solva-avatar-img" /></div>
             <div class="user-info">
               <span id="user-name" class="user-name">User</span>
               <span id="user-email" class="user-email">user@gmail.com</span>
@@ -122,7 +122,7 @@
         <!-- User Profile Card -->
         <div class="user-profile-surface">
           <div class="user-profile-meta">
-            <div id="user-profile-avatar" class="user-profile-avatar">U</div>
+            <div id="user-profile-avatar" class="user-profile-avatar"><img src="./solva.webp" alt="SOLVATECH BOT" class="solva-avatar-img" /></div>
             <div class="user-profile-details">
               <h3 id="user-profile-name">Authenticated User</h3>
               <p id="user-profile-email">user@gmail.com</p>
@@ -680,9 +680,9 @@
 
           if (userAvatar) {
             if (photoURL) {
-              userAvatar.innerHTML = `<img src="${photoURL}" alt="${displayName}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" />`;
+              userAvatar.innerHTML = `<img src="${photoURL}" alt="${displayName}" class="solva-avatar-img" />`;
             } else {
-              userAvatar.textContent = (displayName[0] || "U").toUpperCase();
+              userAvatar.innerHTML = `<img src="./solva.webp" alt="SOLVATECH BOT" class="solva-avatar-img" />`;
             }
           }
 
@@ -691,9 +691,9 @@
 
           if (userProfileAvatar) {
             if (photoURL) {
-              userProfileAvatar.innerHTML = `<img src="${photoURL}" alt="${displayName}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" />`;
+              userProfileAvatar.innerHTML = `<img src="${photoURL}" alt="${displayName}" class="solva-avatar-img" />`;
             } else {
-              userProfileAvatar.textContent = (displayName[0] || "U").toUpperCase();
+              userProfileAvatar.innerHTML = `<img src="./solva.webp" alt="SOLVATECH BOT" class="solva-avatar-img" />`;
             }
           }
 

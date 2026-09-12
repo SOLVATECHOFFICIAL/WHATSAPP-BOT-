@@ -361,17 +361,62 @@
   gap: 16px;
 }
 
+.brand-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  background: rgba(16, 38, 34, 0.1);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  padding: 3px;
+  flex-shrink: 0;
+}
+
+.solva-brand-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.user-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  background: rgba(16, 38, 34, 0.08);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 3px;
+  flex-shrink: 0;
+}
+
 .user-profile-avatar {
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: var(--teal);
-  color: #fff;
-  display: grid;
-  place-items: center;
-  font: 700 16px "DM Mono", monospace;
+  min-width: 58px;
+  height: 48px;
+  width: auto;
+  border-radius: 8px;
+  background: rgba(16, 38, 34, 0.08);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 4px;
   box-shadow: 0 4px 12px rgba(25, 124, 112, 0.18);
+  flex-shrink: 0;
+}
+
+.solva-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 .user-profile-details h3 {
