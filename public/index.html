@@ -242,7 +242,24 @@
       } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
 
       const $ = (id) => document.getElementById(id);
-      const apiPrefix = "/bot-api";
+      
+      const FIREBASE_CONFIG = {
+        projectId: "gen-lang-client-0324946831",
+        appId: "1:420914651308:web:ae4cb5d7632401c1a83f09",
+        apiKey: "AIzaSyA_g2ek4ziXSE9m4VD5-5PfKpKJjAobYFg",
+        authDomain: "gen-lang-client-0324946831.firebaseapp.com",
+        firestoreDatabaseId: "ai-studio-whatsappbot-da9a52de-41e7-4365-a5b4-8aec9332642c",
+        storageBucket: "gen-lang-client-0324946831.firebasestorage.app",
+        messagingSenderId: "420914651308",
+      };
+
+      let customApiUrl = localStorage.getItem("solvatech_backend_url") || "";
+      function getApiUrl(endpoint) {
+        if (customApiUrl) {
+          return `${customApiUrl.replace(/\/$/, "")}/bot-api${endpoint}`;
+        }
+        return `/bot-api${endpoint}`;
+      }
 
       // Elements
       const authView = $("auth-view"), dashboardView = $("dashboard-view");
@@ -510,7 +527,7 @@
       async function refresh() {
         if (!activeUserId) return;
         try {
-          const response = await fetch(apiPrefix + "/status", {
+          const response = await fetch(getApiUrl("/status"), {
             headers: {
               "Accept": "application/json",
               "x-user-id": activeUserId,
@@ -554,31 +571,22 @@
         }
       }
 
-      // Initialize Firebase Auth
+      // Initialize Firebase Auth synchronously so it is always ready instantly
       let auth = null;
-      async function initFirebase() {
-        try {
-          const res = await fetch(apiPrefix + "/firebase-config");
-          if (!res.ok) throw new Error("Could not fetch Firebase configuration.");
-          const firebaseConfig = await res.json();
-          const app = initializeApp(firebaseConfig);
-          auth = getAuth(app);
-
-          onAuthStateChanged(auth, (user) => {
-            if (user) {
-              renderAuthState(user);
-            } else {
-              renderAuthState(null);
-            }
-          });
-        } catch (e) {
-          console.error("Firebase Auth initialization error:", e);
-          showAuthError("Authentication service could not load: " + (e.message || "Network error."));
-          renderAuthState(null);
-        }
+      try {
+        const app = initializeApp(FIREBASE_CONFIG);
+        auth = getAuth(app);
+        onAuthStateChanged(auth, (user) => {
+          if (user) {
+            renderAuthState(user);
+          } else {
+            renderAuthState(null);
+          }
+        });
+      } catch (e) {
+        console.error("Firebase Auth initialization error:", e);
+        showAuthError("Authentication service could not load: " + (e.message || "Configuration error."));
       }
-
-      initFirebase();
 
       // Google Sign-In Only
       if (googleSignInBtn) {
@@ -588,7 +596,8 @@
           googleSignInBtn.style.opacity = "0.7";
           try {
             if (!auth) {
-              throw new Error("Authentication system is initializing. Please tap again in a moment.");
+              const app = initializeApp(FIREBASE_CONFIG);
+              auth = getAuth(app);
             }
             const provider = new GoogleAuthProvider();
             provider.setCustomParameters({ prompt: 'select_account' });
@@ -619,7 +628,7 @@
           const currentId = activeUserId;
           try {
             if (currentId) {
-              fetch(apiPrefix + "/disconnect", {
+              fetch(getApiUrl("/disconnect"), {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
@@ -680,7 +689,7 @@
           }
 
           try {
-            const response = await fetch(apiPrefix + "/pair", {
+            const response = await fetch(getApiUrl("/pair"), {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -731,7 +740,7 @@
           disconnect.disabled = true;
           disconnect.textContent = "Disconnecting...";
           try {
-            const response = await fetch(apiPrefix + "/disconnect", {
+            const response = await fetch(getApiUrl("/disconnect"), {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
