@@ -702,31 +702,8 @@
       }
 
       async function syncUserProfile(user) {
-        if (!db || !user || !user.uid || user.type === "preview") return;
-        try {
-          const userDocRef = doc(db, "users", user.uid);
-          const snap = await getDoc(userDocRef);
-          const now = new Date().toISOString();
-          if (!snap.exists()) {
-            await setDoc(userDocRef, {
-              uid: user.uid,
-              email: user.email || "",
-              displayName: user.displayName || user.email?.split("@")[0] || "User",
-              photoURL: user.photoURL || "",
-              createdAt: now,
-              lastLoginAt: now,
-            });
-          } else {
-            await setDoc(userDocRef, {
-              lastLoginAt: now,
-              email: user.email || snap.data()?.email || "",
-              displayName: user.displayName || snap.data()?.displayName || "",
-              photoURL: user.photoURL || snap.data()?.photoURL || "",
-            }, { merge: true });
-          }
-        } catch (err) {
-          console.debug("User profile sync error:", err.message);
-        }
+        // User profile and session state are managed authoritatively by backend API routes.
+        return;
       }
 
       function updateStatusUI(data) {
