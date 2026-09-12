@@ -13,8 +13,8 @@ const settingByName = {
   antibot: "antiBot",
 };
 
-export default async function anti({ sock, chatId, sender, senderJids, args, command, reply, userId = "default" }) {
-  await requireAdmin(sock, chatId, sender, true, senderJids);
+export default async function anti({ sock, chatId, sender, senderJids, senderIsLinkedAccount, args, command, reply, userId = "default" }) {
+  await requireAdmin(sock, chatId, sender, true, senderJids, senderIsLinkedAccount);
   const commandSetting = settingByCommand[command];
   const first = String(args[0] || "").toLowerCase();
   const second = String(args[1] || "").toLowerCase();

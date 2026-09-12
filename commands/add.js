@@ -1,8 +1,8 @@
 import { normalizeNumber } from "../lib/helpers.js";
 import { requireAdmin } from "../lib/command-tools.js";
 
-export default async function add({ sock, chatId, sender, senderJids, args, reply }) {
-  const metadata = await requireAdmin(sock, chatId, sender, true, senderJids);
+export default async function add({ sock, chatId, sender, senderJids, senderIsLinkedAccount, args, reply }) {
+  const metadata = await requireAdmin(sock, chatId, sender, true, senderJids, senderIsLinkedAccount);
   const number = normalizeNumber(args[0]);
   if (!number || number.length < 7) return reply("❌ Please provide a valid number with country code.");
   try {
