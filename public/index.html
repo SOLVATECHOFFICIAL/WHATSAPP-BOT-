@@ -240,6 +240,12 @@
         signOut, 
         onAuthStateChanged 
       } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+      import {
+        getFirestore,
+        doc,
+        setDoc,
+        getDoc
+      } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
 
       const $ = (id) => document.getElementById(id);
       
@@ -464,13 +470,86 @@
         timerId = setInterval(tick, 1000);
       }
 
+      async function getValidIdToken(forceRefresh = false) {
+        if (!currentUser) return null;
+        try {
+          return await currentUser.getIdToken(forceRefresh);
+        } catch (err) {
+          console.warn("Could not acquire Firebase ID token:", err.message);
+          return null;
+        }
+      }
+
+      async function getAuthHeader() {
+        const token = await getValidIdToken(false);
+        return token ? `Bearer ${token}` : null;
+      }
+
+      async function syncUserProfile(user) {
+        if (!db || !user || !user.uid) return;
+        try {
+          const userDocRef = doc(db, "users", user.uid);
+          const snap = await getDoc(userDocRef);
+          const now = new Date().toISOString();
+          if (!snap.exists()) {
+            await setDoc(userDocRef, {
+              uid: user.uid,
+              email: user.email || "",
+              displayName: user.displayName || user.email?.split("@")[0] || "User",
+              photoURL: user.photoURL || "",
+              createdAt: now,
+              lastLoginAt: now,
+            });
+          } else {
+            await setDoc(userDocRef, {
+              lastLoginAt: now,
+              email: user.email || snap.data()?.email || "",
+              displayName: user.displayName || snap.data()?.displayName || "",
+              photoURL: user.photoURL || snap.data()?.photoURL || "",
+            }, { merge: true });
+          }
+        } catch (err) {
+          console.debug("User profile sync error:", err.message);
+        }
+      }
+
+      function updateStatusUI(data) {
+        const connected = data.status === "connected" || data.connected === true;
+        const failed = data.status === "disconnected" || data.failed === true;
+        const pending = data.status === "pairing" || data.status === "connecting";
+
+        if (badge) {
+          badge.textContent = connected ? "Live Connected" : failed ? "Disconnected" : pending ? "Pairing socket open" : "Ready to pair";
+          badge.classList.toggle("connected", connected);
+          badge.classList.toggle("failed", failed);
+        }
+        if (state) state.textContent = connected ? "Active" : failed ? "Socket error" : pending ? "Pairing..." : "Not connected";
+        if (detail) {
+          detail.textContent = connected 
+            ? "Your dedicated WhatsApp socket is active and listening for owner commands." 
+            : failed 
+            ? (data.lastError || "WhatsApp closed the pairing socket. Ready to try again.") 
+            : pending 
+            ? "Socket is open and waiting for WhatsApp mobile confirmation." 
+            : "Enter your phone number above to generate your pairing code.";
+        }
+        if (number) number.textContent = data.phoneNumber || "—";
+        if (disconnect) disconnect.disabled = !connected && !pending;
+
+        if (connected && pairingActive) {
+          pairingActive = false;
+          if (timerId) clearInterval(timerId);
+          if (codePanel) codePanel.classList.add("hidden");
+          if (button) {
+            button.disabled = false;
+            button.textContent = "Get Pairing Code →";
+          }
+        }
+      }
+
       function renderAuthState(user) {
         currentUser = user;
         if (user && user.uid) {
-          // Logged In State with Google Account
-          activeUserId = "user_" + user.uid.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 64);
-          localStorage.setItem("solvatech_user_id", activeUserId);
-
           const displayName = user.displayName || user.email?.split("@")[0] || "Google User";
           const email = user.email || "account@google.com";
           const photoURL = user.photoURL;
@@ -496,21 +575,20 @@
 
           if (userProfileName) userProfileName.textContent = displayName;
           if (userProfileEmail) userProfileEmail.textContent = email;
-          if (userProfileId) userProfileId.textContent = `SESSION: ${activeUserId}`;
+          if (userProfileId) userProfileId.textContent = `UID: ${user.uid}`;
 
           if (authView) authView.classList.add("hidden");
           if (dashboardView) dashboardView.classList.remove("hidden");
           if (userBar) userBar.classList.remove("hidden");
           if (authTopBadge) authTopBadge.classList.add("hidden");
 
+          syncUserProfile(user);
           refresh();
           if (!statusIntervalId) {
             statusIntervalId = setInterval(refresh, 4000);
           }
         } else {
-          // Logged Out State -> Show Sign In Screen
-          activeUserId = null;
-          localStorage.removeItem("solvatech_user_id");
+          currentUser = null;
 
           if (statusIntervalId) {
             clearInterval(statusIntervalId);
@@ -525,57 +603,53 @@
       }
 
       async function refresh() {
-        if (!activeUserId) return;
+        if (!currentUser) return;
         try {
-          const response = await fetch(getApiUrl("/status"), {
+          let authHeader = await getAuthHeader();
+          if (!authHeader) return;
+
+          let response = await fetch(getApiUrl("/status"), {
             headers: {
               "Accept": "application/json",
-              "x-user-id": activeUserId,
+              "Authorization": authHeader,
             },
           });
+
+          if (response.status === 401) {
+            const refreshedToken = await getValidIdToken(true);
+            if (!refreshedToken) {
+              renderAuthState(null);
+              return;
+            }
+            authHeader = `Bearer ${refreshedToken}`;
+            response = await fetch(getApiUrl("/status"), {
+              headers: {
+                "Accept": "application/json",
+                "Authorization": authHeader,
+              },
+            });
+          }
+
           if (!response.ok) return;
           const data = await response.json();
-          const connected = data.status === "connected" || data.connected === true;
-          const failed = data.status === "disconnected" || data.failed === true;
-          const pending = data.status === "pairing" || data.status === "connecting";
-
-          if (badge) {
-            badge.textContent = connected ? "Live Connected" : failed ? "Disconnected" : pending ? "Pairing socket open" : "Ready to pair";
-            badge.classList.toggle("connected", connected);
-            badge.classList.toggle("failed", failed);
-          }
-          if (state) state.textContent = connected ? "Active" : failed ? "Socket error" : pending ? "Pairing..." : "Not connected";
-          if (detail) {
-            detail.textContent = connected 
-              ? "Your dedicated WhatsApp socket is active and listening for owner commands." 
-              : failed 
-              ? (data.lastError || "WhatsApp closed the pairing socket. Ready to try again.") 
-              : pending 
-              ? "Socket is open and waiting for WhatsApp mobile confirmation." 
-              : "Enter your phone number above to generate your pairing code.";
-          }
-          if (number) number.textContent = data.phoneNumber || "—";
-          if (disconnect) disconnect.disabled = !connected && !pending;
-
-          if (connected && pairingActive) {
-            pairingActive = false;
-            if (timerId) clearInterval(timerId);
-            if (codePanel) codePanel.classList.add("hidden");
-            if (button) {
-              button.disabled = false;
-              button.textContent = "Get Pairing Code →";
-            }
-          }
+          updateStatusUI(data);
         } catch (err) {
           console.debug("Status poll:", err.message);
         }
       }
 
-      // Initialize Firebase Auth synchronously so it is always ready instantly
+      // Initialize Firebase Auth and Firestore
       let auth = null;
+      let db = null;
       try {
         const app = initializeApp(FIREBASE_CONFIG);
         auth = getAuth(app);
+        try {
+          db = getFirestore(app, FIREBASE_CONFIG.firestoreDatabaseId || "(default)");
+        } catch {
+          db = getFirestore(app);
+        }
+
         onAuthStateChanged(auth, (user) => {
           if (user) {
             renderAuthState(user);
@@ -625,27 +699,29 @@
           logoutBtn.disabled = true;
           logoutBtn.textContent = "Logging out...";
           
-          const currentId = activeUserId;
           try {
-            if (currentId) {
+            if (statusIntervalId) {
+              clearInterval(statusIntervalId);
+              statusIntervalId = null;
+            }
+
+            const authHeader = await getAuthHeader().catch(() => null);
+            if (authHeader) {
               fetch(getApiUrl("/disconnect"), {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
-                  "x-user-id": currentId,
+                  "Authorization": authHeader,
                 },
-                body: JSON.stringify({ userId: currentId }),
               }).catch(() => {});
             }
+
             if (auth) {
               await signOut(auth).catch(() => {});
             }
           } catch (e) {
             console.debug("Sign out cleanup:", e.message);
           } finally {
-            localStorage.removeItem("solvatech_user_id");
-            localStorage.removeItem("solvatech_uid");
-            activeUserId = null;
             currentUser = null;
 
             logoutBtn.disabled = false;
@@ -683,20 +759,42 @@
             return;
           }
 
+          let authHeader = await getAuthHeader();
+          if (!authHeader) {
+            showError("Authentication required. Please sign in with Google.");
+            return;
+          }
+
           if (button) {
             button.disabled = true;
             button.innerHTML = '<span class="button-loading"><i></i>Opening socket…</span>';
           }
 
           try {
-            const response = await fetch(getApiUrl("/pair"), {
+            let response = await fetch(getApiUrl("/pair"), {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
-                "x-user-id": activeUserId || "default",
+                "Authorization": authHeader,
               },
-              body: JSON.stringify({ number: formattedNumber, userId: activeUserId }),
+              body: JSON.stringify({ number: formattedNumber }),
             });
+
+            if (response.status === 401) {
+              const refreshedToken = await getValidIdToken(true);
+              if (refreshedToken) {
+                authHeader = `Bearer ${refreshedToken}`;
+                response = await fetch(getApiUrl("/pair"), {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": authHeader,
+                  },
+                  body: JSON.stringify({ number: formattedNumber }),
+                });
+              }
+            }
+
             const data = await response.json();
             if (!response.ok) throw new Error(data.error || "Pairing code could not be generated.");
 
@@ -740,14 +838,30 @@
           disconnect.disabled = true;
           disconnect.textContent = "Disconnecting...";
           try {
-            const response = await fetch(getApiUrl("/disconnect"), {
+            let authHeader = await getAuthHeader();
+            if (!authHeader) throw new Error("Authentication required.");
+
+            let response = await fetch(getApiUrl("/disconnect"), {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
-                "x-user-id": activeUserId || "default",
+                "Authorization": authHeader,
               },
-              body: JSON.stringify({ userId: activeUserId }),
             });
+
+            if (response.status === 401) {
+              const refreshedToken = await getValidIdToken(true);
+              if (refreshedToken) {
+                response = await fetch(getApiUrl("/disconnect"), {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${refreshedToken}`,
+                  },
+                });
+              }
+            }
+
             if (!response.ok) throw new Error("Disconnect request failed");
             if (codePanel) codePanel.classList.add("hidden");
             refresh();

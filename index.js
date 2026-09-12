@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { PORT } from "./lib/config.js";
 import { logger } from "./lib/logger.js";
 import { getWhatsAppController } from "./lib/whatsapp.js";
+import { requireAuth } from "./lib/auth.js";
 
 process.on("uncaughtException", (error) => {
   logger.error("Process uncaught exception handled gracefully", error?.stack || error?.message);
@@ -26,14 +27,19 @@ app.use(express.json({ limit: "32kb" }));
 app.use(express.static(publicDir, { extensions: ["html"] }));
 app.use(express.static(rootDir, { extensions: ["html"] }));
 
-function resolveUserId(request) {
-  const header = request.headers["x-user-id"];
-  const query = request.query?.userId;
-  const body = request.body?.userId;
-  const raw = String(header || query || body || "default").trim();
-  // Sanitize to safe characters for path safety
-  return raw.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 128) || "default";
-}
+/**
+ * ARCHITECTURAL NOTE - STORAGE ON RAILWAY & PRODUCTION:
+ * ======================================================
+ * Currently, WhatsApp authentication keys and session state are stored in the local
+ * filesystem directory (`sessions/<safeUserId>`) via Baileys multi-file auth state,
+ * and group settings in `data/group-settings-<safeUserId>.json`.
+ *
+ * Ephemeral container platforms like Railway rebuild/restart containers, which resets
+ * local filesystem storage unless a persistent Railway Volume is mounted to `./sessions`
+ * and `./data`, or session state is synced to Cloud Firestore / database.
+ *
+ * For this phase, session directory isolation is strictly keyed to the verified Firebase UID.
+ */
 
 function getFirebaseClientConfig() {
   try {
@@ -59,6 +65,7 @@ function getFirebaseClientConfig() {
 const prefixes = Array.from(new Set([apiPrefix, "/api", "/bot-api"]));
 
 for (const p of prefixes) {
+  // Public Health & Firebase Config endpoints
   app.get(`${p}/health`, (_request, response) => {
     response.json({ status: "ok" });
   });
@@ -71,15 +78,38 @@ for (const p of prefixes) {
     response.json(config);
   });
 
-  app.get(`${p}/status`, (request, response) => {
-    const userId = resolveUserId(request);
-    const controller = getWhatsAppController(userId);
-    response.json({ ...controller.getStatus(), userId });
+  // Protected Routes: Require valid Firebase Auth Bearer token
+  // The verified Firebase UID is authoritative and determines the WhatsApp session.
+  // Any client-supplied body.userId, query.userId, or header x-user-id is strictly ignored.
+  app.get(`${p}/status`, requireAuth, (request, response) => {
+    const safeUserId = request.safeUserId;
+    const verifiedUid = request.verifiedUid;
+    const controller = getWhatsAppController(safeUserId);
+    response.json({
+      ...controller.getStatus(),
+      userId: verifiedUid,
+      user: {
+        uid: request.auth.uid,
+        email: request.auth.email,
+        displayName: request.auth.displayName,
+        photoURL: request.auth.photoURL,
+      },
+    });
   });
 
-  app.post(`${p}/pair`, async (request, response) => {
-    const userId = resolveUserId(request);
-    const controller = getWhatsAppController(userId);
+  app.get(`${p}/user/profile`, requireAuth, (request, response) => {
+    response.json({
+      uid: request.auth.uid,
+      email: request.auth.email,
+      displayName: request.auth.displayName,
+      photoURL: request.auth.photoURL,
+    });
+  });
+
+  app.post(`${p}/pair`, requireAuth, async (request, response) => {
+    const safeUserId = request.safeUserId;
+    const verifiedUid = request.verifiedUid;
+    const controller = getWhatsAppController(safeUserId);
     try {
       const result = await controller.requestPairingCode(request.body?.number);
       response.json({
@@ -87,27 +117,28 @@ for (const p of prefixes) {
         pairingCode: result.code,
         expiresAt: result.expiresAt,
         pairingNumber: result.phone,
-        userId,
+        userId: verifiedUid,
       });
     } catch (error) {
-      logger.error(`Pairing request failed for user ${userId}`, error.stack || error.message);
+      logger.error(`Pairing request failed for verified user ${verifiedUid}`, error.stack || error.message);
       response.status(400).json({
         error: error.message || "Pairing code could not be generated.",
         statusCode: error?.output?.statusCode ?? error?.statusCode ?? null,
-        userId,
+        userId: verifiedUid,
       });
     }
   });
 
-  app.post(`${p}/disconnect`, async (request, response) => {
-    const userId = resolveUserId(request);
-    const controller = getWhatsAppController(userId);
+  app.post(`${p}/disconnect`, requireAuth, async (request, response) => {
+    const safeUserId = request.safeUserId;
+    const verifiedUid = request.verifiedUid;
+    const controller = getWhatsAppController(safeUserId);
     try {
       await controller.disconnect();
-      response.json({ ok: true, status: "idle", userId });
+      response.json({ ok: true, status: "idle", userId: verifiedUid });
     } catch (error) {
-      logger.error(`Disconnect failed for user ${userId}`, error.stack || error.message);
-      response.status(500).json({ error: "The WhatsApp session could not be cleared.", userId });
+      logger.error(`Disconnect failed for verified user ${verifiedUid}`, error.stack || error.message);
+      response.status(500).json({ error: "The WhatsApp session could not be cleared.", userId: verifiedUid });
     }
   });
 }
