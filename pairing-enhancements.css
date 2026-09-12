@@ -626,65 +626,70 @@
 }
 
 /* ==========================================================================
-   HERO IMAGE & GET KEY BUTTON STYLES
+   HERO IMAGE & GET KEY BUTTON STYLES (PRO POLISH - UNCROPPED FULL BANNER)
    ========================================================================== */
 .hero-with-image {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 32px;
+  gap: 36px;
   max-width: 100%;
 }
 
 .hero-text-wrap {
-  flex: 1 1 520px;
+  flex: 1 1 480px;
 }
 
 .hero-image-wrap {
-  flex: 0 0 280px;
-  max-width: 320px;
+  flex: 1 1 500px;
+  max-width: 580px;
+  width: 100%;
   display: flex;
   justify-content: center;
+  align-items: center;
 }
 
 .hero-image {
   width: 100%;
-  max-width: 280px;
   height: auto;
-  max-height: 220px;
-  object-fit: cover;
-  border-radius: 8px;
-  border: 1px solid var(--line);
-  box-shadow: 0 10px 25px rgba(16, 38, 34, 0.08);
-  transition: transform 0.25s ease;
+  max-width: 100%;
+  object-fit: contain;
+  display: block;
+  border-radius: 12px;
+  border: 1px solid rgba(25, 124, 112, 0.3);
+  box-shadow: 0 16px 40px rgba(16, 38, 34, 0.12), 0 2px 8px rgba(0, 0, 0, 0.04);
+  background: #06110f;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .hero-image:hover {
-  transform: translateY(-2px);
+  transform: translateY(-3px) scale(1.01);
+  box-shadow: 0 22px 50px rgba(16, 38, 34, 0.18), 0 0 24px rgba(37, 211, 102, 0.18);
 }
 
 .get-key-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  background: #25D366;
+  gap: 8px;
+  background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
   color: #ffffff !important;
-  padding: 10px 16px;
-  border-radius: 4px;
+  padding: 11px 20px;
+  border-radius: 6px;
   font: 700 12px "DM Mono", monospace;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   text-decoration: none;
-  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
-  box-shadow: 0 3px 10px rgba(37, 211, 102, 0.25);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 14px rgba(37, 211, 102, 0.3);
   white-space: nowrap;
   cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .get-key-btn:hover {
-  background: #1ebc57;
-  transform: translateY(-1px);
-  box-shadow: 0 5px 14px rgba(37, 211, 102, 0.35);
+  background: linear-gradient(135deg, #28e06c 0%, #159a8b 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(37, 211, 102, 0.45);
 }
 
 .get-key-btn:active {
@@ -692,8 +697,8 @@
 }
 
 .get-key-btn svg {
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
   flex-shrink: 0;
 }
 
@@ -701,28 +706,79 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-top: 18px;
-  padding-top: 14px;
+  gap: 14px;
+  margin-top: 20px;
+  padding-top: 16px;
   border-top: 1px dashed var(--line);
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 500;
   color: var(--muted);
 }
 
-@media (max-width: 720px) {
+/* HIGH-END COMPONENT POLISH */
+.surface {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.surface:hover {
+  box-shadow: 0 20px 45px rgba(16, 38, 34, 0.08);
+}
+
+/* GOOGLE AUTH BUTTON HIGH-END POLISH */
+.google-auth-button {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.google-auth-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(16, 38, 34, 0.12);
+  border-color: var(--teal);
+}
+
+/* PAIR BUTTON PULSE EFFECT */
+#pair-button {
+  border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(16, 38, 34, 0.2);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#pair-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(25, 124, 112, 0.35);
+}
+
+/* PULSING ONLINE INDICATOR */
+.orbit.online {
+  box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.4);
+  animation: pulseGreen 2.2s infinite cubic-bezier(0.66, 0, 0, 1);
+}
+
+@keyframes pulseGreen {
+  to {
+    box-shadow: 0 0 0 12px rgba(37, 211, 102, 0);
+  }
+}
+
+@media (max-width: 860px) {
   .hero-with-image {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 18px;
+    align-items: stretch;
+    gap: 22px;
+  }
+  .hero-text-wrap {
+    flex: 1 1 auto;
   }
   .hero-image-wrap {
     width: 100%;
     max-width: 100%;
+    flex: 1 1 auto;
   }
   .hero-image {
-    max-height: 160px;
     width: 100%;
-    max-width: 100%;
+    height: auto;
+    max-height: none;
+    object-fit: contain;
   }
   .license-form-row {
     flex-direction: column;
