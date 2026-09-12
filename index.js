@@ -7,6 +7,15 @@ import { PORT } from "./lib/config.js";
 import { logger } from "./lib/logger.js";
 import { getWhatsAppController } from "./lib/whatsapp.js";
 
+process.on("uncaughtException", (error) => {
+  logger.error("Process uncaught exception handled gracefully", error?.stack || error?.message);
+});
+
+process.on("unhandledRejection", (reason) => {
+  const msg = reason instanceof Error ? (reason.stack || reason.message) : String(reason);
+  logger.error("Process unhandled rejection handled gracefully", msg);
+});
+
 const app = express();
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(rootDir, "public");
