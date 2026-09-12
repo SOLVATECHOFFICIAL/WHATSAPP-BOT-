@@ -6,7 +6,8 @@ function sleep(ms) {
 
 export default async function spam({ sock, chatId, senderIsLinkedAccount, text, reply, userId = "default" }) {
   if (!senderIsLinkedAccount) {
-    return reply("❌ *Controller-Only Command:* Only the linked SOLVATECH account owner can use this command.");
+    // Strictly controller-only: completely ignore anyone else
+    return;
   }
 
   const messageText = String(text || "").trim();
