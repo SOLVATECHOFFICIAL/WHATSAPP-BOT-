@@ -1,13 +1,13 @@
 import "dotenv/config";
 import express from "express";
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { PORT } from "./lib/config.js";
 import { logger } from "./lib/logger.js";
-import { createWhatsAppController } from "./lib/whatsapp.js";
+import { getWhatsAppController } from "./lib/whatsapp.js";
 
 const app = express();
-const controller = createWhatsAppController();
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(rootDir, "public");
 const apiPrefix = String(process.env.BOT_API_PREFIX || "/bot-api").replace(/\/$/, "");
@@ -16,6 +16,36 @@ app.disable("x-powered-by");
 app.use(express.json({ limit: "32kb" }));
 app.use(express.static(publicDir, { extensions: ["html"] }));
 
+function resolveUserId(request) {
+  const header = request.headers["x-user-id"];
+  const query = request.query?.userId;
+  const body = request.body?.userId;
+  const raw = String(header || query || body || "default").trim();
+  // Sanitize to safe characters for path safety
+  return raw.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 128) || "default";
+}
+
+function getFirebaseClientConfig() {
+  try {
+    const configPath = path.join(rootDir, "firebase-applet-config.json");
+    if (fs.existsSync(configPath)) {
+      const parsed = JSON.parse(fs.readFileSync(configPath, "utf8"));
+      return {
+        apiKey: parsed.apiKey,
+        authDomain: parsed.authDomain,
+        projectId: parsed.projectId,
+        storageBucket: parsed.storageBucket,
+        messagingSenderId: parsed.messagingSenderId,
+        appId: parsed.appId,
+        firestoreDatabaseId: parsed.firestoreDatabaseId || "(default)",
+      };
+    }
+  } catch (error) {
+    logger.warn("Could not read firebase-applet-config.json", error.message);
+  }
+  return null;
+}
+
 const prefixes = Array.from(new Set([apiPrefix, "/api", "/bot-api"]));
 
 for (const p of prefixes) {
@@ -23,30 +53,51 @@ for (const p of prefixes) {
     response.json({ status: "ok" });
   });
 
-  app.get(`${p}/status`, (_request, response) => {
-    response.json(controller.getStatus());
+  app.get(`${p}/firebase-config`, (_request, response) => {
+    const config = getFirebaseClientConfig();
+    if (!config) {
+      return response.status(500).json({ error: "Firebase configuration is not available on the server." });
+    }
+    response.json(config);
+  });
+
+  app.get(`${p}/status`, (request, response) => {
+    const userId = resolveUserId(request);
+    const controller = getWhatsAppController(userId);
+    response.json({ ...controller.getStatus(), userId });
   });
 
   app.post(`${p}/pair`, async (request, response) => {
+    const userId = resolveUserId(request);
+    const controller = getWhatsAppController(userId);
     try {
       const result = await controller.requestPairingCode(request.body?.number);
-      response.json({ code: result.code, pairingCode: result.code, expiresAt: result.expiresAt, pairingNumber: result.phone });
+      response.json({
+        code: result.code,
+        pairingCode: result.code,
+        expiresAt: result.expiresAt,
+        pairingNumber: result.phone,
+        userId,
+      });
     } catch (error) {
-      logger.error("Pairing request failed", error.stack || error.message);
+      logger.error(`Pairing request failed for user ${userId}`, error.stack || error.message);
       response.status(400).json({
         error: error.message || "Pairing code could not be generated.",
         statusCode: error?.output?.statusCode ?? error?.statusCode ?? null,
+        userId,
       });
     }
   });
 
-  app.post(`${p}/disconnect`, async (_request, response) => {
+  app.post(`${p}/disconnect`, async (request, response) => {
+    const userId = resolveUserId(request);
+    const controller = getWhatsAppController(userId);
     try {
       await controller.disconnect();
-      response.json({ ok: true, status: "idle" });
+      response.json({ ok: true, status: "idle", userId });
     } catch (error) {
-      logger.error("Disconnect failed", error.stack || error.message);
-      response.status(500).json({ error: "The WhatsApp session could not be cleared." });
+      logger.error(`Disconnect failed for user ${userId}`, error.stack || error.message);
+      response.status(500).json({ error: "The WhatsApp session could not be cleared.", userId });
     }
   });
 }
@@ -63,5 +114,4 @@ app.use((error, _request, response, _next) => {
 
 app.listen(PORT, "0.0.0.0", () => {
   logger.info("SOLVATECH BOT web server listening", String(PORT));
-  void controller.start().catch((error) => logger.error("WhatsApp startup failed", error.stack || error.message));
 });

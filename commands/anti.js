@@ -13,12 +13,7 @@ const settingByName = {
   antibot: "antiBot",
 };
 
-const labels = {
-  antiLink: "Anti-link",
-  antiBot: "Anti-bot",
-};
-
-export default async function anti({ sock, chatId, sender, senderJids, args, command, reply }) {
+export default async function anti({ sock, chatId, sender, senderJids, args, command, reply, userId = "default" }) {
   await requireAdmin(sock, chatId, sender, true, senderJids);
   const commandSetting = settingByCommand[command];
   const first = String(args[0] || "").toLowerCase();
@@ -27,19 +22,17 @@ export default async function anti({ sock, chatId, sender, senderJids, args, com
   const value = commandSetting ? first : settingByName[first] ? second : first;
 
   if (!["on", "off"].includes(value)) {
-    const current = await getGroupSettings(chatId);
-    const lines = Object.entries(labels).map(([key, label]) => (
-      `*${label}:* ${current[key] ? "✅ ON" : "❌ OFF"}`
-    ));
+    const current = await getGroupSettings(chatId, userId);
     return reply([
-      "*🛡️ ANTI PROTECTION STATUS*",
+      "Anti Protection",
       "",
-      ...lines,
-      "",
-       "_Use .antilink or .antibot on/off._",
+      `Antilink: ${current.antiLink ? "ON" : "OFF"}`,
+      `Antibot: ${current.antiBot ? "ON" : "OFF"}`,
     ].join("\n"));
   }
 
-  await toggleGroupSetting(chatId, setting, value === "on");
-  await reply(`✅ *${labels[setting]} protection turned ${value.toUpperCase()}.*`);
+  const enabled = value === "on";
+  await toggleGroupSetting(chatId, setting, enabled, userId);
+  const name = setting === "antiBot" ? "Antibot" : "Antilink";
+  await reply(`✅ ${name}: ${enabled ? "ON" : "OFF"}`);
 }

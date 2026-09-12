@@ -3,7 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=20.0.0" },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "dev": "node index.js",
     "build": "node -e \"console.log('SOLVATECH BOT production build ready')\"",
@@ -13,10 +15,12 @@
     "lint": "node --check index.js && node --check lib/config.js && node --check lib/whatsapp.js"
   },
   "dependencies": {
+    "@google/genai": "^2.22.0",
     "@whiskeysockets/baileys": "7.0.0-rc14",
     "axios": "^1.8.4",
     "dotenv": "^16.4.7",
     "express": "^5.2.1",
+    "firebase": "^12.19.0",
     "pino": "^9.14.0",
     "sharp": "^0.34.1"
   }

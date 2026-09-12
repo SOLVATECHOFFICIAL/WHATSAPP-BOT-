@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#102622" />
-    <title>SOLVATECH BOT — Pairing Console</title>
+    <title>SOLVATECH BOT — Multi-User Pairing Console</title>
     <link rel="stylesheet" href="/style.css" />
     <link rel="stylesheet" href="/pairing-enhancements.css" />
   </head>
@@ -15,62 +15,188 @@
         <span class="brand-mark">S/</span>
         <span><strong>SOLVATECH BOT</strong><small>BY SOLVATECHOFFICIAL</small></span>
       </a>
-      <span class="live-label">PAIRING CONSOLE / LIVE</span>
-    </header>
-    <main class="main">
-      <section class="hero">
-        <p class="eyebrow">WHATSAPP MULTI-DEVICE</p>
-        <h1>Connect your phone.<br /><em>Keep it clear.</em></h1>
-        <p class="lede">Request a pairing code, link your WhatsApp account, and see the connection come alive.</p>
-      </section>
-      <section class="grid">
-        <article class="surface pair-card">
-          <div class="card-top"><span>01 / START A SESSION</span><small>01—02</small></div>
-          <h2>Get your pairing code</h2>
-          <form id="pair-form">
-            <label for="number">Nigerian WhatsApp number</label>
-            <div class="phone-wrap"><span>NG</span><input id="number" type="tel" inputmode="numeric" placeholder="0901 234 5678" autocomplete="tel" required /></div>
-            <p class="hint">Enter your normal Nigerian number starting with 090, 080, 081, 070, 071, or 091. We convert it securely to +234 automatically.</p>
-            <button id="pair-button" type="submit">Get Pairing Code <span>→</span></button>
-          </form>
-          <div id="code-panel" class="code-panel hidden">
-            <div class="code-heading"><span>YOUR PAIRING CODE</span><span id="code-timer" class="code-timer">EXPIRES IN 5:00</span></div>
-            <div class="code-value-row"><strong id="pair-code">—</strong><button id="copy-code" class="copy-button" type="button">Copy code</button></div>
-            <div id="pairing-for" class="pairing-for"></div>
-            <p>Open WhatsApp → Linked Devices → Link a device → Link with phone number. Enter the 8-character code exactly as shown, then keep this page open while the session finishes connecting.</p>
-            <span id="copy-feedback" class="copy-feedback" role="status" aria-live="polite"></span>
+      <div id="topbar-right">
+        <div id="user-bar" class="user-bar hidden">
+          <div class="user-badge">
+            <div id="user-avatar" class="user-avatar">U</div>
+            <div class="user-info">
+              <span id="user-name" class="user-name">User</span>
+              <span id="user-email" class="user-email">user@gmail.com</span>
+            </div>
           </div>
-          <p id="error" class="error hidden" role="alert"></p>
-        </article>
-        <aside class="surface status-card" aria-live="polite">
-          <div class="card-top"><span>02 / LIVE STATUS</span><b id="badge" class="badge">Ready to pair</b></div>
-          <div class="status-line"><h2 id="state">Not connected</h2><span id="orbit" class="orbit">◉</span></div>
-          <p id="detail">Enter your WhatsApp number to start a secure pairing session.</p>
-          <hr />
-          <span class="muted-label">CONNECTED NUMBER</span>
-          <strong id="connected-number">—</strong>
-          <button id="disconnect" class="disconnect" disabled>Disconnect</button>
-        </aside>
+          <button id="signout-button" class="signout-button" type="button">Sign out</button>
+        </div>
+        <span id="live-label" class="live-label">MULTI-USER / CONSOLE</span>
+      </div>
+    </header>
+
+    <main class="main">
+      <!-- Unauthenticated View: Google Sign-In Required -->
+      <section id="auth-view" class="auth-view hidden">
+        <div class="hero">
+          <p class="eyebrow">GOOGLE AUTHENTICATION • MULTI-USER</p>
+          <h1>Connect your account.<br /><em>Start your session.</em></h1>
+          <p class="lede">Sign in with your Google account to access your personal, isolated WhatsApp bot instance and live pairing console.</p>
+        </div>
+
+        <div class="auth-grid">
+          <article class="surface pair-card">
+            <div class="card-top"><span>01 / AUTHENTICATION</span><small>GOOGLE SECURE</small></div>
+            <h2>Sign in to SOLVATECH</h2>
+            <p class="hint">Every Google account receives its own dedicated WhatsApp Multi-Device session. Your data, pairings, and credentials are completely isolated.</p>
+            
+            <button id="google-signin-button" class="google-auth-button" type="button">
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+              </svg>
+              <span>Continue with Google</span>
+            </button>
+            <p id="auth-error" class="error hidden" role="alert"></p>
+            <p class="auth-note">ⓘ No passwords are stored. Authentication is handled securely through Google Identity Services.</p>
+          </article>
+
+          <aside class="surface status-card">
+            <div class="card-top"><span>02 / MULTI-USER ARCHITECTURE</span><b class="badge good">Active</b></div>
+            <div class="status-line"><h2>Account Isolation</h2><span class="orbit">◉</span></div>
+            <p>Each user gets an isolated Baileys socket, dedicated WhatsApp credentials directory, and private pairing controls.</p>
+            <hr />
+            <span class="muted-label">AUTHENTICATION PROVIDER</span>
+            <strong>Google OAuth 2.0</strong>
+            <span class="muted-label">DATABASE & PROFILES</span>
+            <strong>Firebase Firestore</strong>
+          </aside>
+        </div>
       </section>
-      <section class="surface instructions">
-        <div class="instruction-head"><h2>Pairing, in three clear moves.</h2><span>NO APP DOWNLOAD REQUIRED</span></div>
-        <ol>
-           <li><b>01</b><span><strong>Enter your number</strong>Use your Nigerian format, for example 09012345678. The country code is added automatically.</span></li>
-          <li><b>02</b><span><strong>Request a code</strong>Tap Get Pairing Code. Your one-time code will appear here when ready.</span></li>
-          <li><b>03</b><span><strong>Link in WhatsApp</strong>WhatsApp → Linked Devices → Link with phone number.</span></li>
-        </ol>
-        <div class="notice">ⓘ <span>Your number is used only to establish this session. Keep your pairing code private. Only the WhatsApp account linked here can run bot commands.</span></div>
-      </section>
+
+      <!-- Authenticated View: Protected Dashboard -->
+      <div id="dashboard-view" class="dashboard-view hidden">
+        <section class="hero">
+          <p class="eyebrow">WHATSAPP MULTI-DEVICE • PROTECTED CONSOLE</p>
+          <h1>Connect your phone.<br /><em>Keep it clear.</em></h1>
+          <p class="lede">Request a pairing code, link your WhatsApp account, and see the connection come alive in your personal session.</p>
+        </section>
+
+        <!-- User Profile Banner -->
+        <section class="user-profile-surface" aria-label="User profile information">
+          <div class="user-profile-meta">
+            <div id="profile-card-avatar" class="user-profile-avatar">U</div>
+            <div class="user-profile-details">
+              <h3 id="profile-card-name">User Name</h3>
+              <p id="profile-card-email">user@gmail.com</p>
+            </div>
+          </div>
+          <div class="user-profile-tags">
+            <span id="profile-card-uid" class="user-id-chip">UID: —</span>
+            <span id="profile-card-created" class="user-created-chip">MEMBER SINCE: —</span>
+          </div>
+        </section>
+
+        <section class="grid">
+          <article class="surface pair-card">
+            <div class="card-top"><span>01 / START A SESSION</span><small>01—02</small></div>
+            <h2>Get your pairing code</h2>
+            <form id="pair-form">
+              <label for="number">Nigerian or International WhatsApp number</label>
+              <div class="phone-wrap"><span>NG</span><input id="number" type="tel" inputmode="numeric" placeholder="0901 234 5678" autocomplete="tel" required /></div>
+              <p class="hint">Enter your Nigerian number (090, 080, 081, 070, 071, 091) or international format. We convert it securely to +234 automatically.</p>
+              <button id="pair-button" type="submit">Get Pairing Code <span>→</span></button>
+            </form>
+            <div id="code-panel" class="code-panel hidden">
+              <div class="code-heading"><span>YOUR PAIRING CODE</span><span id="code-timer" class="code-timer">EXPIRES IN 5:00</span></div>
+              <div class="code-value-row"><strong id="pair-code">—</strong><button id="copy-code" class="copy-button" type="button">Copy code</button></div>
+              <div id="pairing-for" class="pairing-for"></div>
+              <p>Open WhatsApp → Linked Devices → Link a device → Link with phone number. Enter the 8-character code exactly as shown, then keep this page open while the session finishes connecting.</p>
+              <span id="copy-feedback" class="copy-feedback" role="status" aria-live="polite"></span>
+            </div>
+            <p id="error" class="error hidden" role="alert"></p>
+          </article>
+          <aside class="surface status-card" aria-live="polite">
+            <div class="card-top"><span>02 / LIVE STATUS</span><b id="badge" class="badge">Ready to pair</b></div>
+            <div class="status-line"><h2 id="state">Not connected</h2><span id="orbit" class="orbit">◉</span></div>
+            <p id="detail">Enter your WhatsApp number to start a secure pairing session.</p>
+            <hr />
+            <span class="muted-label">CONNECTED NUMBER</span>
+            <strong id="connected-number">—</strong>
+            <button id="disconnect" class="disconnect" disabled>Disconnect</button>
+          </aside>
+        </section>
+
+        <section class="surface instructions">
+          <div class="instruction-head"><h2>Pairing, in three clear moves.</h2><span>NO APP DOWNLOAD REQUIRED</span></div>
+          <ol>
+             <li><b>01</b><span><strong>Enter your number</strong>Use your Nigerian format (e.g. 09012345678) or full international number.</span></li>
+            <li><b>02</b><span><strong>Request a code</strong>Tap Get Pairing Code. Your one-time code will appear here when ready.</span></li>
+            <li><b>03</b><span><strong>Link in WhatsApp</strong>WhatsApp → Linked Devices → Link with phone number.</span></li>
+          </ol>
+          <div class="notice">ⓘ <span>Your WhatsApp session is tied exclusively to your authenticated Google account (UID). Keep your pairing code private.</span></div>
+        </section>
+      </div>
     </main>
-    <footer><span>© SOLVATECHOFFICIAL</span><span>SECURE SESSION / WHATSAPP MD</span></footer>
-    <script>
+
+    <footer><span>© SOLVATECHOFFICIAL</span><span>SECURE MULTI-USER SESSION / WHATSAPP MD</span></footer>
+
+    <!-- Firebase Modular SDK & Multi-User App Logic -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+      import {
+        getAuth,
+        GoogleAuthProvider,
+        signInWithPopup,
+        signOut,
+        onAuthStateChanged
+      } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
+      import {
+        getFirestore,
+        doc,
+        getDoc,
+        setDoc
+      } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+
       const $ = (id) => document.getElementById(id);
+      const authView = $("auth-view");
+      const dashboardView = $("dashboard-view");
+      const userBar = $("user-bar");
+      const userAvatar = $("user-avatar");
+      const userName = $("user-name");
+      const userEmail = $("user-email");
+      const signoutBtn = $("signout-button");
+      const googleSigninBtn = $("google-signin-button");
+      const authError = $("auth-error");
+
+      const profileAvatar = $("profile-card-avatar");
+      const profileName = $("profile-card-name");
+      const profileEmail = $("profile-card-email");
+      const profileUid = $("profile-card-uid");
+      const profileCreated = $("profile-card-created");
+
       const form = $("pair-form"), button = $("pair-button"), codePanel = $("code-panel"), code = $("pair-code");
       const error = $("error"), state = $("state"), badge = $("badge"), detail = $("detail"), number = $("connected-number"), disconnect = $("disconnect");
       const copyButton = $("copy-code"), copyFeedback = $("copy-feedback"), timer = $("code-timer"), pairingFor = $("pairing-for");
+
+      let currentUser = null;
+      let userProfile = null;
       let expiresAt = 0, timerId, pairingActive = false;
-      function showError(message) { error.textContent = message; error.classList.toggle("hidden", !message); }
-      function formatTime(seconds) { return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`; }
+      let refreshIntervalId = null;
+
+      const apiPrefix = "/bot-api";
+
+      function showAuthError(msg) {
+        authError.textContent = msg;
+        authError.classList.toggle("hidden", !msg);
+      }
+
+      function showError(message) {
+        error.textContent = message;
+        error.classList.toggle("hidden", !message);
+      }
+
+      function formatTime(seconds) {
+        return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+      }
+
       function startTimer(value) {
         expiresAt = Number(value || 0);
         codePanel.classList.remove("expired");
@@ -79,10 +205,15 @@
           const remaining = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
           timer.textContent = remaining ? `EXPIRES IN ${formatTime(remaining)}` : "CODE EXPIRED";
           copyButton.disabled = !remaining;
-          if (!remaining) { codePanel.classList.add("expired"); clearInterval(timerId); }
+          if (!remaining) {
+            codePanel.classList.add("expired");
+            clearInterval(timerId);
+          }
         };
-        tick(); timerId = setInterval(tick, 1000);
+        tick();
+        timerId = setInterval(tick, 1000);
       }
+
       function render(data) {
         const connected = data.connected === true || data.status === "connected";
         const pending = ["pairing", "connecting"].includes(data.status);
@@ -91,40 +222,268 @@
         badge.textContent = connected ? "Connected" : failed ? "Pairing failed" : pending ? "Waiting for phone" : "Ready to pair";
         badge.className = "badge " + (connected ? "good" : pending ? "pending" : failed ? "failed" : "");
         state.textContent = connected ? "✓ WHATSAPP CONNECTED" : failed ? "Connection stopped" : pending ? "Pairing in progress" : "Not connected";
-        detail.textContent = connected ? "The live WhatsApp socket reported an open state." : failed ? (data.lastError || "WhatsApp closed the pairing socket.") : pending ? "Open WhatsApp and enter the code shown here. This dashboard is watching the same live socket." : "Enter your WhatsApp number to start a secure pairing session.";
+        detail.textContent = connected ? "Your dedicated WhatsApp socket reported an open state." : failed ? (data.lastError || "WhatsApp closed the pairing socket.") : pending ? "Open WhatsApp and enter the code shown here. This dashboard is watching your session." : "Enter your WhatsApp number to start a secure pairing session.";
         number.textContent = data.botNumber || data.number || "—";
         button.disabled = pairingActive;
         disconnect.disabled = data.status === "idle";
         if (failed && data.lastError) showError(data.lastError);
         if (!failed && data.status === "idle") showError("");
-        if (data.pairingNumber) { pairingFor.textContent = `PAIRING FOR +${data.pairingNumber}`; pairingFor.classList.remove("hidden"); }
-        if (data.pairingCode) { code.textContent = data.pairingCode; codePanel.classList.remove("hidden"); if (data.pairingCodeExpiresAt) startTimer(data.pairingCodeExpiresAt); }
-        if (connected) { codePanel.classList.add("hidden"); }
+        if (data.pairingNumber) {
+          pairingFor.textContent = `PAIRING FOR +${data.pairingNumber}`;
+          pairingFor.classList.remove("hidden");
+        }
+        if (data.pairingCode) {
+          code.textContent = data.pairingCode;
+          codePanel.classList.remove("hidden");
+          if (data.pairingCodeExpiresAt) startTimer(data.pairingCodeExpiresAt);
+        }
+        if (connected) {
+          codePanel.classList.add("hidden");
+        }
       }
-      const apiPrefix = "/bot-api";
-      async function refresh() { try { const response = await fetch(apiPrefix + "/status"); render(await response.json()); } catch {} }
-      form.addEventListener("submit", async (event) => {
-        event.preventDefault(); showError(""); copyFeedback.textContent = ""; codePanel.classList.add("hidden"); pairingActive = true; button.disabled = true; button.innerHTML = '<span class="button-loading"><i></i>Opening live socket…</span>';
+
+      async function refresh() {
+        if (!currentUser) return;
         try {
-          const response = await fetch(apiPrefix + "/pair", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({number: $("number").value}) });
-          const data = await response.json(); if (!response.ok) throw new Error(data.error || "Pairing code could not be generated.");
-          code.textContent = data.code; codePanel.classList.remove("hidden"); startTimer(data.expiresAt); render({...data, status:"pairing", pairingCode:data.code, pairingCodeExpiresAt:data.expiresAt, pairingNumber:data.pairingNumber});
-        } catch (e) { pairingActive = true; showError(e.message); } finally { button.disabled = pairingActive; button.innerHTML = "Get Pairing Code <span>→</span>"; }
+          const response = await fetch(apiPrefix + "/status", {
+            headers: {
+              "Accept": "application/json",
+              "x-user-id": currentUser.uid,
+            },
+          });
+          if (response.ok) {
+            render(await response.json());
+          }
+        } catch {}
+      }
+
+      // Initialize Firebase Auth & Firestore
+      async function setupFirebase() {
+        try {
+          const configRes = await fetch("/api/firebase-config");
+          if (!configRes.ok) throw new Error("Could not load Firebase configuration from server.");
+          const firebaseConfig = await configRes.json();
+          const app = initializeApp(firebaseConfig);
+          const auth = getAuth(app);
+          const db = getFirestore(app);
+
+          // Listen for authentication changes
+          onAuthStateChanged(auth, async (user) => {
+            if (user) {
+              currentUser = user;
+              showAuthError("");
+
+              // Retrieve or create User profile in Firestore (users/{userId})
+              try {
+                const userRef = doc(db, "users", user.uid);
+                const snap = await getDoc(userRef);
+                const nowIso = new Date().toISOString();
+
+                if (!snap.exists()) {
+                  userProfile = {
+                    id: user.uid,
+                    email: user.email || "",
+                    displayName: user.displayName || "SOLVATECH User",
+                    photoURL: user.photoURL || "",
+                    createdAt: nowIso,
+                    lastLoginAt: nowIso,
+                  };
+                  await setDoc(userRef, userProfile);
+                } else {
+                  const existing = snap.data();
+                  userProfile = {
+                    ...existing,
+                    id: user.uid,
+                    email: user.email || existing.email,
+                    displayName: user.displayName || existing.displayName,
+                    photoURL: user.photoURL || existing.photoURL,
+                    lastLoginAt: nowIso,
+                  };
+                  await setDoc(userRef, { lastLoginAt: nowIso }, { merge: true });
+                }
+              } catch (dbErr) {
+                console.warn("Firestore profile sync notice:", dbErr.message);
+                userProfile = {
+                  id: user.uid,
+                  email: user.email || "",
+                  displayName: user.displayName || "SOLVATECH User",
+                  photoURL: user.photoURL || "",
+                  createdAt: new Date().toISOString(),
+                  lastLoginAt: new Date().toISOString(),
+                };
+              }
+
+              // Update User Interface
+              updateUserUI(userProfile);
+              authView.classList.add("hidden");
+              dashboardView.classList.remove("hidden");
+              userBar.classList.remove("hidden");
+
+              // Start session status polling
+              await refresh();
+              clearInterval(refreshIntervalId);
+              refreshIntervalId = setInterval(refresh, 4000);
+            } else {
+              currentUser = null;
+              userProfile = null;
+              clearInterval(refreshIntervalId);
+              clearInterval(timerId);
+
+              authView.classList.remove("hidden");
+              dashboardView.classList.add("hidden");
+              userBar.classList.add("hidden");
+            }
+          });
+
+          // Google Sign In action
+          googleSigninBtn.addEventListener("click", async () => {
+            showAuthError("");
+            googleSigninBtn.disabled = true;
+            googleSigninBtn.innerHTML = '<span class="button-loading"><i></i>Connecting to Google…</span>';
+            try {
+              const provider = new GoogleAuthProvider();
+              provider.setCustomParameters({ prompt: "select_account" });
+              await signInWithPopup(auth, provider);
+            } catch (err) {
+              console.error("Sign-in failed", err);
+              if (err.code !== "auth/popup-closed-by-user") {
+                showAuthError(err.message || "Google Sign-In failed. Please try again.");
+              }
+            } finally {
+              googleSigninBtn.disabled = false;
+              googleSigninBtn.innerHTML = `
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                </svg>
+                <span>Continue with Google</span>`;
+            }
+          });
+
+          // Sign Out action
+          signoutBtn.addEventListener("click", async () => {
+            try {
+              await signOut(auth);
+            } catch (err) {
+              console.error("Sign-out error", err);
+            }
+          });
+
+        } catch (error) {
+          console.error("Firebase init failed", error);
+          showAuthError("Authentication service initialization failed: " + error.message);
+          authView.classList.remove("hidden");
+        }
+      }
+
+      function updateUserUI(profile) {
+        if (!profile) return;
+        const initial = (profile.displayName || profile.email || "U")[0].toUpperCase();
+        
+        // Topbar
+        userName.textContent = profile.displayName || "SOLVATECH User";
+        userEmail.textContent = profile.email || "";
+        if (profile.photoURL) {
+          userAvatar.innerHTML = `<img src="${profile.photoURL}" alt="${profile.displayName}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;"/>`;
+          profileAvatar.innerHTML = `<img src="${profile.photoURL}" alt="${profile.displayName}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;"/>`;
+        } else {
+          userAvatar.textContent = initial;
+          profileAvatar.textContent = initial;
+        }
+
+        // Profile card
+        profileName.textContent = profile.displayName || "SOLVATECH User";
+        profileEmail.textContent = profile.email || "";
+        profileUid.textContent = `UID: ${profile.id.slice(0, 16)}…`;
+        const createdDate = profile.createdAt ? new Date(profile.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : "Today";
+        profileCreated.textContent = `MEMBER SINCE: ${createdDate.toUpperCase()}`;
+      }
+
+      // Pairing form submit
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (!currentUser) return;
+        showError("");
+        copyFeedback.textContent = "";
+        codePanel.classList.add("hidden");
+        pairingActive = true;
+        button.disabled = true;
+        button.innerHTML = '<span class="button-loading"><i></i>Opening live socket…</span>';
+        try {
+          const response = await fetch(apiPrefix + "/pair", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-user-id": currentUser.uid,
+            },
+            body: JSON.stringify({ number: $("number").value, userId: currentUser.uid }),
+          });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || "Pairing code could not be generated.");
+          code.textContent = data.code;
+          codePanel.classList.remove("hidden");
+          startTimer(data.expiresAt);
+          render({
+            ...data,
+            status: "pairing",
+            pairingCode: data.code,
+            pairingCodeExpiresAt: data.expiresAt,
+            pairingNumber: data.pairingNumber,
+          });
+        } catch (e) {
+          pairingActive = true;
+          showError(e.message);
+        } finally {
+          button.disabled = pairingActive;
+          button.innerHTML = "Get Pairing Code <span>→</span>";
+        }
       });
+
+      // Copy code button
       copyButton.addEventListener("click", async () => {
         const value = code.textContent.trim();
         if (!value || copyButton.disabled) return;
         try {
           await navigator.clipboard.writeText(value);
         } catch {
-          const helper = document.createElement("textarea"); helper.value = value; helper.style.position = "fixed"; helper.style.opacity = "0"; document.body.appendChild(helper); helper.select(); document.execCommand("copy"); helper.remove();
+          const helper = document.createElement("textarea");
+          helper.value = value;
+          helper.style.position = "fixed";
+          helper.style.opacity = "0";
+          document.body.appendChild(helper);
+          helper.select();
+          document.execCommand("copy");
+          helper.remove();
         }
         copyFeedback.textContent = "Code copied. Paste it into WhatsApp.";
         copyButton.textContent = "Copied";
-        setTimeout(() => { copyButton.textContent = "Copy code"; }, 1800);
+        setTimeout(() => {
+          copyButton.textContent = "Copy code";
+        }, 1800);
       });
-      disconnect.addEventListener("click", async () => { disconnect.disabled = true; pairingActive = false; await fetch(apiPrefix + "/disconnect", {method:"POST"}); clearInterval(timerId); codePanel.classList.add("hidden"); await refresh(); });
-      refresh(); setInterval(refresh, 4000);
+
+      // Disconnect session
+      disconnect.addEventListener("click", async () => {
+        if (!currentUser) return;
+        disconnect.disabled = true;
+        pairingActive = false;
+        await fetch(apiPrefix + "/disconnect", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-user-id": currentUser.uid,
+          },
+          body: JSON.stringify({ userId: currentUser.uid }),
+        });
+        clearInterval(timerId);
+        codePanel.classList.add("hidden");
+        await refresh();
+      });
+
+      // Boot application
+      setupFirebase();
     </script>
   </body>
 </html>
