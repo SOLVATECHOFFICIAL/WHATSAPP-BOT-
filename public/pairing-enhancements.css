@@ -361,17 +361,62 @@
   gap: 16px;
 }
 
+.brand-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  background: rgba(16, 38, 34, 0.1);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  padding: 3px;
+  flex-shrink: 0;
+}
+
+.solva-brand-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.user-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  background: rgba(16, 38, 34, 0.08);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 3px;
+  flex-shrink: 0;
+}
+
 .user-profile-avatar {
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: var(--teal);
-  color: #fff;
-  display: grid;
-  place-items: center;
-  font: 700 16px "DM Mono", monospace;
+  min-width: 58px;
+  height: 48px;
+  width: auto;
+  border-radius: 8px;
+  background: rgba(16, 38, 34, 0.08);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 4px;
   box-shadow: 0 4px 12px rgba(25, 124, 112, 0.18);
+  flex-shrink: 0;
+}
+
+.solva-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 .user-profile-details h3 {
@@ -624,3 +669,559 @@
   letter-spacing: 0.05em;
   user-select: all;
 }
+
+/* ==========================================================================
+   HERO IMAGE & GET KEY BUTTON STYLES (PRO POLISH - UNCROPPED FULL BANNER)
+   ========================================================================== */
+.hero-with-image {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 36px;
+  max-width: 100%;
+}
+
+.hero-text-wrap {
+  flex: 1 1 480px;
+}
+
+.hero-image-wrap {
+  flex: 1 1 500px;
+  max-width: 580px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.hero-image {
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  object-fit: contain;
+  display: block;
+  border-radius: 12px;
+  border: 1px solid rgba(25, 124, 112, 0.3);
+  box-shadow: 0 16px 40px rgba(16, 38, 34, 0.12), 0 2px 8px rgba(0, 0, 0, 0.04);
+  background: #06110f;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hero-image:hover {
+  transform: translateY(-3px) scale(1.01);
+  box-shadow: 0 22px 50px rgba(16, 38, 34, 0.18), 0 0 24px rgba(37, 211, 102, 0.18);
+}
+
+.get-key-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+  color: #ffffff !important;
+  padding: 11px 20px;
+  border-radius: 6px;
+  font: 700 12px "DM Mono", monospace;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 14px rgba(37, 211, 102, 0.3);
+  white-space: nowrap;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.get-key-btn:hover {
+  background: linear-gradient(135deg, #28e06c 0%, #159a8b 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(37, 211, 102, 0.45);
+}
+
+.get-key-btn:active {
+  transform: translateY(0);
+}
+
+.get-key-btn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.auth-get-key-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--line);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* HIGH-END COMPONENT POLISH */
+.surface {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.surface:hover {
+  box-shadow: 0 20px 45px rgba(16, 38, 34, 0.08);
+}
+
+/* GOOGLE AUTH BUTTON HIGH-END POLISH */
+.google-auth-button {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.google-auth-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(16, 38, 34, 0.12);
+  border-color: var(--teal);
+}
+
+/* PAIR BUTTON PULSE EFFECT */
+#pair-button {
+  border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(16, 38, 34, 0.2);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#pair-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(25, 124, 112, 0.35);
+}
+
+/* PULSING ONLINE INDICATOR */
+.orbit.online {
+  box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.4);
+  animation: pulseGreen 2.2s infinite cubic-bezier(0.66, 0, 0, 1);
+}
+
+@keyframes pulseGreen {
+  to {
+    box-shadow: 0 0 0 12px rgba(37, 211, 102, 0);
+  }
+}
+
+@media (max-width: 860px) {
+  .hero-with-image {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 22px;
+  }
+  .hero-text-wrap {
+    flex: 1 1 auto;
+  }
+  .hero-image-wrap {
+    width: 100%;
+    max-width: 100%;
+    flex: 1 1 auto;
+  }
+  .hero-image {
+    width: 100%;
+    height: auto;
+    max-height: none;
+    object-fit: contain;
+  }
+  .license-form-row {
+    flex-direction: column;
+  }
+  .license-form-row .get-key-btn {
+    width: 100%;
+  }
+  .auth-get-key-bar {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+}
+
+/* ==========================================================================
+   SOLVATECH BOT - PROGRESSIVE WEB APP & ANDROID NATIVE EXPERIENCE STYLES
+   ========================================================================== */
+
+/* 1. Android Native Feel, Touch Handling & Safe Areas */
+html, body {
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+body {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+@media (display-mode: standalone) {
+  body {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  input, textarea, [contenteditable="true"] {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+  .pwa-hide-standalone {
+    display: none !important;
+  }
+}
+
+/* Touch Friendly Targets (>= 44px) */
+button, input, select, .get-key-btn, .logout-button {
+  min-height: 44px;
+}
+
+/* 2. SOLVATECH PWA Splash Screen */
+.pwa-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: #102622;
+  color: #f4f1e9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.45s;
+  pointer-events: auto;
+}
+
+.pwa-splash.fade-out {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.pwa-splash-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 24px;
+  max-width: 320px;
+}
+
+.pwa-splash-logo-wrap {
+  width: 96px;
+  height: 96px;
+  border-radius: 20px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(25, 124, 112, 0.3);
+  background: #102622;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pwa-splash-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.pwa-splash-title {
+  font-family: "DM Mono", monospace;
+  font-size: 20px;
+  letter-spacing: 0.14em;
+  color: #f4f1e9;
+  margin: 0 0 8px 0;
+  font-weight: 700;
+}
+
+.pwa-splash-subtitle {
+  font-family: "Manrope", sans-serif;
+  font-size: 13px;
+  color: #9ca8a1;
+  margin: 0 0 28px 0;
+  letter-spacing: 0.02em;
+}
+
+.pwa-splash-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pwa-splash-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2.5px solid rgba(25, 124, 112, 0.25);
+  border-top-color: #197c70;
+  border-radius: 50%;
+  animation: solvatech-pwa-spin 0.75s linear infinite;
+}
+
+@keyframes solvatech-pwa-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* 3. PWA Install Prompt & Topbar Button */
+.pwa-topbar-install-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(25, 124, 112, 0.15);
+  color: var(--teal);
+  border: 1px solid rgba(25, 124, 112, 0.35);
+  padding: 8px 14px;
+  font-size: 11px;
+  font-family: "DM Mono", monospace;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  letter-spacing: 0.08em;
+}
+
+.pwa-topbar-install-btn:hover {
+  background: var(--teal);
+  color: #fff;
+}
+
+/* PWA Bottom-Sheet / Card Install Overlay */
+.pwa-install-overlay {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  max-width: 360px;
+  width: calc(100% - 48px);
+  background: #102622;
+  color: #f4f1e9;
+  border: 1px solid rgba(25, 124, 112, 0.4);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45);
+  z-index: 9999;
+  animation: pwaSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes pwaSlideUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.pwa-install-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.pwa-install-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  object-fit: contain;
+  background: #102622;
+  border: 1px solid rgba(25, 124, 112, 0.3);
+}
+
+.pwa-install-brand strong {
+  display: block;
+  font-family: "DM Mono", monospace;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  color: #f4f1e9;
+}
+
+.pwa-install-brand small {
+  font-size: 11px;
+  color: var(--teal);
+  letter-spacing: 0.05em;
+}
+
+.pwa-install-body p {
+  font-size: 12px;
+  line-height: 1.55;
+  color: #b0beb8;
+  margin: 0 0 16px 0;
+}
+
+.pwa-install-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pwa-install-btn-confirm {
+  flex: 1;
+  background: var(--teal);
+  color: #ffffff;
+  border: none;
+  padding: 11px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: center;
+  letter-spacing: 0.06em;
+  transition: background 0.2s ease;
+}
+
+.pwa-install-btn-confirm:hover {
+  background: #136359;
+}
+
+.pwa-install-btn-dismiss {
+  background: transparent;
+  color: #9ca8a1;
+  border: 1px solid rgba(216, 221, 213, 0.2);
+  padding: 11px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pwa-install-btn-dismiss:hover {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* iOS Safari Guide Modal */
+.pwa-ios-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.pwa-ios-content {
+  background: #102622;
+  color: #f4f1e9;
+  border: 1px solid rgba(25, 124, 112, 0.4);
+  border-radius: 8px;
+  padding: 24px;
+  max-width: 360px;
+  width: 100%;
+}
+
+.pwa-ios-content h3 {
+  margin: 0 0 12px 0;
+  font-family: "DM Mono", monospace;
+  font-size: 16px;
+  color: #ffffff;
+}
+
+.pwa-ios-content ol {
+  margin: 0 0 20px 0;
+  padding-left: 20px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #b0beb8;
+}
+
+.pwa-ios-content li {
+  margin-bottom: 8px;
+}
+
+.pwa-ios-close {
+  width: 100%;
+  background: var(--teal);
+  color: #ffffff;
+  border: none;
+  padding: 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* 4. Offline Connection Status Indicator */
+.pwa-offline-banner {
+  position: fixed;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a2a26;
+  color: #f4f1e9;
+  border: 1px solid rgba(209, 102, 60, 0.5);
+  padding: 10px 18px;
+  border-radius: 99px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  font-size: 12px;
+  font-family: "DM Mono", monospace;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 9998;
+  animation: pwaFadeIn 0.3s ease;
+  white-space: nowrap;
+}
+
+.pwa-offline-banner.online-recovered {
+  border-color: rgba(37, 211, 102, 0.5);
+  color: #88e0b0;
+}
+
+.pwa-offline-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #d27644;
+  animation: pwaDotPulse 1.4s ease-in-out infinite;
+}
+
+.pwa-offline-banner.online-recovered .pwa-offline-dot {
+  background: #25d366;
+}
+
+@keyframes pwaDotPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+@keyframes pwaFadeIn {
+  from { opacity: 0; transform: translate(-50%, 15px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* 5. PWA Update Notification Banner */
+.pwa-update-banner {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #102622;
+  color: #f4f1e9;
+  border: 1px solid var(--teal);
+  border-radius: 6px;
+  padding: 10px 18px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+  z-index: 9999;
+  font-size: 12px;
+  font-family: "DM Mono", monospace;
+}
+
+.pwa-update-btn {
+  background: var(--teal);
+  color: #ffffff;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.08em;
+}
+
+.pwa-update-btn:hover {
+  background: #136359;
+}
+
+

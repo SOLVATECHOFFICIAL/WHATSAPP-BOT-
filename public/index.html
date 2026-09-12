@@ -2,31 +2,101 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#102622" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="SOLVATECH BOT" />
     <title>SOLVATECH BOT</title>
-    <meta name="description" content="WhatsApp Multi-Device bot and pairing console for managing Nigerian and international WhatsApp sessions and automated commands." />
+    <meta name="description" content="Secure SOLVATECH WhatsApp Bot Management Platform" />
     <meta property="og:title" content="SOLVATECH BOT" />
-    <meta property="og:description" content="WhatsApp Multi-Device bot and pairing console for managing Nigerian and international WhatsApp sessions and automated commands." />
+    <meta property="og:description" content="Secure SOLVATECH WhatsApp Bot Management Platform" />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="./solva.webp" />
     <meta property="og:image:type" content="image/webp" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="SOLVATECH BOT" />
-    <meta name="twitter:description" content="WhatsApp Multi-Device bot and pairing console for managing Nigerian and international WhatsApp sessions and automated commands." />
+    <meta name="twitter:description" content="Secure SOLVATECH WhatsApp Bot Management Platform" />
     <meta name="twitter:image" content="./solva.webp" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" type="image/png" sizes="192x192" href="./icon-192x192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="./icon-512x512.png" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
     <link rel="stylesheet" href="./style.css" />
     <link rel="stylesheet" href="./pairing-enhancements.css" />
   </head>
   <body>
     <div class="grain"></div>
+
+    <!-- PWA Splash Screen -->
+    <div id="pwa-splash" class="pwa-splash" aria-hidden="true">
+      <div class="pwa-splash-inner">
+        <div class="pwa-splash-logo-wrap">
+          <img src="./solva.webp" alt="SOLVATECH BOT" class="pwa-splash-logo" />
+        </div>
+        <div class="pwa-splash-title">SOLVATECH BOT</div>
+        <div class="pwa-splash-subtitle">Secure WhatsApp Automation</div>
+        <div class="pwa-splash-loader">
+          <span class="pwa-splash-spinner"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PWA Update Available Banner -->
+    <div id="pwa-update-banner" class="pwa-update-banner hidden" role="status">
+      <span>New SOLVATECH BOT version available.</span>
+      <button id="pwa-update-btn" type="button" class="pwa-update-btn">UPDATE</button>
+    </div>
+
+    <!-- PWA Offline / Connection Banner -->
+    <div id="pwa-offline-banner" class="pwa-offline-banner hidden" role="status" aria-live="polite">
+      <span class="pwa-offline-dot"></span>
+      <span id="pwa-offline-text">OFFLINE — Some features require an internet connection.</span>
+    </div>
+
+    <!-- PWA Install Modal / Overlay -->
+    <aside id="pwa-install-overlay" class="pwa-install-overlay pwa-hide-standalone hidden" aria-label="Install SOLVATECH BOT">
+      <div class="pwa-install-header">
+        <img src="./icon-192x192.png" alt="SOLVATECH BOT" class="pwa-install-icon" />
+        <div class="pwa-install-brand">
+          <strong>SOLVATECH BOT</strong>
+          <small>Install the official app</small>
+        </div>
+      </div>
+      <div class="pwa-install-body">
+        <p>Get faster access to your WhatsApp Bot dashboard with an offline-ready standalone experience.</p>
+      </div>
+      <div class="pwa-install-actions">
+        <button id="pwa-install-confirm-btn" type="button" class="pwa-install-btn-confirm">INSTALL APP</button>
+        <button id="pwa-install-dismiss-btn" type="button" class="pwa-install-btn-dismiss">NOT NOW</button>
+      </div>
+    </aside>
+
+    <!-- iOS Safari Install Guide Modal -->
+    <div id="pwa-ios-modal" class="pwa-ios-modal hidden" role="dialog" aria-modal="true" aria-labelledby="pwa-ios-title">
+      <div class="pwa-ios-content">
+        <h3 id="pwa-ios-title">Install on iOS / Safari</h3>
+        <ol>
+          <li>Tap the <strong>Share</strong> icon in the Safari navigation bar.</li>
+          <li>Scroll down and select <strong>Add to Home Screen</strong>.</li>
+          <li>Tap <strong>Add</strong> at the top right to install SOLVATECH BOT.</li>
+        </ol>
+        <button id="pwa-ios-close-btn" type="button" class="pwa-ios-close">GOT IT</button>
+      </div>
+    </div>
+
     <header class="topbar">
       <a class="brand" href="/">
         <span class="brand-mark"><img src="./solva.webp" alt="SOLVATECH BOT" class="solva-brand-logo" /></span>
         <span><strong>SOLVATECH BOT</strong><small>BY SOLVATECHOFFICIAL</small></span>
       </a>
       <div id="topbar-right" class="topbar-actions">
+        <button id="pwa-install-topbar-btn" class="pwa-topbar-install-btn pwa-hide-standalone hidden" type="button" title="Install SOLVATECH BOT app">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          <span>INSTALL APP</span>
+        </button>
         <span id="auth-top-badge" class="live-label">SECURE CONSOLE</span>
         <div id="user-bar" class="user-bar hidden">
           <div class="user-badge">
@@ -384,10 +454,10 @@
         messagingSenderId: "420914651308",
       };
 
-      const RAILWAY_BACKEND_URL = "https://web-production-3c1de8.up.railway.app";
+      const DEFAULT_BACKEND_URL = window.location.origin;
       let customApiUrl = localStorage.getItem("solvatech_backend_url") || "";
       function getApiUrl(endpoint) {
-        const baseUrl = (customApiUrl || RAILWAY_BACKEND_URL).replace(/\/$/, "");
+        const baseUrl = (customApiUrl || DEFAULT_BACKEND_URL).replace(/\/$/, "");
         return `${baseUrl}/bot-api${endpoint}`;
       }
 
@@ -1420,6 +1490,208 @@
         } catch (err) {
           console.debug("Failed to load admin licenses table:", err.message);
         }
+      }
+
+      // =========================================================================
+      // SOLVATECH BOT - PROGRESSIVE WEB APP (PWA) CONTROLLER
+      // =========================================================================
+
+      // 1. Splash Screen Smooth Dismissal
+      function dismissSplashScreen() {
+        const splash = document.getElementById("pwa-splash");
+        if (!splash || splash.classList.contains("fade-out")) return;
+        splash.classList.add("fade-out");
+        setTimeout(() => {
+          splash.style.display = "none";
+        }, 460);
+      }
+
+      // Automatically dismiss splash screen after a crisp duration
+      if (document.readyState === "complete") {
+        setTimeout(dismissSplashScreen, 650);
+      } else {
+        window.addEventListener("load", () => {
+          setTimeout(dismissSplashScreen, 650);
+        });
+      }
+      setTimeout(dismissSplashScreen, 1200); // Fail-safe timer
+
+      // 2. Service Worker Registration & Update Notification
+      let swRegistration = null;
+      let newWorkerWaiting = null;
+
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("./sw.js", { scope: "./" })
+            .then((reg) => {
+              swRegistration = reg;
+              console.log("[PWA] SOLVATECH BOT Service Worker active, scope:", reg.scope);
+
+              // Detect incoming updates
+              reg.addEventListener("updatefound", () => {
+                const installingWorker = reg.installing;
+                if (!installingWorker) return;
+                installingWorker.addEventListener("statechange", () => {
+                  if (installingWorker.state === "installed" && navigator.serviceWorker.controller) {
+                    newWorkerWaiting = installingWorker;
+                    const updateBanner = document.getElementById("pwa-update-banner");
+                    if (updateBanner) updateBanner.classList.remove("hidden");
+                  }
+                });
+              });
+            })
+            .catch((err) => {
+              console.debug("[PWA] Service Worker registration note:", err.message);
+            });
+
+          // Reload upon skipping waiting to activate the latest version
+          let refreshing = false;
+          navigator.serviceWorker.addEventListener("controllerchange", () => {
+            if (!refreshing) {
+              refreshing = true;
+              window.location.reload();
+            }
+          });
+        });
+
+        const updateBtn = document.getElementById("pwa-update-btn");
+        if (updateBtn) {
+          updateBtn.addEventListener("click", () => {
+            if (newWorkerWaiting) {
+              newWorkerWaiting.postMessage({ type: "SKIP_WAITING" });
+            } else if (swRegistration && swRegistration.waiting) {
+              swRegistration.waiting.postMessage({ type: "SKIP_WAITING" });
+            }
+          });
+        }
+      }
+
+      // 3. PWA In-App Install Prompt & Standalone Mode Handling
+      let deferredInstallPrompt = null;
+      const PWA_DISMISS_KEY = "solvatech_pwa_install_dismissed";
+      const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
+      function isRunningStandalone() {
+        return (
+          window.matchMedia("(display-mode: standalone)").matches ||
+          window.navigator.standalone === true ||
+          document.referrer.includes("android-app://")
+        );
+      }
+
+      const isIOSDevice = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+      const pwaTopbarBtn = document.getElementById("pwa-install-topbar-btn");
+      const pwaInstallOverlay = document.getElementById("pwa-install-overlay");
+      const pwaConfirmBtn = document.getElementById("pwa-install-confirm-btn");
+      const pwaDismissBtn = document.getElementById("pwa-install-dismiss-btn");
+      const pwaIosModal = document.getElementById("pwa-ios-modal");
+      const pwaIosCloseBtn = document.getElementById("pwa-ios-close-btn");
+
+      function canShowInstallCard() {
+        if (isRunningStandalone()) return false;
+        const dismissedAt = localStorage.getItem(PWA_DISMISS_KEY);
+        if (dismissedAt && Date.now() - parseInt(dismissedAt, 10) < SEVEN_DAYS_MS) {
+          return false;
+        }
+        return true;
+      }
+
+      // Listen for browser beforeinstallprompt
+      window.addEventListener("beforeinstallprompt", (e) => {
+        e.preventDefault();
+        deferredInstallPrompt = e;
+
+        if (!isRunningStandalone()) {
+          if (pwaTopbarBtn) pwaTopbarBtn.classList.remove("hidden");
+          if (canShowInstallCard() && pwaInstallOverlay) {
+            setTimeout(() => {
+              if (pwaInstallOverlay && !isRunningStandalone()) {
+                pwaInstallOverlay.classList.remove("hidden");
+              }
+            }, 1600);
+          }
+        }
+      });
+
+      // Listen for app installed
+      window.addEventListener("appinstalled", () => {
+        deferredInstallPrompt = null;
+        if (pwaInstallOverlay) pwaInstallOverlay.classList.add("hidden");
+        if (pwaTopbarBtn) pwaTopbarBtn.classList.add("hidden");
+        console.log("[PWA] SOLVATECH BOT installed successfully to home screen.");
+      });
+
+      async function triggerPwaInstall() {
+        if (deferredInstallPrompt) {
+          deferredInstallPrompt.prompt();
+          const { outcome } = await deferredInstallPrompt.userChoice;
+          if (outcome === "accepted") {
+            console.log("[PWA] User accepted installation prompt");
+          }
+          deferredInstallPrompt = null;
+          if (pwaInstallOverlay) pwaInstallOverlay.classList.add("hidden");
+        } else if (isIOSDevice) {
+          if (pwaIosModal) pwaIosModal.classList.remove("hidden");
+        }
+      }
+
+      if (pwaConfirmBtn) {
+        pwaConfirmBtn.addEventListener("click", triggerPwaInstall);
+      }
+
+      if (pwaTopbarBtn) {
+        pwaTopbarBtn.addEventListener("click", triggerPwaInstall);
+      }
+
+      if (pwaDismissBtn) {
+        pwaDismissBtn.addEventListener("click", () => {
+          if (pwaInstallOverlay) pwaInstallOverlay.classList.add("hidden");
+          localStorage.setItem(PWA_DISMISS_KEY, String(Date.now()));
+        });
+      }
+
+      if (pwaIosCloseBtn) {
+        pwaIosCloseBtn.addEventListener("click", () => {
+          if (pwaIosModal) pwaIosModal.classList.add("hidden");
+        });
+      }
+
+      // For iOS Safari, show topbar install button if not installed in standalone mode
+      if (isIOSDevice && !isRunningStandalone() && pwaTopbarBtn) {
+        pwaTopbarBtn.classList.remove("hidden");
+      }
+
+      // 4. Offline Connectivity Indicator
+      const pwaOfflineBanner = document.getElementById("pwa-offline-banner");
+      const pwaOfflineText = document.getElementById("pwa-offline-text");
+      let pwaRecoveryTimer = null;
+
+      function updateConnectionStatus() {
+        if (!pwaOfflineBanner) return;
+        if (navigator.onLine) {
+          if (!pwaOfflineBanner.classList.contains("hidden")) {
+            pwaOfflineBanner.classList.add("online-recovered");
+            if (pwaOfflineText) pwaOfflineText.textContent = "BACK ONLINE — Reconnecting...";
+            clearTimeout(pwaRecoveryTimer);
+            pwaRecoveryTimer = setTimeout(() => {
+              pwaOfflineBanner.classList.add("hidden");
+              pwaOfflineBanner.classList.remove("online-recovered");
+            }, 3000);
+          }
+        } else {
+          clearTimeout(pwaRecoveryTimer);
+          pwaOfflineBanner.classList.remove("online-recovered");
+          if (pwaOfflineText) pwaOfflineText.textContent = "OFFLINE — Some features require an internet connection.";
+          pwaOfflineBanner.classList.remove("hidden");
+        }
+      }
+
+      window.addEventListener("online", updateConnectionStatus);
+      window.addEventListener("offline", updateConnectionStatus);
+
+      if (!navigator.onLine) {
+        updateConnectionStatus();
       }
     </script>
   </body>

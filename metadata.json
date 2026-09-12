@@ -1,6 +1,6 @@
 {
   "name": "SOLVATECH BOT",
-  "description": "WhatsApp Multi-Device bot and pairing console for managing Nigerian and international WhatsApp sessions and automated commands.",
+  "description": "Secure SOLVATECH WhatsApp Bot Management Platform",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

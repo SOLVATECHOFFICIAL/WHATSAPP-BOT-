@@ -59,8 +59,22 @@ app.use((req, res, next) => {
 
 app.disable("x-powered-by");
 app.use(express.json({ limit: "32kb" }));
-app.use(express.static(publicDir, { extensions: ["html"] }));
-app.use(express.static(rootDir, { extensions: ["html"] }));
+
+const staticOptions = {
+  extensions: ["html"],
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith("sw.js")) {
+      res.setHeader("Service-Worker-Allowed", "/");
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    } else if (filePath.endsWith(".webmanifest") || filePath.endsWith("manifest.json")) {
+      res.setHeader("Content-Type", "application/manifest+json; charset=utf-8");
+      res.setHeader("Cache-Control", "public, max-age=3600");
+    }
+  }
+};
+
+app.use(express.static(publicDir, staticOptions));
+app.use(express.static(rootDir, staticOptions));
 
 /**
  * ARCHITECTURAL NOTE - STORAGE ON RAILWAY & PRODUCTION:

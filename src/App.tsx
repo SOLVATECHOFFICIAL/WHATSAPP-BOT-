@@ -68,10 +68,10 @@ async function readResponse(response: Response) {
   return payload;
 }
 
-const RAILWAY_BACKEND_URL = 'https://web-production-3c1de8.up.railway.app';
+const DEFAULT_BACKEND_URL = typeof window !== 'undefined' ? window.location.origin : 'https://web-production-3c1de8.up.railway.app';
 function getApiUrl(path: string) {
   const custom = typeof window !== 'undefined' ? localStorage.getItem('solvatech_backend_url') : '';
-  const baseUrl = (custom || RAILWAY_BACKEND_URL).replace(/\/$/, '');
+  const baseUrl = (custom || DEFAULT_BACKEND_URL).replace(/\/$/, '');
   const cleanPath = path.startsWith('/api/') ? path.replace(/^\/api/, '/bot-api') : path;
   return `${baseUrl}${cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath}`;
 }
