@@ -16,35 +16,43 @@ app.disable("x-powered-by");
 app.use(express.json({ limit: "32kb" }));
 app.use(express.static(publicDir, { extensions: ["html"] }));
 
-app.get(`${apiPrefix}/status`, (_request, response) => {
-  response.json(controller.getStatus());
-});
+const prefixes = Array.from(new Set([apiPrefix, "/api", "/bot-api"]));
 
-app.post(`${apiPrefix}/pair`, async (request, response) => {
-  try {
-    const result = await controller.requestPairingCode(request.body?.number);
-    response.json({ code: result.code, pairingCode: result.code, expiresAt: result.expiresAt, pairingNumber: result.phone });
-  } catch (error) {
-    logger.error("Pairing request failed", error.stack || error.message);
-    response.status(400).json({
-      error: error.message || "Pairing code could not be generated.",
-      statusCode: error?.output?.statusCode ?? error?.statusCode ?? null,
-    });
-  }
-});
+for (const p of prefixes) {
+  app.get(`${p}/health`, (_request, response) => {
+    response.json({ status: "ok" });
+  });
 
-app.post(`${apiPrefix}/disconnect`, async (_request, response) => {
-  try {
-    await controller.disconnect();
-    response.json({ ok: true, status: "idle" });
-  } catch (error) {
-    logger.error("Disconnect failed", error.stack || error.message);
-    response.status(500).json({ error: "The WhatsApp session could not be cleared." });
-  }
-});
+  app.get(`${p}/status`, (_request, response) => {
+    response.json(controller.getStatus());
+  });
+
+  app.post(`${p}/pair`, async (request, response) => {
+    try {
+      const result = await controller.requestPairingCode(request.body?.number);
+      response.json({ code: result.code, pairingCode: result.code, expiresAt: result.expiresAt, pairingNumber: result.phone });
+    } catch (error) {
+      logger.error("Pairing request failed", error.stack || error.message);
+      response.status(400).json({
+        error: error.message || "Pairing code could not be generated.",
+        statusCode: error?.output?.statusCode ?? error?.statusCode ?? null,
+      });
+    }
+  });
+
+  app.post(`${p}/disconnect`, async (_request, response) => {
+    try {
+      await controller.disconnect();
+      response.json({ ok: true, status: "idle" });
+    } catch (error) {
+      logger.error("Disconnect failed", error.stack || error.message);
+      response.status(500).json({ error: "The WhatsApp session could not be cleared." });
+    }
+  });
+}
 
 app.use((request, response, next) => {
-  if (request.path.startsWith(`${apiPrefix}/`)) return next();
+  if (prefixes.some((p) => request.path.startsWith(`${p}/`))) return next();
   response.sendFile(path.join(publicDir, "index.html"));
 });
 

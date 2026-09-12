@@ -9,7 +9,8 @@
     "build": "node -e \"console.log('SOLVATECH BOT production build ready')\"",
     "start": "node index.js",
     "serve": "node index.js",
-    "typecheck": "node --check index.js && for file in lib/*.js commands/*.js; do node --check \"$file\"; done"
+    "typecheck": "node --check index.js && for file in lib/*.js commands/*.js; do node --check \"$file\"; done",
+    "lint": "node --check index.js && node --check lib/config.js && node --check lib/whatsapp.js"
   },
   "dependencies": {
     "@whiskeysockets/baileys": "7.0.0-rc14",
