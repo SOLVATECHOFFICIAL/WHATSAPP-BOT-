@@ -1224,4 +1224,70 @@ button, input, select, .get-key-btn, .logout-button {
   background: #136359;
 }
 
+/* Domain Notice & Studio Preview Sign-In */
+.domain-notice-box {
+  margin-top: 14px;
+  background: rgba(16, 38, 34, 0.04);
+  border: 1px solid rgba(16, 38, 34, 0.15);
+  border-radius: 6px;
+  padding: 14px 16px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+.domain-notice-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  color: var(--teal);
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.domain-notice-box p {
+  margin: 0 0 10px 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.domain-notice-box code {
+  background: rgba(16, 38, 34, 0.08);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--teal);
+}
+
+.preview-signin-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  background: var(--teal);
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.15s ease;
+}
+
+.preview-signin-button:hover {
+  background: #144039;
+  transform: translateY(-1px);
+}
+
+.preview-signin-button:active {
+  transform: translateY(0);
+}
+
+
 

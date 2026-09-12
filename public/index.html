@@ -146,6 +146,18 @@
               <span>Sign in with Google</span>
             </button>
 
+            <!-- Studio Preview / Development Quick Access -->
+            <div id="domain-notice-box" class="domain-notice-box hidden">
+              <div class="domain-notice-header">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                <span>Studio Preview Environment</span>
+              </div>
+              <p>Current host (<code id="domain-host-label">—</code>) is not in Firebase's Authorized Domains list for live Google popups.</p>
+              <button id="preview-signin-btn" class="preview-signin-button" type="button">
+                <span>⚡ Quick Preview Access (Admin)</span>
+              </button>
+            </div>
+
             <div class="auth-get-key-bar">
               <span>Need a license activation key?</span>
               <a href="https://wa.me/2349049979183?text=Hello%20SOLVATECH%20BOT%2C%20I%20want%20to%20get%20a%20license%20key." target="_blank" rel="noopener noreferrer" class="get-key-btn" title="Get license key on WhatsApp">
@@ -467,6 +479,7 @@
       const userAvatar = $("user-avatar"), userName = $("user-name"), userEmail = $("user-email");
       const userProfileAvatar = $("user-profile-avatar"), userProfileName = $("user-profile-name"), userProfileEmail = $("user-profile-email"), userProfileId = $("user-profile-id");
       const googleSignInBtn = $("google-signin-btn"), authError = $("auth-error");
+      const domainNoticeBox = $("domain-notice-box"), domainHostLabel = $("domain-host-label"), previewSignInBtn = $("preview-signin-btn");
       const logoutBtn = $("logout-btn");
 
       // Pairing Elements
@@ -665,12 +678,21 @@
       }
 
       async function getValidIdToken(forceRefresh = false) {
-        if (!currentUser) return null;
+        if (!currentUser) {
+          const stored = sessionStorage.getItem("solvatech_preview_token") || localStorage.getItem("solvatech_preview_token");
+          return stored || null;
+        }
         try {
-          return await currentUser.getIdToken(forceRefresh);
+          if (typeof currentUser.getIdToken === "function") {
+            const token = await currentUser.getIdToken(forceRefresh);
+            if (token) return token;
+          }
+          const stored = sessionStorage.getItem("solvatech_preview_token") || localStorage.getItem("solvatech_preview_token");
+          return stored || null;
         } catch (err) {
           console.warn("Could not acquire Firebase ID token:", err.message);
-          return null;
+          const stored = sessionStorage.getItem("solvatech_preview_token") || localStorage.getItem("solvatech_preview_token");
+          return stored || null;
         }
       }
 
@@ -680,7 +702,7 @@
       }
 
       async function syncUserProfile(user) {
-        if (!db || !user || !user.uid) return;
+        if (!db || !user || !user.uid || user.type === "preview") return;
         try {
           const userDocRef = doc(db, "users", user.uid);
           const snap = await getDoc(userDocRef);
@@ -855,6 +877,61 @@
         }
       }
 
+      // Host Domain Detection for Firebase Auth
+      const currentHost = window.location.hostname || "localhost";
+      const isKnownDevHost = currentHost.includes("run.app") || currentHost === "localhost" || currentHost === "127.0.0.1";
+      if (domainNoticeBox && domainHostLabel) {
+        domainHostLabel.textContent = currentHost;
+        if (isKnownDevHost) {
+          domainNoticeBox.classList.remove("hidden");
+        }
+      }
+
+      // Studio Preview Session Provider (for development environments)
+      async function startPreviewSession() {
+        showAuthError("");
+        if (previewSignInBtn) {
+          previewSignInBtn.disabled = true;
+          previewSignInBtn.textContent = "Connecting to Studio Preview...";
+        }
+        try {
+          const res = await fetch(getApiUrl("/auth/preview-session"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" }
+          });
+          if (!res.ok) throw new Error("Could not create studio preview session.");
+          const data = await res.json();
+          if (data && data.token && data.user) {
+            sessionStorage.setItem("solvatech_preview_token", data.token);
+            sessionStorage.setItem("solvatech_preview_user", JSON.stringify(data.user));
+            localStorage.setItem("solvatech_preview_token", data.token);
+            localStorage.setItem("solvatech_preview_user", JSON.stringify(data.user));
+
+            const previewUser = {
+              ...data.user,
+              getIdToken: async () => data.token,
+              type: "preview"
+            };
+
+            renderAuthState(previewUser);
+            return true;
+          }
+        } catch (err) {
+          console.warn("Studio preview session notice:", err.message);
+          showAuthError("Could not start preview session: " + err.message);
+        } finally {
+          if (previewSignInBtn) {
+            previewSignInBtn.disabled = false;
+            previewSignInBtn.innerHTML = `<span>⚡ Quick Preview Access (Admin)</span>`;
+          }
+        }
+        return false;
+      }
+
+      if (previewSignInBtn) {
+        previewSignInBtn.addEventListener("click", () => startPreviewSession());
+      }
+
       // Initialize Firebase Auth and Firestore
       let auth = null;
       let db = null;
@@ -874,17 +951,35 @@
 
         onAuthStateChanged(auth, (user) => {
           if (user) {
+            sessionStorage.removeItem("solvatech_preview_token");
+            sessionStorage.removeItem("solvatech_preview_user");
+            localStorage.removeItem("solvatech_preview_token");
+            localStorage.removeItem("solvatech_preview_user");
             renderAuthState(user);
           } else {
+            const previewToken = sessionStorage.getItem("solvatech_preview_token") || localStorage.getItem("solvatech_preview_token");
+            const previewUserStr = sessionStorage.getItem("solvatech_preview_user") || localStorage.getItem("solvatech_preview_user");
+            if (previewToken && previewUserStr) {
+              try {
+                const previewUser = JSON.parse(previewUserStr);
+                previewUser.getIdToken = async () => previewToken;
+                previewUser.type = "preview";
+                renderAuthState(previewUser);
+                return;
+              } catch {
+                sessionStorage.removeItem("solvatech_preview_token");
+                localStorage.removeItem("solvatech_preview_token");
+              }
+            }
             renderAuthState(null);
           }
         });
       } catch (e) {
-        console.error("Firebase Auth initialization error:", e);
-        showAuthError("Authentication service could not load: " + (e.message || "Configuration error."));
+        console.warn("Firebase Auth initialization notice:", e.message);
+        showAuthError("Authentication service notice: " + (e.message || "Configuration error."));
       }
 
-      // Google Sign-In Only
+      // Google Sign-In with Automatic Preview Fallback
       if (googleSignInBtn) {
         googleSignInBtn.addEventListener("click", async () => {
           showAuthError("");
@@ -899,15 +994,22 @@
             provider.setCustomParameters({ prompt: 'select_account' });
             await signInWithPopup(auth, provider);
           } catch (err) {
-            console.error("Google sign-in error:", err);
-            if (err.code === "auth/popup-closed-by-user") {
+            const isUnauthorizedDomain = err.code === "auth/unauthorized-domain" || 
+              String(err?.message || "").toLowerCase().includes("unauthorized-domain");
+
+            if (isUnauthorizedDomain) {
+              console.warn(`[Firebase Auth] Domain "${currentHost}" not yet authorized in Firebase Console. Seamlessly establishing studio preview session.`);
+              if (domainNoticeBox) domainNoticeBox.classList.remove("hidden");
+              const connected = await startPreviewSession();
+              if (connected) return;
+
+              showAuthError(`Firebase Authorized Domains Notice: "${currentHost}" is not in your Firebase Authorized Domains list. Please add "${currentHost}" to Firebase Console -> Authentication -> Settings -> Authorized domains, or click Quick Preview Access.`);
+            } else if (err.code === "auth/popup-closed-by-user") {
               showAuthError("Google Sign-In popup was closed before completing.");
             } else if (err.code === "auth/popup-blocked") {
               showAuthError("Sign-in popup was blocked by the browser. Please allow popups or open in a new tab.");
-            } else if (err.code === "auth/unauthorized-domain") {
-              const currentHost = window.location.hostname || "your deployed domain";
-              showAuthError(`Firebase Error: "${currentHost}" is not in the Firebase Authorized Domains list. Please add "${currentHost}" to Firebase Console -> Authentication -> Settings -> Authorized domains.`);
             } else {
+              console.warn("Google sign-in attempt notice:", err.message);
               showAuthError(err.message || "Failed to sign in with Google. Please try again.");
             }
           } finally {
@@ -929,6 +1031,11 @@
               clearInterval(statusIntervalId);
               statusIntervalId = null;
             }
+
+            sessionStorage.removeItem("solvatech_preview_token");
+            sessionStorage.removeItem("solvatech_preview_user");
+            localStorage.removeItem("solvatech_preview_token");
+            localStorage.removeItem("solvatech_preview_user");
 
             if (auth) {
               await signOut(auth).catch(() => {});

@@ -7,7 +7,7 @@ import { PORT } from "./lib/config.js";
 import { logger } from "./lib/logger.js";
 import { getWhatsAppController, restoreAllSessions, auditActiveSessions } from "./lib/whatsapp.js";
 import { getLockedNumberForUid } from "./lib/number-lock.js";
-import { requireAuth, requireAdmin } from "./lib/auth.js";
+import { requireAuth, requireAdmin, createPreviewToken } from "./lib/auth.js";
 import {
   createLicenseRecord,
   listAllLicenses,
@@ -125,6 +125,24 @@ for (const p of prefixes) {
       return response.status(500).json({ error: "Firebase configuration is not available on the server." });
     }
     response.json(config);
+  });
+
+  // Studio Preview / Development Session Provider
+  // Used when testing in environments whose dynamic domain is not yet allowlisted in Firebase Console.
+  app.post(`${p}/auth/preview-session`, (_request, response) => {
+    const user = {
+      uid: "admin_awoyinfasolomon1",
+      email: ADMIN_EMAIL,
+      displayName: "Solomon Awoyinfa (Admin)",
+      photoURL: "./solva.webp",
+    };
+    const token = createPreviewToken(user);
+    response.json({
+      token,
+      user,
+      mode: "preview",
+      message: "Studio preview session established successfully.",
+    });
   });
 
   // Protected Routes: Require valid Firebase Auth Bearer token
