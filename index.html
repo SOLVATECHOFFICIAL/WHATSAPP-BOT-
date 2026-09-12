@@ -817,7 +817,7 @@
         });
       }
 
-      // Logout Button: Logs out and returns to Sign In screen
+      // Logout Button: Logs out of web dashboard (does NOT disconnect WhatsApp bot)
       if (logoutBtn) {
         logoutBtn.addEventListener("click", async (e) => {
           e.preventDefault();
@@ -828,17 +828,6 @@
             if (statusIntervalId) {
               clearInterval(statusIntervalId);
               statusIntervalId = null;
-            }
-
-            const authHeader = await getAuthHeader().catch(() => null);
-            if (authHeader) {
-              fetch(getApiUrl("/disconnect"), {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "Authorization": authHeader,
-                },
-              }).catch(() => {});
             }
 
             if (auth) {
