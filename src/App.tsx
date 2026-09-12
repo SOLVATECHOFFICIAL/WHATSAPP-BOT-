@@ -52,7 +52,15 @@ function getErrorMessage(error: unknown, fallback: string) {
 }
 
 async function readResponse(response: Response) {
-  const payload = await response.json().catch(() => ({}));
+  const text = await response.text();
+  let payload: unknown = {};
+  try {
+    if (text) payload = JSON.parse(text);
+  } catch {
+    if (text.trim().startsWith('<')) {
+      throw new Error('Server returned an HTML response instead of JSON. Please check backend connection.');
+    }
+  }
   if (!response.ok) {
     const data = (payload && typeof payload === 'object' ? payload : {}) as Record<string, unknown>;
     throw new Error(readString(data, ['message', 'error']) || `Request failed with ${response.status}`);

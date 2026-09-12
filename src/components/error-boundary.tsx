@@ -21,6 +21,19 @@ interface ErrorBoundaryState {
   error: Error | null;
 }
 
+function safeStringify(obj: unknown): string {
+  const seen = new WeakSet();
+  return JSON.stringify(obj, (_key, value) => {
+    if (typeof value === 'object' && value !== null) {
+      if (seen.has(value)) {
+        return '[Circular]';
+      }
+      seen.add(value);
+    }
+    return value;
+  });
+}
+
 function toError(value: unknown): Error {
   if (value instanceof Error) {
     return value;
@@ -28,11 +41,17 @@ function toError(value: unknown): Error {
   if (typeof value === 'string') {
     return new Error(value);
   }
-  try {
-    return new Error(JSON.stringify(value));
-  } catch {
-    return new Error(String(value));
+  if (value && typeof value === 'object') {
+    if ('message' in value && typeof (value as { message?: unknown }).message === 'string') {
+      return new Error((value as { message: string }).message);
+    }
+    try {
+      return new Error(safeStringify(value));
+    } catch {
+      return new Error(String(value));
+    }
   }
+  return new Error(String(value));
 }
 
 function DefaultFallback({ error, resetError }: ErrorFallbackProps) {
