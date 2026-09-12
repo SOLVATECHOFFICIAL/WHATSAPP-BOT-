@@ -24,6 +24,7 @@ const apiPrefix = String(process.env.BOT_API_PREFIX || "/bot-api").replace(/\/$/
 app.disable("x-powered-by");
 app.use(express.json({ limit: "32kb" }));
 app.use(express.static(publicDir, { extensions: ["html"] }));
+app.use(express.static(rootDir, { extensions: ["html"] }));
 
 function resolveUserId(request) {
   const header = request.headers["x-user-id"];

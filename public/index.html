@@ -8,8 +8,9 @@
     <meta name="description" content="WhatsApp Multi-Device bot and pairing console for managing Nigerian and international WhatsApp sessions and automated commands." />
     <meta property="og:title" content="SOLVATECH BOT" />
     <meta property="og:description" content="WhatsApp Multi-Device bot and pairing console for managing Nigerian and international WhatsApp sessions and automated commands." />
-    <link rel="stylesheet" href="/style.css" />
-    <link rel="stylesheet" href="/pairing-enhancements.css" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="stylesheet" href="./style.css" />
+    <link rel="stylesheet" href="./pairing-enhancements.css" />
   </head>
   <body>
     <div class="grain"></div>
@@ -18,7 +19,8 @@
         <span class="brand-mark">S/</span>
         <span><strong>SOLVATECH BOT</strong><small>BY SOLVATECHOFFICIAL</small></span>
       </a>
-      <div id="topbar-right">
+      <div id="topbar-right" class="topbar-actions">
+        <span id="auth-top-badge" class="live-label">SECURE CONSOLE</span>
         <div id="user-bar" class="user-bar hidden">
           <div class="user-badge">
             <div id="user-avatar" class="user-avatar">U</div>
@@ -27,14 +29,91 @@
               <span id="user-email" class="user-email">user@gmail.com</span>
             </div>
           </div>
-          <button id="signout-button" class="signout-button" type="button">Sign out</button>
+          <button id="logout-btn" class="logout-button" type="button" title="Log out and return to sign in">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+            <span>Log Out</span>
+          </button>
         </div>
-        <span id="live-label" class="live-label">MULTI-USER / CONSOLE</span>
       </div>
     </header>
 
     <main class="main">
-      <div id="dashboard-view" class="dashboard-view">
+      <!-- AUTHENTICATION VIEW: Shown when user is logged out -->
+      <div id="auth-view" class="auth-view">
+        <section class="hero">
+          <p class="eyebrow">AUTHENTICATION & ACCESS CONTROL • MD 2.0</p>
+          <h1>Sign in to your console.<br /><em>Start your WhatsApp session.</em></h1>
+          <p class="lede">Authenticate securely with your Google account to access your dedicated WhatsApp pairing console, generate pairing codes, and manage your bot.</p>
+        </section>
+
+        <section class="grid auth-grid" style="margin-top: 24px;">
+          <article class="surface pair-card">
+            <div class="card-top"><span>01 / USER SIGN IN</span><small>GOOGLE AUTH</small></div>
+            <h2>Account Access</h2>
+            <p style="font-size: 13px; color: var(--muted); margin-bottom: 20px; line-height: 1.6;">
+              Sign in with your Google account to allocate an encrypted, single-owner session workspace. Your pairing keys, session credentials, and commands remain strictly protected.
+            </p>
+
+            <button id="google-signin-btn" class="google-auth-button" type="button">
+              <svg viewBox="0 0 24 24">
+                <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.3 9 5 12 5z"/>
+                <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/>
+                <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.8s.2-2.1.4-2.8L1.9 6.3C.7 8.7 0 10.3 0 12s.7 3.3 1.9 5.7l3.7-2.9z"/>
+                <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.3-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z"/>
+              </svg>
+              <span>Sign in with Google</span>
+            </button>
+
+            <p id="auth-error" class="error hidden" role="alert" style="margin-top: 16px;"></p>
+            <p class="auth-note">
+              🔒 <strong>Single-Sign-On Security:</strong> Sessions are isolated per Google account. Only you can access your pairing console and trigger commands on your linked WhatsApp.
+            </p>
+          </article>
+
+          <aside class="surface status-card">
+            <div class="card-top"><span>02 / CONSOLE FEATURES</span><b class="badge">Active 2.0</b></div>
+            <div style="margin-top: 12px;">
+              <h3 style="font-size: 15px; margin-bottom: 12px; color: var(--ink);">Built-in Capabilities</h3>
+              <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 14px; font-size: 12px; line-height: 1.5; color: var(--ink);">
+                <li style="display: flex; gap: 10px; align-items: flex-start;">
+                  <span style="color: var(--teal); font-weight: bold;">✓</span>
+                  <span><strong>Owner-Only Commands:</strong> Ignores all non-owner admins and users to protect your WhatsApp.</span>
+                </li>
+                <li style="display: flex; gap: 10px; align-items: flex-start;">
+                  <span style="color: var(--teal); font-weight: bold;">✓</span>
+                  <span><strong>DDD Alert:</strong> Automatic <code>DDD</code> notification when any message is deleted + verbatim <code>.rd</code> recovery.</span>
+                </li>
+                <li style="display: flex; gap: 10px; align-items: flex-start;">
+                  <span style="color: var(--teal); font-weight: bold;">✓</span>
+                  <span><strong>Global Country Selector:</strong> 60+ countries for instant pairing code delivery without manual formatting.</span>
+                </li>
+                <li style="display: flex; gap: 10px; align-items: flex-start;">
+                  <span style="color: var(--teal); font-weight: bold;">✓</span>
+                  <span><strong>Multi-Device Engine:</strong> 100% cloud socket with automatic reconnects and 24-hour cache.</span>
+                </li>
+              </ul>
+            </div>
+          </aside>
+        </section>
+      </div>
+
+      <!-- DASHBOARD VIEW: Shown when user is logged in -->
+      <div id="dashboard-view" class="dashboard-view hidden">
+        <!-- User Profile Card -->
+        <div class="user-profile-surface">
+          <div class="user-profile-meta">
+            <div id="user-profile-avatar" class="user-profile-avatar">U</div>
+            <div class="user-profile-details">
+              <h3 id="user-profile-name">Authenticated User</h3>
+              <p id="user-profile-email">user@gmail.com</p>
+            </div>
+          </div>
+          <div class="user-profile-tags">
+            <span id="user-profile-id" class="user-id-chip">SESSION: user_default</span>
+            <span class="user-created-chip">CONNECTED SESSION ISOLATED</span>
+          </div>
+        </div>
+
         <section class="hero">
           <p class="eyebrow">WHATSAPP MULTI-DEVICE • LIVE PAIRING CONSOLE</p>
           <h1>Connect your phone.<br /><em>Start your session.</em></h1>
@@ -46,9 +125,30 @@
             <div class="card-top"><span>01 / PAIRING CONSOLE</span><small>MD 2.0</small></div>
             <h2>Get your pairing code</h2>
             <form id="pair-form">
-              <label for="number">Nigerian or International WhatsApp Number</label>
-              <div class="phone-wrap"><span>NG</span><input id="number" type="tel" inputmode="numeric" placeholder="0901 234 5678" autocomplete="tel" required /></div>
-              <p class="hint">Enter your Nigerian mobile number (090, 080, 081, 070, 071, 091) or full international format (e.g. 2349012345678). Auto-formatted securely.</p>
+              <div class="country-select-wrap">
+                <label id="country-select-label">Select Your Country</label>
+                <button type="button" id="country-dropdown-btn" class="country-dropdown-btn" aria-haspopup="listbox" aria-expanded="false">
+                  <span class="opt-left">
+                    <span id="selected-flag" class="selected-flag">🇳🇬</span>
+                    <span id="selected-country-name">Nigeria</span>
+                    <span id="selected-code" class="selected-code">+234</span>
+                  </span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+                <div id="country-menu" class="country-menu hidden" role="listbox">
+                  <div class="country-search-box">
+                    <input id="country-search" type="text" placeholder="Search country or dial code..." autocomplete="off" />
+                  </div>
+                  <div id="country-options-list"></div>
+                </div>
+              </div>
+
+              <label for="number">WhatsApp Phone Number</label>
+              <div class="phone-wrap">
+                <span id="dial-prefix-display" class="dial-prefix-tag">+234</span>
+                <input id="number" type="tel" inputmode="numeric" placeholder="0901 234 5678" autocomplete="tel" required />
+              </div>
+              <p id="phone-hint" class="hint">Enter your mobile number. Leading 0s and formatting are normalized automatically.</p>
               <button id="pair-button" type="submit">Get Pairing Code <span>→</span></button>
             </form>
             <div id="code-panel" class="code-panel hidden">
@@ -75,7 +175,7 @@
         <section class="surface instructions">
           <div class="instruction-head"><h2>Pairing, in three clear moves.</h2><span>DIRECT LINK</span></div>
           <ol>
-             <li><b>01</b><span><strong>Enter your number</strong>Input your Nigerian format (e.g. 09012345678) or international code.</span></li>
+             <li><b>01</b><span><strong>Enter your number</strong>Input your local number (e.g. 09012345678) or international format.</span></li>
              <li><b>02</b><span><strong>Request pairing code</strong>Click Get Pairing Code to receive your unique 8-character key.</span></li>
              <li><b>03</b><span><strong>Link on WhatsApp</strong>Go to WhatsApp → Linked Devices → Link with phone number.</span></li>
           </ol>
@@ -109,7 +209,7 @@
             <div style="background: rgba(16,38,34,0.03); padding: 14px; border-radius: 4px; border: 1px solid var(--line);">
               <strong style="color: var(--teal); font-size: 13px; display: block; margin-bottom: 6px;">🔄 Message Recovery</strong>
               <div style="font-family: 'DM Mono', monospace; font-size: 11px; line-height: 1.8; color: var(--ink);">
-                <div><code>OKAY DELETED</code> — Auto alert on delete</div>
+                <div><code>DDD</code> — Auto alert on delete</div>
                 <div><code>.rd</code> — Restore deleted message</div>
                 <div><code>24-Hour Cache</code> — Media & text stored</div>
               </div>
@@ -130,208 +230,526 @@
 
     <footer><span>© SOLVATECHOFFICIAL</span><span>SECURE MULTI-USER SESSION / WHATSAPP MD</span></footer>
 
-    <script>
-      (function() {
-        const $ = (id) => document.getElementById(id);
-        const form = $("pair-form"), button = $("pair-button"), codePanel = $("code-panel"), code = $("pair-code");
-        const error = $("error"), state = $("state"), badge = $("badge"), detail = $("detail"), number = $("connected-number"), disconnect = $("disconnect");
-        const copyButton = $("copy-code"), copyFeedback = $("copy-feedback"), timer = $("code-timer"), pairingFor = $("pairing-for");
+    <!-- Firebase Auth & Application Module Script -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+      import { 
+        getAuth, 
+        signInWithPopup, 
+        GoogleAuthProvider, 
+        signOut, 
+        onAuthStateChanged 
+      } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
 
-        // Stable isolated session ID per browser client
-        let userId = localStorage.getItem("solvatech_uid");
-        if (!userId) {
-          userId = "user_" + Math.random().toString(36).slice(2, 11) + "_" + Date.now().toString(36);
-          localStorage.setItem("solvatech_uid", userId);
+      const $ = (id) => document.getElementById(id);
+      const apiPrefix = "/bot-api";
+
+      // Elements
+      const authView = $("auth-view"), dashboardView = $("dashboard-view");
+      const userBar = $("user-bar"), authTopBadge = $("auth-top-badge");
+      const userAvatar = $("user-avatar"), userName = $("user-name"), userEmail = $("user-email");
+      const userProfileAvatar = $("user-profile-avatar"), userProfileName = $("user-profile-name"), userProfileEmail = $("user-profile-email"), userProfileId = $("user-profile-id");
+      const googleSignInBtn = $("google-signin-btn"), authError = $("auth-error");
+      const logoutBtn = $("logout-btn");
+
+      // Pairing Elements
+      const form = $("pair-form"), button = $("pair-button"), codePanel = $("code-panel"), code = $("pair-code");
+      const error = $("error"), state = $("state"), badge = $("badge"), detail = $("detail"), number = $("connected-number"), disconnect = $("disconnect");
+      const copyButton = $("copy-code"), copyFeedback = $("copy-feedback"), timer = $("code-timer"), pairingFor = $("pairing-for");
+
+      // Country Selector Elements
+      const countryDropdownBtn = $("country-dropdown-btn"), countryMenu = $("country-menu"), countrySearch = $("country-search"), countryOptionsList = $("country-options-list");
+      const selectedFlag = $("selected-flag"), selectedCountryName = $("selected-country-name"), selectedCode = $("selected-code"), dialPrefixDisplay = $("dial-prefix-display");
+      const phoneInput = $("number"), phoneHint = $("phone-hint");
+
+      // Global Country List
+      const COUNTRIES = [
+        { name: "Nigeria", code: "+234", flag: "🇳🇬", placeholder: "0901 234 5678", hint: "Enter Nigerian number (090, 080, 081, 070, 071, 091)." },
+        { name: "United States", code: "+1", flag: "🇺🇸", placeholder: "(555) 012-3456", hint: "Enter 10-digit US phone number." },
+        { name: "United Kingdom", code: "+44", flag: "🇬🇧", placeholder: "07911 123456", hint: "Enter UK mobile number." },
+        { name: "Ghana", code: "+233", flag: "🇬🇭", placeholder: "024 123 4567", hint: "Enter Ghanaian mobile number." },
+        { name: "Kenya", code: "+254", flag: "🇰🇪", placeholder: "0712 345 678", hint: "Enter Kenyan mobile number." },
+        { name: "South Africa", code: "+27", flag: "🇿🇦", placeholder: "071 234 5678", hint: "Enter South African mobile number." },
+        { name: "India", code: "+91", flag: "🇮🇳", placeholder: "98765 43210", hint: "Enter 10-digit Indian mobile number." },
+        { name: "Pakistan", code: "+92", flag: "🇵🇰", placeholder: "0301 2345678", hint: "Enter Pakistani mobile number." },
+        { name: "Bangladesh", code: "+880", flag: "🇧🇩", placeholder: "01712 345678", hint: "Enter Bangladeshi mobile number." },
+        { name: "Canada", code: "+1", flag: "🇨🇦", placeholder: "(416) 555-0123", hint: "Enter Canadian phone number." },
+        { name: "Australia", code: "+61", flag: "🇦🇺", placeholder: "0412 345 678", hint: "Enter Australian mobile number." },
+        { name: "Germany", code: "+49", flag: "🇩🇪", placeholder: "0151 23456789", hint: "Enter German mobile number." },
+        { name: "France", code: "+33", flag: "🇫🇷", placeholder: "06 12 34 56 78", hint: "Enter French mobile number." },
+        { name: "Italy", code: "+39", flag: "🇮🇹", placeholder: "312 345 6789", hint: "Enter Italian mobile number." },
+        { name: "Spain", code: "+34", flag: "🇪🇸", placeholder: "612 345 678", hint: "Enter Spanish mobile number." },
+        { name: "Brazil", code: "+55", flag: "🇧🇷", placeholder: "11 91234-5678", hint: "Enter Brazilian mobile number with DDD." },
+        { name: "Mexico", code: "+52", flag: "🇲🇽", placeholder: "55 1234 5678", hint: "Enter Mexican mobile number." },
+        { name: "Argentina", code: "+54", flag: "🇦🇷", placeholder: "11 1234-5678", hint: "Enter Argentine phone number." },
+        { name: "Colombia", code: "+57", flag: "🇨🇴", placeholder: "300 1234567", hint: "Enter Colombian mobile number." },
+        { name: "United Arab Emirates", code: "+971", flag: "🇦🇪", placeholder: "050 123 4567", hint: "Enter UAE mobile number." },
+        { name: "Saudi Arabia", code: "+966", flag: "🇸🇦", placeholder: "050 123 4567", hint: "Enter Saudi mobile number." },
+        { name: "Egypt", code: "+20", flag: "🇪🇬", placeholder: "010 1234 5678", hint: "Enter Egyptian mobile number." },
+        { name: "Morocco", code: "+212", flag: "🇲🇦", placeholder: "06 12 34 56 78", hint: "Enter Moroccan mobile number." },
+        { name: "Algeria", code: "+213", flag: "🇩🇿", placeholder: "0551 23 45 67", hint: "Enter Algerian mobile number." },
+        { name: "Cameroon", code: "+237", flag: "🇨🇲", placeholder: "6 71 23 45 67", hint: "Enter Cameroonian mobile number." },
+        { name: "Côte d'Ivoire", code: "+225", flag: "🇨🇮", placeholder: "07 12 34 56 78", hint: "Enter Ivorian mobile number." },
+        { name: "Senegal", code: "+221", flag: "🇸🇳", placeholder: "77 123 45 67", hint: "Enter Senegalese mobile number." },
+        { name: "Uganda", code: "+256", flag: "🇺🇬", placeholder: "0772 123456", hint: "Enter Ugandan mobile number." },
+        { name: "Tanzania", code: "+255", flag: "🇹🇿", placeholder: "0712 345 678", hint: "Enter Tanzanian mobile number." },
+        { name: "Rwanda", code: "+250", flag: "🇷🇼", placeholder: "0788 123 456", hint: "Enter Rwandan mobile number." },
+        { name: "Ethiopia", code: "+251", flag: "🇪🇹", placeholder: "091 123 4567", hint: "Enter Ethiopian mobile number." },
+        { name: "Zimbabwe", code: "+263", flag: "🇿🇼", placeholder: "077 123 4567", hint: "Enter Zimbabwean mobile number." },
+        { name: "Zambia", code: "+260", flag: "🇿🇲", placeholder: "097 1234567", hint: "Enter Zambian mobile number." },
+        { name: "Philippines", code: "+63", flag: "🇵🇭", placeholder: "0917 123 4567", hint: "Enter Philippine mobile number." },
+        { name: "Indonesia", code: "+62", flag: "🇮🇩", placeholder: "0812 3456 7890", hint: "Enter Indonesian mobile number." },
+        { name: "Malaysia", code: "+60", flag: "🇲🇾", placeholder: "012-345 6789", hint: "Enter Malaysian mobile number." },
+        { name: "Singapore", code: "+65", flag: "🇸🇬", placeholder: "8123 4567", hint: "Enter Singaporean mobile number." },
+        { name: "Thailand", code: "+66", flag: "🇹🇭", placeholder: "081 234 5678", hint: "Enter Thai mobile number." },
+        { name: "Vietnam", code: "+84", flag: "🇻🇳", placeholder: "091 234 5678", hint: "Enter Vietnamese mobile number." },
+        { name: "Japan", code: "+81", flag: "🇯🇵", placeholder: "090 1234 5678", hint: "Enter Japanese mobile number." },
+        { name: "South Korea", code: "+82", flag: "🇰🇷", placeholder: "010 1234 5678", hint: "Enter South Korean mobile number." },
+        { name: "China", code: "+86", flag: "🇨🇳", placeholder: "138 0013 8000", hint: "Enter Chinese mobile number." },
+        { name: "Turkey", code: "+90", flag: "🇹🇷", placeholder: "0532 123 45 67", hint: "Enter Turkish mobile number." },
+        { name: "Netherlands", code: "+31", flag: "🇳🇱", placeholder: "06 12345678", hint: "Enter Dutch mobile number." },
+        { name: "Belgium", code: "+32", flag: "🇧🇪", placeholder: "0470 12 34 56", hint: "Enter Belgian mobile number." },
+        { name: "Switzerland", code: "+41", flag: "🇨🇭", placeholder: "079 123 45 67", hint: "Enter Swiss mobile number." },
+        { name: "Sweden", code: "+46", flag: "🇸🇪", placeholder: "070 123 45 67", hint: "Enter Swedish mobile number." },
+        { name: "Norway", code: "+47", flag: "🇳🇴", placeholder: "412 34 567", hint: "Enter Norwegian mobile number." },
+        { name: "Poland", code: "+48", flag: "🇵🇱", placeholder: "512 345 678", hint: "Enter Polish mobile number." },
+        { name: "Portugal", code: "+351", flag: "🇵🇹", placeholder: "912 345 678", hint: "Enter Portuguese mobile number." },
+        { name: "Ireland", code: "+353", flag: "🇮🇪", placeholder: "085 123 4567", hint: "Enter Irish mobile number." },
+        { name: "New Zealand", code: "+64", flag: "🇳🇿", placeholder: "021 123 4567", hint: "Enter New Zealand mobile number." },
+        { name: "Qatar", code: "+974", flag: "🇶🇦", placeholder: "3312 3456", hint: "Enter Qatari mobile number." },
+        { name: "Kuwait", code: "+965", flag: "🇰🇼", placeholder: "9123 4567", hint: "Enter Kuwaiti mobile number." },
+        { name: "Oman", code: "+968", flag: "🇴🇲", placeholder: "9123 4567", hint: "Enter Omani mobile number." },
+        { name: "Jordan", code: "+962", flag: "🇯🇴", placeholder: "07 9123 4567", hint: "Enter Jordanian mobile number." },
+        { name: "Lebanon", code: "+961", flag: "🇱🇧", placeholder: "70 123 456", hint: "Enter Lebanese mobile number." },
+        { name: "Iraq", code: "+964", flag: "🇮🇶", placeholder: "0790 123 4567", hint: "Enter Iraqi mobile number." },
+        { name: "Israel", code: "+972", flag: "🇮🇱", placeholder: "050 123 4567", hint: "Enter Israeli mobile number." },
+        { name: "Nepal", code: "+977", flag: "🇳🇵", placeholder: "984 1234567", hint: "Enter Nepali mobile number." },
+        { name: "Sri Lanka", code: "+94", flag: "🇱🇰", placeholder: "071 234 5678", hint: "Enter Sri Lankan mobile number." },
+        { name: "Other Country", code: "+", flag: "🌐", placeholder: "Full international number with dial code", hint: "Enter your full international phone number with country code." },
+      ];
+
+      let currentCountry = COUNTRIES[0];
+
+      function renderCountryOptions(filterText = "") {
+        if (!countryOptionsList) return;
+        const query = filterText.toLowerCase().trim();
+        const filtered = COUNTRIES.filter((c) => 
+          c.name.toLowerCase().includes(query) || 
+          c.code.toLowerCase().includes(query)
+        );
+
+        if (filtered.length === 0) {
+          countryOptionsList.innerHTML = '<div style="padding: 12px; font-size: 12px; color: var(--muted); text-align: center;">No matching countries</div>';
+          return;
         }
 
-        let expiresAt = 0, timerId = null, pairingActive = false;
-        const apiPrefix = "/bot-api";
+        countryOptionsList.innerHTML = filtered.map((c) => `
+          <div class="country-option ${c.name === currentCountry.name ? 'active' : ''}" data-name="${c.name}">
+            <span class="opt-left">
+              <span>${c.flag}</span>
+              <span>${c.name}</span>
+            </span>
+            <span class="opt-code">${c.code}</span>
+          </div>
+        `).join("");
 
-        function showError(message) {
-          if (!error) return;
-          error.textContent = message || "";
-          error.classList.toggle("hidden", !message);
-        }
-
-        function formatTime(seconds) {
-          return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
-        }
-
-        function startTimer(value) {
-          expiresAt = Number(value || 0);
-          if (codePanel) codePanel.classList.remove("expired");
-          clearInterval(timerId);
-          const tick = () => {
-            const remaining = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
-            if (timer) timer.textContent = remaining ? `EXPIRES IN ${formatTime(remaining)}` : "CODE EXPIRED";
-            if (copyButton) copyButton.disabled = !remaining;
-            if (!remaining) {
-              if (codePanel) codePanel.classList.add("expired");
-              clearInterval(timerId);
+        countryOptionsList.querySelectorAll(".country-option").forEach((el) => {
+          el.addEventListener("click", () => {
+            const countryName = el.getAttribute("data-name");
+            const found = COUNTRIES.find((c) => c.name === countryName);
+            if (found) {
+              selectCountry(found);
             }
-          };
-          tick();
-          timerId = setInterval(tick, 1000);
+          });
+        });
+      }
+
+      function selectCountry(country) {
+        currentCountry = country;
+        if (selectedFlag) selectedFlag.textContent = country.flag;
+        if (selectedCountryName) selectedCountryName.textContent = country.name;
+        if (selectedCode) selectedCode.textContent = country.code;
+        if (dialPrefixDisplay) dialPrefixDisplay.textContent = country.code;
+        if (phoneInput) phoneInput.placeholder = country.placeholder;
+        if (phoneHint) phoneHint.textContent = country.hint;
+        if (countryMenu) countryMenu.classList.add("hidden");
+        if (countryDropdownBtn) countryDropdownBtn.setAttribute("aria-expanded", "false");
+      }
+
+      if (countryDropdownBtn && countryMenu) {
+        countryDropdownBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const isHidden = countryMenu.classList.contains("hidden");
+          countryMenu.classList.toggle("hidden", !isHidden);
+          countryDropdownBtn.setAttribute("aria-expanded", String(isHidden));
+          if (isHidden) {
+            renderCountryOptions();
+            if (countrySearch) {
+              countrySearch.value = "";
+              setTimeout(() => countrySearch.focus(), 50);
+            }
+          }
+        });
+
+        if (countrySearch) {
+          countrySearch.addEventListener("input", (e) => {
+            renderCountryOptions(e.target.value);
+          });
+          countrySearch.addEventListener("click", (e) => e.stopPropagation());
         }
 
-        function render(data) {
-          if (!data) return;
-          const connected = data.connected === true || data.status === "connected";
-          const pending = ["pairing", "connecting"].includes(data.status);
-          const failed = data.status === "error" || data.status === "disconnected";
-          pairingActive = connected || pending;
+        document.addEventListener("click", (e) => {
+          if (!countryMenu.contains(e.target) && !countryDropdownBtn.contains(e.target)) {
+            countryMenu.classList.add("hidden");
+            countryDropdownBtn.setAttribute("aria-expanded", "false");
+          }
+        });
+      }
+
+      renderCountryOptions();
+
+      // State
+      let currentUser = null;
+      let activeUserId = localStorage.getItem("solvatech_user_id") || null;
+      let expiresAt = 0, timerId = null, pairingActive = false, statusIntervalId = null;
+
+      function showAuthError(msg) {
+        if (!authError) return;
+        authError.textContent = msg || "";
+        authError.classList.toggle("hidden", !msg);
+      }
+
+      function showError(message) {
+        if (!error) return;
+        error.textContent = message || "";
+        error.classList.toggle("hidden", !message);
+      }
+
+      function formatTime(seconds) {
+        return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+      }
+
+      function startTimer(value) {
+        if (timerId) clearInterval(timerId);
+        expiresAt = Date.now() + value * 1000;
+        pairingActive = true;
+        const tick = () => {
+          const left = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
+          if (timer) timer.textContent = `EXPIRES IN ${formatTime(left)}`;
+          if (left <= 0) {
+            pairingActive = false;
+            clearInterval(timerId);
+            if (codePanel) codePanel.classList.add("expired");
+            if (timer) timer.textContent = "PAIRING CODE EXPIRED";
+          }
+        };
+        tick();
+        timerId = setInterval(tick, 1000);
+      }
+
+      function renderAuthState(user) {
+        currentUser = user;
+        if (user && user.uid) {
+          // Logged In State with Google Account
+          activeUserId = "user_" + user.uid.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 64);
+          localStorage.setItem("solvatech_user_id", activeUserId);
+
+          const displayName = user.displayName || user.email?.split("@")[0] || "Google User";
+          const email = user.email || "account@google.com";
+          const photoURL = user.photoURL;
+
+          if (userAvatar) {
+            if (photoURL) {
+              userAvatar.innerHTML = `<img src="${photoURL}" alt="${displayName}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" />`;
+            } else {
+              userAvatar.textContent = (displayName[0] || "U").toUpperCase();
+            }
+          }
+
+          if (userName) userName.textContent = displayName;
+          if (userEmail) userEmail.textContent = email;
+
+          if (userProfileAvatar) {
+            if (photoURL) {
+              userProfileAvatar.innerHTML = `<img src="${photoURL}" alt="${displayName}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" />`;
+            } else {
+              userProfileAvatar.textContent = (displayName[0] || "U").toUpperCase();
+            }
+          }
+
+          if (userProfileName) userProfileName.textContent = displayName;
+          if (userProfileEmail) userProfileEmail.textContent = email;
+          if (userProfileId) userProfileId.textContent = `SESSION: ${activeUserId}`;
+
+          if (authView) authView.classList.add("hidden");
+          if (dashboardView) dashboardView.classList.remove("hidden");
+          if (userBar) userBar.classList.remove("hidden");
+          if (authTopBadge) authTopBadge.classList.add("hidden");
+
+          refresh();
+          if (!statusIntervalId) {
+            statusIntervalId = setInterval(refresh, 4000);
+          }
+        } else {
+          // Logged Out State -> Show Sign In Screen
+          activeUserId = null;
+          localStorage.removeItem("solvatech_user_id");
+
+          if (statusIntervalId) {
+            clearInterval(statusIntervalId);
+            statusIntervalId = null;
+          }
+
+          if (authView) authView.classList.remove("hidden");
+          if (dashboardView) dashboardView.classList.add("hidden");
+          if (userBar) userBar.classList.add("hidden");
+          if (authTopBadge) authTopBadge.classList.remove("hidden");
+        }
+      }
+
+      async function refresh() {
+        if (!activeUserId) return;
+        try {
+          const response = await fetch(apiPrefix + "/status", {
+            headers: {
+              "Accept": "application/json",
+              "x-user-id": activeUserId,
+            },
+          });
+          if (!response.ok) return;
+          const data = await response.json();
+          const connected = data.status === "connected" || data.connected === true;
+          const failed = data.status === "disconnected" || data.failed === true;
+          const pending = data.status === "pairing" || data.status === "connecting";
 
           if (badge) {
-            badge.textContent = connected ? "Connected" : failed ? "Pairing failed" : pending ? "Waiting for phone" : "Ready to pair";
-            badge.className = "badge " + (connected ? "good" : pending ? "pending" : failed ? "failed" : "");
+            badge.textContent = connected ? "Live Connected" : failed ? "Disconnected" : pending ? "Pairing socket open" : "Ready to pair";
+            badge.classList.toggle("connected", connected);
+            badge.classList.toggle("failed", failed);
           }
-          if (state) {
-            state.textContent = connected ? "✓ WHATSAPP CONNECTED" : failed ? "Connection stopped" : pending ? "Pairing in progress" : "Not connected";
-          }
+          if (state) state.textContent = connected ? "Active" : failed ? "Socket error" : pending ? "Pairing..." : "Not connected";
           if (detail) {
             detail.textContent = connected 
-              ? "Your dedicated WhatsApp socket is active and listening for group commands." 
+              ? "Your dedicated WhatsApp socket is active and listening for owner commands." 
               : failed 
               ? (data.lastError || "WhatsApp closed the pairing socket. Ready to try again.") 
               : pending 
-              ? "Open WhatsApp and enter the 8-character code shown here." 
-              : "Enter your WhatsApp number to start a secure pairing session.";
+              ? "Socket is open and waiting for WhatsApp mobile confirmation." 
+              : "Enter your phone number above to generate your pairing code.";
           }
-          if (number) {
-            number.textContent = data.botNumber || data.number || "—";
-          }
-          if (button) {
-            button.disabled = pending;
-          }
-          if (disconnect) {
-            disconnect.disabled = data.status === "idle";
-          }
-          if (failed && data.lastError) showError(data.lastError);
-          if (!failed && data.status === "idle") showError("");
+          if (number) number.textContent = data.phoneNumber || "—";
+          if (disconnect) disconnect.disabled = !connected && !pending;
 
-          if (data.pairingNumber && pairingFor) {
-            pairingFor.textContent = `PAIRING FOR +${data.pairingNumber}`;
-            pairingFor.classList.remove("hidden");
-          }
-          if (data.pairingCode && code && codePanel) {
-            code.textContent = data.pairingCode;
-            codePanel.classList.remove("hidden");
-            if (data.pairingCodeExpiresAt) startTimer(data.pairingCodeExpiresAt);
-          }
-          if (connected && codePanel) {
-            codePanel.classList.add("hidden");
-          }
-        }
-
-        async function refresh() {
-          try {
-            const response = await fetch(apiPrefix + "/status", {
-              headers: {
-                "Accept": "application/json",
-                "x-user-id": userId,
-              },
-            });
-            if (response.ok) {
-              const data = await response.json();
-              render(data);
-            }
-          } catch (e) {
-            console.debug("Status poll:", e.message);
-          }
-        }
-
-        if (form) {
-          form.addEventListener("submit", async (event) => {
-            event.preventDefault();
-            showError("");
-            if (copyFeedback) copyFeedback.textContent = "";
+          if (connected && pairingActive) {
+            pairingActive = false;
+            if (timerId) clearInterval(timerId);
             if (codePanel) codePanel.classList.add("hidden");
             if (button) {
-              button.disabled = true;
-              button.innerHTML = '<span class="button-loading"><i></i>Opening socket…</span>';
+              button.disabled = false;
+              button.textContent = "Get Pairing Code →";
             }
-            try {
-              const inputVal = $("number")?.value || "";
-              const response = await fetch(apiPrefix + "/pair", {
+          }
+        } catch (err) {
+          console.debug("Status poll:", err.message);
+        }
+      }
+
+      // Initialize Firebase Auth
+      let auth = null;
+      async function initFirebase() {
+        try {
+          const res = await fetch(apiPrefix + "/firebase-config");
+          if (!res.ok) throw new Error("Could not fetch Firebase configuration.");
+          const firebaseConfig = await res.json();
+          const app = initializeApp(firebaseConfig);
+          auth = getAuth(app);
+
+          onAuthStateChanged(auth, (user) => {
+            if (user) {
+              renderAuthState(user);
+            } else {
+              renderAuthState(null);
+            }
+          });
+        } catch (e) {
+          console.error("Firebase Auth initialization error:", e);
+          showAuthError("Authentication service could not load: " + (e.message || "Network error."));
+          renderAuthState(null);
+        }
+      }
+
+      initFirebase();
+
+      // Google Sign-In Only
+      if (googleSignInBtn) {
+        googleSignInBtn.addEventListener("click", async () => {
+          showAuthError("");
+          googleSignInBtn.disabled = true;
+          googleSignInBtn.style.opacity = "0.7";
+          try {
+            if (!auth) {
+              throw new Error("Authentication system is initializing. Please tap again in a moment.");
+            }
+            const provider = new GoogleAuthProvider();
+            provider.setCustomParameters({ prompt: 'select_account' });
+            await signInWithPopup(auth, provider);
+          } catch (err) {
+            console.error("Google sign-in error:", err);
+            if (err.code === "auth/popup-closed-by-user") {
+              showAuthError("Google Sign-In popup was closed before completing.");
+            } else if (err.code === "auth/popup-blocked") {
+              showAuthError("Sign-in popup was blocked by the browser. Please allow popups or open in a new tab.");
+            } else {
+              showAuthError(err.message || "Failed to sign in with Google. Please try again.");
+            }
+          } finally {
+            googleSignInBtn.disabled = false;
+            googleSignInBtn.style.opacity = "1";
+          }
+        });
+      }
+
+      // Logout Button: Logs out and returns to Sign In screen
+      if (logoutBtn) {
+        logoutBtn.addEventListener("click", async (e) => {
+          e.preventDefault();
+          logoutBtn.disabled = true;
+          logoutBtn.textContent = "Logging out...";
+          
+          const currentId = activeUserId;
+          try {
+            if (currentId) {
+              fetch(apiPrefix + "/disconnect", {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
-                  "x-user-id": userId,
+                  "x-user-id": currentId,
                 },
-                body: JSON.stringify({ number: inputVal, userId: userId }),
-              });
-              const data = await response.json();
-              if (!response.ok) throw new Error(data.error || "Pairing code could not be generated.");
-              if (code) code.textContent = data.code;
-              if (codePanel) codePanel.classList.remove("hidden");
-              if (data.expiresAt) startTimer(data.expiresAt);
-              render({
-                ...data,
-                status: "pairing",
-                pairingCode: data.code,
-                pairingCodeExpiresAt: data.expiresAt,
-                pairingNumber: data.pairingNumber,
-              });
-            } catch (e) {
-              showError(e.message);
-            } finally {
-              if (button) {
-                button.disabled = false;
-                button.innerHTML = "Get Pairing Code <span>→</span>";
-              }
+                body: JSON.stringify({ userId: currentId }),
+              }).catch(() => {});
             }
-          });
-        }
+            if (auth) {
+              await signOut(auth).catch(() => {});
+            }
+          } catch (e) {
+            console.debug("Sign out cleanup:", e.message);
+          } finally {
+            localStorage.removeItem("solvatech_user_id");
+            localStorage.removeItem("solvatech_uid");
+            activeUserId = null;
+            currentUser = null;
 
-        if (copyButton) {
-          copyButton.addEventListener("click", async () => {
-            const value = code ? code.textContent.trim() : "";
-            if (!value || copyButton.disabled) return;
-            try {
-              await navigator.clipboard.writeText(value);
-            } catch {
-              const helper = document.createElement("textarea");
-              helper.value = value;
-              helper.style.position = "fixed";
-              helper.style.opacity = "0";
-              document.body.appendChild(helper);
-              helper.select();
-              document.execCommand("copy");
-              helper.remove();
-            }
-            if (copyFeedback) copyFeedback.textContent = "Code copied. Paste it into WhatsApp.";
-            copyButton.textContent = "Copied";
-            setTimeout(() => {
-              if (copyButton) copyButton.textContent = "Copy code";
-            }, 2000);
-          });
-        }
+            logoutBtn.disabled = false;
+            logoutBtn.innerHTML = `
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+              <span>Log Out</span>
+            `;
 
-        if (disconnect) {
-          disconnect.addEventListener("click", async () => {
-            disconnect.disabled = true;
-            try {
-              await fetch(apiPrefix + "/disconnect", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "x-user-id": userId,
-                },
-                body: JSON.stringify({ userId: userId }),
-              });
-            } catch (e) {
-              console.error("Disconnect error:", e);
+            renderAuthState(null);
+          }
+        });
+      }
+
+      // Pairing Form Handler
+      if (form) {
+        form.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          showError("");
+          if (copyFeedback) copyFeedback.textContent = "";
+
+          const rawInput = $("number")?.value || "";
+          let cleanDigits = rawInput.replace(/\D/g, "");
+          const countryDialDigits = currentCountry.code.replace(/\D/g, "");
+
+          let formattedNumber = cleanDigits;
+          if (countryDialDigits && !cleanDigits.startsWith(countryDialDigits)) {
+            if (cleanDigits.startsWith("0")) {
+              cleanDigits = cleanDigits.slice(1);
             }
-            clearInterval(timerId);
+            formattedNumber = `${countryDialDigits}${cleanDigits}`;
+          }
+
+          if (formattedNumber.length < 8) {
+            showError("Please enter a valid phone number with your country code.");
+            return;
+          }
+
+          if (button) {
+            button.disabled = true;
+            button.innerHTML = '<span class="button-loading"><i></i>Opening socket…</span>';
+          }
+
+          try {
+            const response = await fetch(apiPrefix + "/pair", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "x-user-id": activeUserId || "default",
+              },
+              body: JSON.stringify({ number: formattedNumber, userId: activeUserId }),
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || "Pairing code could not be generated.");
+
+            if (code) code.textContent = data.code || data.pairingCode || "—";
+            if (pairingFor) pairingFor.textContent = `LINKING FOR +${data.pairingNumber || formattedNumber}`;
+            if (codePanel) {
+              codePanel.classList.remove("hidden", "expired");
+            }
+            startTimer(data.expiresAt ? Math.max(10, Math.floor((data.expiresAt - Date.now()) / 1000)) : 300);
+            refresh();
+          } catch (err) {
+            showError(err.message || "Pairing code request failed. Check number format and try again.");
+          } finally {
+            if (button) {
+              button.disabled = false;
+              button.textContent = "Get Pairing Code →";
+            }
+          }
+        });
+      }
+
+      // Copy Code Handler
+      if (copyButton) {
+        copyButton.addEventListener("click", async () => {
+          const val = code?.textContent?.trim();
+          if (!val || val === "—") return;
+          try {
+            await navigator.clipboard.writeText(val);
+            if (copyFeedback) copyFeedback.textContent = "Pairing code copied to clipboard.";
+            setTimeout(() => { if (copyFeedback) copyFeedback.textContent = ""; }, 3500);
+          } catch {
+            if (copyFeedback) copyFeedback.textContent = "Could not copy automatically. Select and copy manually.";
+          }
+        });
+      }
+
+      // Disconnect Button Handler
+      if (disconnect) {
+        disconnect.addEventListener("click", async (e) => {
+          e.preventDefault();
+          disconnect.disabled = true;
+          disconnect.textContent = "Disconnecting...";
+          try {
+            const response = await fetch(apiPrefix + "/disconnect", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "x-user-id": activeUserId || "default",
+              },
+              body: JSON.stringify({ userId: activeUserId }),
+            });
+            if (!response.ok) throw new Error("Disconnect request failed");
             if (codePanel) codePanel.classList.add("hidden");
-            await refresh();
-          });
-        }
-
-        // Initial status load & periodic background refresh
-        refresh();
-        setInterval(refresh, 4000);
-      })();
+            refresh();
+          } catch (err) {
+            showError(err.message || "Failed to disconnect session");
+          } finally {
+            disconnect.disabled = false;
+            disconnect.textContent = "Disconnect Session";
+          }
+        });
+      }
     </script>
   </body>
 </html>
