@@ -359,12 +359,11 @@
         messagingSenderId: "420914651308",
       };
 
+      const RAILWAY_BACKEND_URL = "https://web-production-3c1de8.up.railway.app";
       let customApiUrl = localStorage.getItem("solvatech_backend_url") || "";
       function getApiUrl(endpoint) {
-        if (customApiUrl) {
-          return `${customApiUrl.replace(/\/$/, "")}/bot-api${endpoint}`;
-        }
-        return `/bot-api${endpoint}`;
+        const baseUrl = (customApiUrl || RAILWAY_BACKEND_URL).replace(/\/$/, "");
+        return `${baseUrl}/bot-api${endpoint}`;
       }
 
       // Elements

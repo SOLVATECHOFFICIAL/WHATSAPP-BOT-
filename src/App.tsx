@@ -60,6 +60,14 @@ async function readResponse(response: Response) {
   return payload;
 }
 
+const RAILWAY_BACKEND_URL = 'https://web-production-3c1de8.up.railway.app';
+function getApiUrl(path: string) {
+  const custom = typeof window !== 'undefined' ? localStorage.getItem('solvatech_backend_url') : '';
+  const baseUrl = (custom || RAILWAY_BACKEND_URL).replace(/\/$/, '');
+  const cleanPath = path.startsWith('/api/') ? path.replace(/^\/api/, '/bot-api') : path;
+  return `${baseUrl}${cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath}`;
+}
+
 function Home() {
   const [phone, setPhone] = useState('');
   const [pairCode, setPairCode] = useState('');
@@ -70,7 +78,7 @@ function Home() {
 
   const fetchStatus = useCallback(async (quiet = false) => {
     try {
-      const response = await fetch('/api/status', { headers: { Accept: 'application/json' } });
+      const response = await fetch(getApiUrl('/bot-api/status'), { headers: { Accept: 'application/json' } });
       const payload = await readResponse(response);
       setStatus(parseStatus(payload));
       if (!quiet) setError('');
@@ -96,7 +104,7 @@ function Home() {
     setPairCode('');
     setStatus((current) => ({ ...current, state: 'pending', message: 'Requesting a pairing code…' }));
     try {
-      const response = await fetch('/api/pair', {
+      const response = await fetch(getApiUrl('/bot-api/pair'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({ number: normalizedPhone }),
@@ -121,7 +129,7 @@ function Home() {
     setIsDisconnecting(true);
     setError('');
     try {
-      const response = await fetch('/api/disconnect', {
+      const response = await fetch(getApiUrl('/bot-api/disconnect'), {
         method: 'POST',
         headers: { Accept: 'application/json' },
       });
