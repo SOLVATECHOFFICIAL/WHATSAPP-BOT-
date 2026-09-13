@@ -3,13 +3,60 @@ import { GoogleGenAI } from "@google/genai";
 import { downloadMessageMedia, getQuotedMessage, mediaTypeFromMessage, unwrapMediaMessage } from "../lib/helpers.js";
 import { logger } from "../lib/logger.js";
 
-let aiClient = null;
+let cachedClient = null;
+let cachedKey = null;
+
+function getApiKey() {
+  return (
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    process.env.GOOGLE_GENAI_API_KEY ||
+    process.env.GEMINI_KEY ||
+    ""
+  ).trim();
+}
 
 function getAIClient() {
-  if (!aiClient) {
-    aiClient = new GoogleGenAI({});
+  const apiKey = getApiKey();
+
+  if (apiKey) {
+    if (!cachedClient || cachedKey !== apiKey) {
+      cachedClient = new GoogleGenAI({
+        apiKey,
+        httpOptions: {
+          headers: {
+            "User-Agent": "aistudio-build",
+          },
+        },
+      });
+      cachedKey = apiKey;
+    }
+    return cachedClient;
   }
-  return aiClient;
+
+  // If credentials are supplied via GOOGLE_APPLICATION_CREDENTIALS
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    const credsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS.trim();
+    if (credsPath.startsWith("{")) {
+      try {
+        const credentials = JSON.parse(credsPath);
+        return new GoogleGenAI({
+          googleAuthOptions: { credentials },
+          httpOptions: { headers: { "User-Agent": "aistudio-build" } },
+        });
+      } catch (err) {
+        logger.warn("Could not parse GOOGLE_APPLICATION_CREDENTIALS as JSON", err.message);
+      }
+    } else {
+      return new GoogleGenAI({
+        httpOptions: { headers: { "User-Agent": "aistudio-build" } },
+      });
+    }
+  }
+
+  throw new Error(
+    "Gemini API key is missing. Please set GEMINI_API_KEY in your Railway environment variables (Project Settings > Variables)."
+  );
 }
 
 const OCR_MODELS = ["gemini-2.5-flash", "gemini-3.7-flash", "gemini-3.8-flash"];
