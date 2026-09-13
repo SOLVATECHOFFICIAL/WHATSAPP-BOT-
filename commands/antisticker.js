@@ -21,13 +21,13 @@ export default async function antisticker({ sock, message, chatId, reply }) {
     let isAnimated = Boolean(content.stickerMessage.isAnimated);
     if (!isAnimated) {
       try {
-        const meta = await sharp(buffer).metadata();
+        const meta = await sharp(buffer, { animated: true }).metadata();
         if (meta.pages && meta.pages > 1) {
           isAnimated = true;
         }
       } catch {}
     }
-    if (!isAnimated && buffer.includes(Buffer.from("ANIM"))) {
+    if (!isAnimated && (buffer.includes(Buffer.from("ANIM")) || buffer.includes(Buffer.from("ANMF")))) {
       isAnimated = true;
     }
 
@@ -40,6 +40,7 @@ export default async function antisticker({ sock, message, chatId, reply }) {
           caption: "✨ Animated sticker converted to video.",
         });
       }
+      throw new Error("Unable to convert animated sticker frames to video.");
     }
 
     // Static sticker (or fallback) -> PNG image

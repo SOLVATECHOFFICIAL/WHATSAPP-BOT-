@@ -7,8 +7,12 @@ export default async function sticker({ sock, message, reply }) {
   if (!type) return reply("❌ Reply to an image or video with .sticker.");
   try {
     const buffer = await downloadMessageMedia(source, `${type}Message`);
-    const stickerBuffer = type === "image" ? await imageToSticker(buffer) : await videoToSticker(buffer);
-    await sock.sendMessage(message.key.remoteJid, { sticker: stickerBuffer });
+    const isVideo = type === "video";
+    const stickerBuffer = isVideo ? await videoToSticker(buffer) : await imageToSticker(buffer);
+    await sock.sendMessage(message.key.remoteJid, {
+      sticker: stickerBuffer,
+      isAnimated: isVideo,
+    });
   } catch (error) {
     await reply("❌ The media could not be downloaded.");
     throw error;
