@@ -1,6 +1,7 @@
 import sharp from "sharp";
 import { stickerToImage, stickerToVideo } from "../lib/media.js";
 import { downloadMessageMedia, getQuotedMessage, unwrapMediaMessage } from "../lib/helpers.js";
+import { logger } from "../lib/logger.js";
 
 export default async function antisticker({ sock, message, chatId, reply }) {
   const source = getQuotedMessage(message) || message;
@@ -12,7 +13,7 @@ export default async function antisticker({ sock, message, chatId, reply }) {
 
   try {
     const targetChat = chatId || message.key.remoteJid;
-    const buffer = await downloadMessageMedia(source, "stickerMessage");
+    const buffer = await downloadMessageMedia(source, "stickerMessage", sock);
     if (!buffer || buffer.length === 0) {
       return reply("❌ Could not download the sticker media.");
     }
@@ -37,6 +38,7 @@ export default async function antisticker({ sock, message, chatId, reply }) {
         return await sock.sendMessage(targetChat, {
           video: videoBuffer,
           mimetype: "video/mp4",
+          gifPlayback: true,
           caption: "✨ Animated sticker converted to video.",
         });
       }
@@ -51,6 +53,7 @@ export default async function antisticker({ sock, message, chatId, reply }) {
       caption: "✨ Sticker converted to picture.",
     });
   } catch (error) {
+    logger.error("Antisticker command error", error);
     await reply(`❌ Failed to convert sticker: ${error.message || "Unknown error"}`);
   }
 }

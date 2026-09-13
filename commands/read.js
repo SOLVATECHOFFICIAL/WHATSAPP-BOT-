@@ -1,3 +1,4 @@
+import sharp from "sharp";
 import { GoogleGenAI } from "@google/genai";
 import { downloadMessageMedia, getQuotedMessage, mediaTypeFromMessage, unwrapMediaMessage } from "../lib/helpers.js";
 import { logger } from "../lib/logger.js";
@@ -11,26 +12,36 @@ function getAIClient() {
   return aiClient;
 }
 
-const OCR_MODELS = ["gemini-3.7-flash", "gemini-3.8-flash", "gemini-3.6-flash"];
+const OCR_MODELS = ["gemini-2.5-flash", "gemini-3.7-flash", "gemini-3.8-flash"];
 
 export default async function read({ sock, message, reply }) {
   const source = getQuotedMessage(message) || message;
   const content = unwrapMediaMessage(source);
   const type = mediaTypeFromMessage(source);
 
-  if (type !== "image" && !content.imageMessage) {
+  const isImage = type === "image" || Boolean(content.imageMessage) || content.documentMessage?.mimetype?.startsWith("image/");
+  if (!isImage) {
     return reply("❌ Reply to an image or send an image with *.read* to extract its text.");
   }
 
   try {
-    const buffer = await downloadMessageMedia(source, "imageMessage");
+    const buffer = await downloadMessageMedia(source, "imageMessage", sock);
     if (!buffer || buffer.length === 0) {
       return reply("❌ Could not download the image media for text extraction.");
     }
 
-    const mimeType = content.imageMessage?.mimetype || "image/jpeg";
-    const ai = getAIClient();
+    let imageBuffer = buffer;
+    try {
+      imageBuffer = await sharp(buffer)
+        .rotate()
+        .jpeg({ quality: 90 })
+        .toBuffer();
+    } catch (sharpErr) {
+      logger.warn("Sharp could not re-encode image, using raw buffer", sharpErr.message);
+      imageBuffer = buffer;
+    }
 
+    const ai = getAIClient();
     let extractedText = "";
     let lastError = null;
 
@@ -41,8 +52,8 @@ export default async function read({ sock, message, reply }) {
           contents: [
             {
               inlineData: {
-                mimeType: mimeType.split(";")[0],
-                data: buffer.toString("base64"),
+                mimeType: "image/jpeg",
+                data: imageBuffer.toString("base64"),
               },
             },
             {
