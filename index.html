@@ -473,9 +473,14 @@
                            window.location.hostname.includes("run.app");
       const DEFAULT_BACKEND_URL = isSelfHosted ? window.location.origin : RAILWAY_URL;
       let customApiUrl = localStorage.getItem("solvatech_backend_url") || "";
+      if (customApiUrl && (customApiUrl.includes("3c1de8") || customApiUrl.includes("localhost:5000"))) {
+        try { localStorage.removeItem("solvatech_backend_url"); } catch (e) {}
+        customApiUrl = "";
+      }
       function getApiUrl(endpoint) {
         const baseUrl = (customApiUrl || DEFAULT_BACKEND_URL).replace(/\/$/, "");
-        return `${baseUrl}/bot-api${endpoint}`;
+        const cleanEndpoint = endpoint.startsWith("/bot-api") ? endpoint.replace(/^\/bot-api/, "") : endpoint;
+        return `${baseUrl}/bot-api${cleanEndpoint.startsWith("/") ? cleanEndpoint : "/" + cleanEndpoint}`;
       }
 
       // Elements
