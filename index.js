@@ -5,9 +5,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { PORT } from "./lib/config.js";
 import { logger } from "./lib/logger.js";
-import { getWhatsAppController, restoreAllSessions, auditActiveSessions } from "./lib/whatsapp.js";
-import { getLockedNumberForUid } from "./lib/number-lock.js";
-import { requireAuth, requireAdmin, createPreviewToken } from "./lib/auth.js";
+import { getWhatsAppController, restoreAllSessions, auditActiveSessions, getAllWhatsAppStatuses } from "./lib/whatsapp.js";
+import { getLockedNumberForUid, getAllNumberLocks } from "./lib/number-lock.js";
+import { requireAuth, requireAdmin, createPreviewToken, getFirebaseServerFirestore } from "./lib/auth.js";
 import {
   createLicenseRecord,
   listAllLicenses,
@@ -20,6 +20,7 @@ import {
   getReferralStats,
   claimReferralReward,
   getAdminReferralAudit,
+  getOfficialLicensePrice,
 } from "./lib/referral.js";
 
 process.on("uncaughtException", (error) => {
@@ -375,6 +376,308 @@ for (const p of prefixes) {
   // --------------------------------------------------------------------------
   // ADMIN LICENSE & REFERRAL AUDIT ROUTES (Strictly Admin Email: awoyinfasolomon1@gmail.com)
   // --------------------------------------------------------------------------
+  app.get(`${p}/admin/overview`, requireAuth, requireAdmin, async (_request, response) => {
+    try {
+      const [licenses, numberLocks, referralAudit, whatsappList] = await Promise.all([
+        listAllLicenses(),
+        getAllNumberLocks(),
+        getAdminReferralAudit(),
+        Promise.resolve(getAllWhatsAppStatuses()),
+      ]);
+
+      const db = getFirebaseServerFirestore();
+      const firestoreUsers = {};
+      if (db) {
+        try {
+          const { collection, getDocs } = await import("firebase/firestore");
+          const [usersSnap, userLicensesSnap] = await Promise.all([
+            getDocs(collection(db, "users")).catch(() => ({ forEach: () => {} })),
+            getDocs(collection(db, "user_licenses")).catch(() => ({ forEach: () => {} })),
+          ]);
+
+          usersSnap.forEach((d) => {
+            if (d.data()) firestoreUsers[d.id] = { ...(firestoreUsers[d.id] || {}), ...d.data(), uid: d.id };
+          });
+          userLicensesSnap.forEach((d) => {
+            if (d.data()) firestoreUsers[d.id] = { ...(firestoreUsers[d.id] || {}), activeLicense: d.data(), uid: d.id };
+          });
+        } catch (err) {
+          logger.debug("Admin comprehensive Firestore scan notice", err.message);
+        }
+      }
+
+      const locksByUid = {};
+      for (const [phone, lock] of Object.entries(numberLocks || {})) {
+        if (lock && lock.uid) {
+          locksByUid[lock.uid] = phone;
+        }
+      }
+
+      const wsByUid = {};
+      for (const ws of (whatsappList || [])) {
+        if (ws && ws.verifiedUid) {
+          wsByUid[ws.verifiedUid] = ws;
+        }
+      }
+
+      const referrersByUid = {};
+      for (const ref of (referralAudit?.referrers || [])) {
+        if (ref && ref.uid) {
+          referrersByUid[ref.uid] = ref;
+        }
+      }
+
+      const now = Date.now();
+      const FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000;
+
+      let totalRevenueNgn = 0;
+      let activeCount = 0;
+      let expiringSoonCount = 0;
+      let expiredCount = 0;
+      let unusedCount = 0;
+      let usedCount = 0;
+      let lifetimeCount = 0;
+
+      const enrichedLicenses = licenses.map((lic) => {
+        const isUsed = lic.status === "used" || Boolean(lic.redeemedByUid);
+        const durationDays = Number(lic.durationDays) || 1;
+        const priceNgn = getOfficialLicensePrice(durationDays);
+        const isLifetime = durationDays >= 36500 || lic.durationDays === "Unlimited";
+
+        let calculatedStatus = "unused";
+        let remainingMs = null;
+
+        if (isUsed) {
+          usedCount++;
+          if (lic.expiresAt) {
+            const expiryMs = new Date(lic.expiresAt).getTime();
+            remainingMs = expiryMs - now;
+            if (isLifetime) {
+              calculatedStatus = "lifetime";
+              lifetimeCount++;
+            } else if (remainingMs > 0) {
+              if (remainingMs <= FORTY_EIGHT_HOURS_MS) {
+                calculatedStatus = "expiring_soon";
+                expiringSoonCount++;
+                activeCount++;
+              } else {
+                calculatedStatus = "active";
+                activeCount++;
+              }
+            } else {
+              calculatedStatus = "expired";
+              expiredCount++;
+            }
+          } else if (isLifetime) {
+            calculatedStatus = "lifetime";
+            lifetimeCount++;
+          } else {
+            calculatedStatus = "active";
+            activeCount++;
+          }
+
+          if (priceNgn > 0) {
+            totalRevenueNgn += priceNgn;
+          }
+        } else {
+          unusedCount++;
+          calculatedStatus = "unused";
+        }
+
+        const redeemedUid = lic.redeemedByUid || "";
+        const phone = locksByUid[redeemedUid] || "";
+        const fsUser = firestoreUsers[redeemedUid] || {};
+
+        return {
+          ...lic,
+          priceNgn,
+          isUsed,
+          computedStatus: calculatedStatus,
+          remainingMs,
+          whatsappNumber: phone,
+          customerEmail: lic.redeemedByEmail || fsUser.email || "",
+          customerName: fsUser.displayName || "",
+        };
+      });
+
+      const customersMap = {};
+
+      for (const [uid, uData] of Object.entries(firestoreUsers)) {
+        customersMap[uid] = {
+          uid,
+          email: uData.email || "",
+          displayName: uData.displayName || "",
+          photoURL: uData.photoURL || "",
+          createdAt: uData.createdAt || uData.joinedAt || null,
+          activeLicense: uData.activeLicense || null,
+        };
+      }
+
+      for (const lic of enrichedLicenses) {
+        if (lic.redeemedByUid) {
+          const uid = lic.redeemedByUid;
+          if (!customersMap[uid]) {
+            customersMap[uid] = {
+              uid,
+              email: lic.redeemedByEmail || "",
+              displayName: lic.customerName || "",
+              createdAt: lic.redeemedAt || lic.createdAt || null,
+            };
+          }
+          if (!customersMap[uid].activeLicense || new Date(lic.expiresAt || 0) > new Date(customersMap[uid].activeLicense.expiresAt || 0)) {
+            customersMap[uid].activeLicense = {
+              code: lic.code,
+              durationDays: lic.durationDays,
+              expiresAt: lic.expiresAt,
+              redeemedAt: lic.redeemedAt,
+              status: lic.computedStatus,
+            };
+          }
+        }
+      }
+
+      for (const ref of (referralAudit?.referrers || [])) {
+        if (!customersMap[ref.uid]) {
+          customersMap[ref.uid] = {
+            uid: ref.uid,
+            email: ref.email || "",
+            displayName: "",
+            createdAt: null,
+          };
+        }
+      }
+
+      const customersList = Object.values(customersMap).map((cust) => {
+        const phone = locksByUid[cust.uid] || "";
+        const ws = wsByUid[cust.uid] || null;
+        const refInfo = referrersByUid[cust.uid] || null;
+
+        let licenseStatus = "none";
+        let remainingMs = null;
+        let expiresAt = null;
+
+        if (cust.uid === "admin" || cust.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+          licenseStatus = "lifetime";
+        } else if (cust.activeLicense && cust.activeLicense.expiresAt) {
+          expiresAt = cust.activeLicense.expiresAt;
+          const expiryMs = new Date(expiresAt).getTime();
+          remainingMs = expiryMs - now;
+          if (remainingMs > 0) {
+            licenseStatus = remainingMs <= FORTY_EIGHT_HOURS_MS ? "expiring_soon" : "active";
+          } else {
+            licenseStatus = "expired";
+          }
+        }
+
+        return {
+          ...cust,
+          phoneNumber: phone,
+          whatsappStatus: ws ? ws.status : phone ? "disconnected" : "never_paired",
+          botNumber: ws?.botNumber || phone || "",
+          connectedAt: ws?.connectedAt || null,
+          licenseStatus,
+          remainingMs,
+          expiresAt,
+          referralCode: refInfo?.referralCode || "",
+          qualifyingSalesNgn: refInfo?.qualifyingSalesNgn || 0,
+          earnedDaysTotal: refInfo?.earnedDaysTotal || 0,
+          claimedDaysTotal: refInfo?.claimedDaysTotal || 0,
+          availableDays: refInfo?.availableDays || 0,
+          referredCount: refInfo?.referredCount || 0,
+        };
+      }).sort((a, b) => (b.activeLicense ? 1 : 0) - (a.activeLicense ? 1 : 0));
+
+      const activityEvents = [];
+
+      for (const lic of licenses) {
+        if (lic.createdAt) {
+          activityEvents.push({
+            id: `lic_create_${lic.code}`,
+            type: "LICENSE_GENERATED",
+            title: `License Generated (${lic.durationDays} Days)`,
+            description: `Code ${lic.code} created`,
+            timestamp: lic.createdAt,
+            user: lic.createdBy || "Admin",
+            meta: { code: lic.code, duration: lic.durationDays },
+          });
+        }
+        if (lic.redeemedAt && lic.redeemedByUid) {
+          activityEvents.push({
+            id: `lic_redeem_${lic.code}`,
+            type: "LICENSE_REDEEMED",
+            title: `License Redeemed (${lic.durationDays} Days)`,
+            description: `Code ${lic.code} activated by ${lic.redeemedByEmail || lic.redeemedByUid}`,
+            timestamp: lic.redeemedAt,
+            user: lic.redeemedByEmail || lic.redeemedByUid,
+            meta: { code: lic.code, expiresAt: lic.expiresAt },
+          });
+        }
+      }
+
+      for (const pur of (referralAudit?.recentPurchases || [])) {
+        if (pur.createdAt) {
+          activityEvents.push({
+            id: `ref_pur_${pur.purchaseId || Math.random()}`,
+            type: "REFERRAL_PURCHASE",
+            title: `Qualifying Purchase Recorded`,
+            description: `₦${Number(pur.amountNgn || 0).toLocaleString()} credited for referrer ${pur.referrerCode || pur.referrerUid}`,
+            timestamp: pur.createdAt,
+            user: pur.buyerEmail || pur.buyerUid || "Customer",
+            meta: { amountNgn: pur.amountNgn, referrer: pur.referrerCode },
+          });
+        }
+      }
+
+      activityEvents.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+      let connectedWhatsApp = 0;
+      let disconnectedWhatsApp = 0;
+      for (const ws of (whatsappList || [])) {
+        if (ws.status === "connected") connectedWhatsApp++;
+        else disconnectedWhatsApp++;
+      }
+
+      response.json({
+        success: true,
+        overview: {
+          totalUsers: customersList.length,
+          activeLicenses: activeCount,
+          expiringSoon: expiringSoonCount,
+          expiredLicenses: expiredCount,
+          lifetimeLicenses: lifetimeCount,
+          unusedKeys: unusedCount,
+          usedKeys: usedCount,
+          totalRevenueNgn,
+          connectedWhatsApp,
+          disconnectedWhatsApp,
+          totalReferrals: referralAudit?.summary?.totalReferredCustomers || 0,
+          totalReferrers: referralAudit?.summary?.totalReferrers || 0,
+          totalQualifyingSalesNgn: referralAudit?.summary?.totalQualifyingSalesNgn || 0,
+          rewardsEarnedDays: referralAudit?.summary?.totalRewardsEarnedDays || 0,
+          rewardsClaimedDays: referralAudit?.summary?.totalRewardsClaimedDays || 0,
+          rewardsAvailableDays: referralAudit?.summary?.totalRewardsAvailableDays || 0,
+        },
+        licenses: enrichedLicenses,
+        customers: customersList,
+        referrals: referralAudit,
+        whatsappSessions: whatsappList,
+        recentActivity: activityEvents.slice(0, 50),
+        systemHealth: {
+          uptimeSeconds: Math.floor(process.uptime()),
+          serverTime: new Date().toISOString(),
+          nodeVersion: process.version,
+          platform: process.platform,
+          memory: process.memoryUsage(),
+          status: "operational",
+        },
+        adminEmail: ADMIN_EMAIL,
+      });
+    } catch (error) {
+      logger.error("Admin overview aggregate error", error.stack || error.message);
+      response.status(500).json({ error: "Failed to generate admin overview data." });
+    }
+  });
+
   app.get(`${p}/admin/referrals`, requireAuth, requireAdmin, async (_request, response) => {
     try {
       const audit = await getAdminReferralAudit();
@@ -387,6 +690,7 @@ for (const p of prefixes) {
       response.status(500).json({ error: "Failed to list referral audit data." });
     }
   });
+
   app.get(`${p}/admin/licenses`, requireAuth, requireAdmin, async (_request, response) => {
     try {
       const licenses = await listAllLicenses();

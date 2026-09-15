@@ -26,6 +26,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
     <link rel="stylesheet" href="./style.css" />
     <link rel="stylesheet" href="./pairing-enhancements.css" />
+    <link rel="stylesheet" href="./admin-dashboard.css" />
   </head>
   <body>
     <div class="grain"></div>
@@ -469,129 +470,600 @@
           </article>
         </section>
 
-        <!-- ADMIN ONLY LICENSE MANAGEMENT PANEL (Strictly for awoyinfasolomon1@gmail.com) -->
-        <section id="admin-panel" class="grid dashboard-tab-content hidden" style="margin-top: 24px;">
-          <article class="surface admin-card" style="grid-column: 1 / -1;">
-            <div class="card-top">
-              <span>ADMINISTRATION CONSOLE</span>
-              <span class="license-badge active">ADMIN ONLY</span>
+        <!-- SUPER ADMIN COMMAND CENTER (Strictly for awoyinfasolomon1@gmail.com) -->
+        <section id="admin-panel" class="dashboard-tab-content hidden" style="margin-top: 24px;">
+          <!-- Admin Hero Header -->
+          <div class="admin-hero-banner">
+            <div class="admin-hero-top">
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <span class="admin-badge-verified">
+                  <span class="admin-live-pulse-dot"></span>
+                  SUPER ADMIN CONSOLE
+                </span>
+                <span style="font-family: 'DM Mono', monospace; font-size: 11px; color: #a7f3d0;">
+                  awoyinfasolomon1@gmail.com
+                </span>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <span id="admin-last-sync-time" style="font-size: 11px; color: rgba(255,255,255,0.7); font-family: 'DM Mono', monospace;">
+                  Syncing...
+                </span>
+                <button id="admin-refresh-all-btn" type="button" class="license-btn" style="padding: 6px 14px; font-size: 11px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);">
+                  ↻ Refresh All Data
+                </button>
+              </div>
             </div>
-            <h2>SOLVATECH License Generator & Audit</h2>
-            <p style="font-size: 12px; color: var(--muted); margin-bottom: 14px;">
-              Logged in as verified administrator: <strong>awoyinfasolomon1@gmail.com</strong>. Generate cryptographically random, unguessable license codes with one-time server binding.
+            <h1 class="admin-hero-title">Solvatech Bot Management & Operations</h1>
+            <p class="admin-hero-sub">
+              Authoritative real-time control center for license generation, live customer subscriptions, WhatsApp MD sessions, referral audits, and system activity logs.
             </p>
+          </div>
 
-            <label>Select Preset Duration</label>
-            <div class="admin-preset-grid">
-              <button type="button" class="admin-preset-btn active" data-days="1">1 Day</button>
-              <button type="button" class="admin-preset-btn" data-days="3">3 Days</button>
-              <button type="button" class="admin-preset-btn" data-days="7">7 Days</button>
-              <button type="button" class="admin-preset-btn" data-days="14">14 Days</button>
-              <button type="button" class="admin-preset-btn" data-days="custom">Custom Days</button>
-            </div>
-
-            <div id="admin-custom-days-wrap" class="hidden" style="margin-bottom: 14px;">
-              <label for="admin-custom-days">Custom Duration (Days: 1 - 365)</label>
-              <input id="admin-custom-days" type="number" min="1" max="365" placeholder="e.g. 30" style="max-width: 200px;" />
-            </div>
-
-            <button id="admin-generate-btn" class="license-btn" type="button" style="padding: 10px 20px; font-size: 13px;">
-              Generate New License Code
+          <!-- Sub-Navigation Tabs within Admin Console -->
+          <div class="admin-subnav" role="tablist">
+            <button type="button" class="admin-subnav-btn active" data-subtab="overview" id="admin-subtab-btn-overview">
+              <span>📊 Overview</span>
             </button>
+            <button type="button" class="admin-subnav-btn" data-subtab="licenses" id="admin-subtab-btn-licenses">
+              <span>🔑 Licenses</span>
+              <span id="admin-count-licenses" class="admin-subnav-count">0</span>
+            </button>
+            <button type="button" class="admin-subnav-btn" data-subtab="customers" id="admin-subtab-btn-customers">
+              <span>👥 Customers</span>
+              <span id="admin-count-customers" class="admin-subnav-count">0</span>
+            </button>
+            <button type="button" class="admin-subnav-btn" data-subtab="expiring" id="admin-subtab-btn-expiring">
+              <span>⏳ Expiring Watch</span>
+              <span id="admin-count-expiring" class="admin-subnav-count" style="background:#fee2e2; color:#b91c1c;">0</span>
+            </button>
+            <button type="button" class="admin-subnav-btn" data-subtab="referrals" id="admin-subtab-btn-referrals">
+              <span>🎁 Referrals</span>
+              <span id="admin-count-referrals" class="admin-subnav-count">0</span>
+            </button>
+            <button type="button" class="admin-subnav-btn" data-subtab="system" id="admin-subtab-btn-system">
+              <span>⚡ WhatsApp & System</span>
+              <span id="admin-count-connected" class="admin-subnav-count" style="background:#dcfce7; color:#15803d;">0</span>
+            </button>
+            <button type="button" class="admin-subnav-btn" data-subtab="activity" id="admin-subtab-btn-activity">
+              <span>📜 Event Logs</span>
+            </button>
+          </div>
 
-            <p id="admin-generate-msg" class="license-msg hidden"></p>
-
-            <!-- Audit Table -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 24px;">
-              <strong style="font-size: 13px; color: var(--ink);">Generated License Records</strong>
-              <button id="admin-refresh-licenses-btn" type="button" class="admin-preset-btn" style="padding: 4px 10px; font-size: 10px;">
-                ↻ Refresh Table
-              </button>
-            </div>
-
-            <div class="table-scroll-hint">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
-              <span>Swipe table horizontally to view full records</span>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
-            </div>
-            <div class="admin-table-wrap">
-              <table class="admin-table">
-                <thead>
-                  <tr>
-                    <th>License Code</th>
-                    <th>Duration</th>
-                    <th>Status</th>
-                    <th>Redeemed By (UID)</th>
-                    <th>Redeemed At</th>
-                    <th>Expires At</th>
-                  </tr>
-                </thead>
-                <tbody id="admin-licenses-tbody">
-                  <tr>
-                    <td colspan="6" style="text-align: center; color: var(--muted); padding: 18px;">Loading license records...</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <!-- Admin Referral Audit Sub-Section -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 32px; border-top: 1px solid var(--line); padding-top: 20px;">
-              <div>
-                <strong style="font-size: 13px; color: var(--ink);">Referral Program Performance & Audit</strong>
-                <p style="font-size: 11px; color: var(--muted); margin: 2px 0 0;">Permanent referrer accounts, qualifying sales, and rewards accounting.</p>
+          <!-- SUBTAB 1: OVERVIEW VIEW -->
+          <div id="admin-view-overview" class="admin-subview">
+            <!-- 10 Primary Metric Cards -->
+            <div class="admin-kpi-grid">
+              <div class="admin-kpi-card kpi-blue">
+                <div class="admin-kpi-card-header">
+                  <span class="admin-kpi-label">TOTAL CUSTOMERS</span>
+                  <span class="admin-kpi-icon">👥</span>
+                </div>
+                <div id="admin-kpi-total-users" class="admin-kpi-val">0</div>
+                <div class="admin-kpi-sub">Registered accounts</div>
               </div>
-              <button id="admin-refresh-referrals-btn" type="button" class="admin-preset-btn" style="padding: 4px 10px; font-size: 10px;">
-                ↻ Refresh Referrals
-              </button>
+
+              <div class="admin-kpi-card kpi-emerald">
+                <div class="admin-kpi-card-header">
+                  <span class="admin-kpi-label">ACTIVE LICENSES</span>
+                  <span class="admin-kpi-icon">🟢</span>
+                </div>
+                <div id="admin-kpi-active-licenses" class="admin-kpi-val" style="color: #15803d;">0</div>
+                <div class="admin-kpi-sub">Currently valid bots</div>
+              </div>
+
+              <div class="admin-kpi-card kpi-amber">
+                <div class="admin-kpi-card-header">
+                  <span class="admin-kpi-label">EXPIRING SOON</span>
+                  <span class="admin-kpi-icon">⏳</span>
+                </div>
+                <div id="admin-kpi-expiring-licenses" class="admin-kpi-val" style="color: #b45309;">0</div>
+                <div class="admin-kpi-sub">&lt; 48 hours remaining</div>
+              </div>
+
+              <div class="admin-kpi-card kpi-rose">
+                <div class="admin-kpi-card-header">
+                  <span class="admin-kpi-label">EXPIRED LICENSES</span>
+                  <span class="admin-kpi-icon">🔴</span>
+                </div>
+                <div id="admin-kpi-expired-licenses" class="admin-kpi-val" style="color: #b91c1c;">0</div>
+                <div class="admin-kpi-sub">Needs renewal</div>
+              </div>
+
+              <div class="admin-kpi-card kpi-emerald">
+                <div class="admin-kpi-card-header">
+                  <span class="admin-kpi-label">UNUSED KEYS</span>
+                  <span class="admin-kpi-icon">🔑</span>
+                </div>
+                <div id="admin-kpi-unused-keys" class="admin-kpi-val" style="color: #0f766e;">0</div>
+                <div class="admin-kpi-sub">Ready for buyers</div>
+              </div>
+
+              <div class="admin-kpi-card kpi-purple">
+                <div class="admin-kpi-card-header">
+                  <span class="admin-kpi-label">USED KEYS</span>
+                  <span class="admin-kpi-icon">🏷️</span>
+                </div>
+                <div id="admin-kpi-used-keys" class="admin-kpi-val" style="color: #6d28d9;">0</div>
+                <div class="admin-kpi-sub">Redeemed by users</div>
+              </div>
+
+              <div class="admin-kpi-card kpi-emerald">
+                <div class="admin-kpi-card-header">
+                  <span class="admin-kpi-label">WHATSAPP LIVE</span>
+                  <span class="admin-kpi-icon">📱</span>
+                </div>
+                <div id="admin-kpi-whatsapp-connected" class="admin-kpi-val" style="color: #15803d;">0</div>
+                <div class="admin-kpi-sub">Active socket sessions</div>
+              </div>
+
+              <div class="admin-kpi-card kpi-emerald">
+                <div class="admin-kpi-card-header">
+                  <span class="admin-kpi-label">QUALIFYING REVENUE</span>
+                  <span class="admin-kpi-icon">💰</span>
+                </div>
+                <div id="admin-kpi-total-revenue" class="admin-kpi-val" style="color: var(--teal);">₦0</div>
+                <div class="admin-kpi-sub">Tracked referral sales</div>
+              </div>
+
+              <div class="admin-kpi-card kpi-amber">
+                <div class="admin-kpi-card-header">
+                  <span class="admin-kpi-label">REWARD DAYS</span>
+                  <span class="admin-kpi-icon">🎁</span>
+                </div>
+                <div id="admin-kpi-reward-days" class="admin-kpi-val" style="color: #b45309;">0 / 0</div>
+                <div class="admin-kpi-sub">Earned / Claimed</div>
+              </div>
+
+              <div class="admin-kpi-card kpi-blue">
+                <div class="admin-kpi-card-header">
+                  <span class="admin-kpi-label">TOTAL REFERRERS</span>
+                  <span class="admin-kpi-icon">🔗</span>
+                </div>
+                <div id="admin-kpi-total-referrers" class="admin-kpi-val">0</div>
+                <div class="admin-kpi-sub">Active affiliate codes</div>
+              </div>
             </div>
 
-            <!-- Admin Referral Summary Stats -->
-            <div class="referral-metrics-grid" style="margin-top: 14px; margin-bottom: 14px;">
-              <div class="referral-metric-item">
-                <span class="muted-label">TOTAL REFERRERS</span>
-                <span id="admin-stat-referrers" class="referral-metric-val">0</span>
+            <!-- Quick Generator + Urgent Watch Preview Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-bottom: 24px;">
+              <!-- Quick License Generator Card -->
+              <div class="surface" style="padding: 20px; border-radius: 8px; border: 1px solid var(--admin-card-border);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                  <h3 style="font-size: 14px; font-weight: 800; color: var(--ink); margin: 0;">⚡ Quick License Generator</h3>
+                  <span class="admin-badge badge-unused">Instant One-Click</span>
+                </div>
+                <p style="font-size: 12px; color: var(--muted); margin: 0 0 14px;">
+                  Select official duration tier to generate a cryptographically unguessable key with server binding.
+                </p>
+
+                <div class="admin-preset-grid-v2">
+                  <button type="button" class="admin-preset-card-btn active" data-days="1" data-price="200">
+                    <span class="admin-preset-days">1 Day</span>
+                    <span class="admin-preset-price">₦200</span>
+                  </button>
+                  <button type="button" class="admin-preset-card-btn" data-days="3" data-price="500">
+                    <span class="admin-preset-days">3 Days</span>
+                    <span class="admin-preset-price">₦500</span>
+                  </button>
+                  <button type="button" class="admin-preset-card-btn" data-days="7" data-price="1000">
+                    <span class="admin-preset-days">7 Days</span>
+                    <span class="admin-preset-price">₦1,000</span>
+                  </button>
+                  <button type="button" class="admin-preset-card-btn" data-days="14" data-price="2000">
+                    <span class="admin-preset-days">14 Days</span>
+                    <span class="admin-preset-price">₦2,000</span>
+                  </button>
+                  <button type="button" class="admin-preset-card-btn" data-days="30" data-price="4000">
+                    <span class="admin-preset-days">30 Days</span>
+                    <span class="admin-preset-price">₦4,000</span>
+                  </button>
+                  <button type="button" class="admin-preset-card-btn" data-days="60" data-price="8000">
+                    <span class="admin-preset-days">2 Months</span>
+                    <span class="admin-preset-price">₦8,000</span>
+                  </button>
+                  <button type="button" class="admin-preset-card-btn" data-days="90" data-price="12000">
+                    <span class="admin-preset-days">3 Months</span>
+                    <span class="admin-preset-price">₦12,000</span>
+                  </button>
+                  <button type="button" class="admin-preset-card-btn" data-days="180" data-price="24000">
+                    <span class="admin-preset-days">6 Months</span>
+                    <span class="admin-preset-price">₦24,000</span>
+                  </button>
+                  <button type="button" class="admin-preset-card-btn" data-days="365" data-price="48000">
+                    <span class="admin-preset-days">12 Months</span>
+                    <span class="admin-preset-price">₦48,000</span>
+                  </button>
+                  <button type="button" class="admin-preset-card-btn" data-days="custom" data-price="custom">
+                    <span class="admin-preset-days">Custom</span>
+                    <span class="admin-preset-price">Variable</span>
+                  </button>
+                </div>
+
+                <div id="admin-custom-days-wrap" class="hidden" style="margin-bottom: 14px;">
+                  <label for="admin-custom-days" style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Custom Days (1 - 365)</label>
+                  <input id="admin-custom-days" type="number" min="1" max="365" placeholder="e.g. 45" style="max-width: 200px; padding: 8px 12px; font-size: 13px;" />
+                </div>
+
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                  <button id="admin-generate-btn" class="license-btn" type="button" style="padding: 10px 22px; font-size: 13px;">
+                    Generate License Key
+                  </button>
+                </div>
+
+                <div id="admin-generate-msg" class="license-msg hidden" style="margin-top: 14px;"></div>
               </div>
-              <div class="referral-metric-item">
-                <span class="muted-label">REFERRED CUSTOMERS</span>
-                <span id="admin-stat-referred-users" class="referral-metric-val">0</span>
-              </div>
-              <div class="referral-metric-item">
-                <span class="muted-label">TOTAL QUALIFYING SALES</span>
-                <span id="admin-stat-sales" class="referral-metric-val" style="color: var(--teal);">₦0</span>
-              </div>
-              <div class="referral-metric-item">
-                <span class="muted-label">REWARDS (EARNED / CLAIMED)</span>
-                <span id="admin-stat-rewards" class="referral-metric-val">0 / 0 Days</span>
+
+              <!-- Urgent Expiry Watchlist Preview -->
+              <div class="surface" style="padding: 20px; border-radius: 8px; border: 1px solid var(--admin-card-border);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                  <h3 style="font-size: 14px; font-weight: 800; color: var(--ink); margin: 0;">⏳ Urgent Expiry Watchlist</h3>
+                  <button type="button" class="admin-chip-btn" onclick="document.getElementById('admin-subtab-btn-expiring').click()">View All</button>
+                </div>
+                <p style="font-size: 12px; color: var(--muted); margin: 0 0 14px;">
+                  Customers whose bot subscriptions will expire within the next 48 hours or recently expired.
+                </p>
+
+                <div id="admin-overview-expiring-list" style="display: flex; flex-direction: column; gap: 8px;">
+                  <div style="text-align: center; color: var(--muted); font-size: 12px; padding: 20px;">
+                    Scanning active subscriptions...
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div class="table-scroll-hint">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
-              <span>Swipe table horizontally to view full records</span>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            <!-- Tier Distribution & Sales Accounting Card -->
+            <div class="surface" style="padding: 20px; border-radius: 8px; border: 1px solid var(--admin-card-border); margin-bottom: 24px;">
+              <h3 style="font-size: 14px; font-weight: 800; color: var(--ink); margin: 0 0 14px;">📦 License Tier Breakdown & Pricing</h3>
+              <div id="admin-tier-breakdown-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px;">
+                <!-- Dynamically populated -->
+              </div>
             </div>
-            <div class="admin-table-wrap">
-              <table class="admin-table">
-                <thead>
-                  <tr>
-                    <th>Referrer UID / Email</th>
-                    <th>Referral Code</th>
-                    <th>Referred Users</th>
-                    <th>Qualifying Sales</th>
-                    <th>Earned Days</th>
-                    <th>Claimed Days</th>
-                    <th>Available Days</th>
-                  </tr>
-                </thead>
-                <tbody id="admin-referrals-tbody">
-                  <tr>
-                    <td colspan="7" style="text-align: center; color: var(--muted); padding: 18px;">Loading referral records...</td>
-                  </tr>
-                </tbody>
-              </table>
+          </div>
+
+          <!-- SUBTAB 2: LICENSES MANAGEMENT VIEW -->
+          <div id="admin-view-licenses" class="admin-subview hidden">
+            <!-- Controls Bar: Search & Filter Chips -->
+            <div class="admin-controls-bar">
+              <div class="admin-search-wrap">
+                <svg class="admin-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input id="admin-search-licenses" type="text" class="admin-search-input" placeholder="Search by key code, customer email, UID..." />
+              </div>
+              <div class="admin-filter-chips">
+                <button type="button" class="admin-chip-btn active" data-filter-license="all">ALL (<span id="count-lic-all">0</span>)</button>
+                <button type="button" class="admin-chip-btn" data-filter-license="unused">UNUSED (<span id="count-lic-unused">0</span>)</button>
+                <button type="button" class="admin-chip-btn" data-filter-license="active">ACTIVE (<span id="count-lic-active">0</span>)</button>
+                <button type="button" class="admin-chip-btn" data-filter-license="expiring">EXPIRING (<span id="count-lic-expiring">0</span>)</button>
+                <button type="button" class="admin-chip-btn" data-filter-license="expired">EXPIRED (<span id="count-lic-expired">0</span>)</button>
+              </div>
             </div>
-          </article>
+
+            <!-- Master Licenses Table & Mobile Cards Container -->
+            <div class="admin-table-container">
+              <div class="admin-table-header-row">
+                <h3 class="admin-table-title">License Inventory & Audit</h3>
+                <div class="admin-table-actions">
+                  <button id="admin-refresh-licenses-btn" type="button" class="admin-preset-btn" style="padding: 5px 12px; font-size: 11px;">
+                    ↻ Refresh
+                  </button>
+                </div>
+              </div>
+
+              <!-- Desktop Full 13-Column Table -->
+              <div class="admin-table-scroll">
+                <table class="admin-master-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>License Key</th>
+                      <th>Status</th>
+                      <th>Tier</th>
+                      <th>Duration</th>
+                      <th>Price</th>
+                      <th>Created Date</th>
+                      <th>State</th>
+                      <th>Redeemed By</th>
+                      <th>Customer Email</th>
+                      <th>WhatsApp No.</th>
+                      <th>Expires At</th>
+                      <th>Time Remaining</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-licenses-tbody">
+                    <tr>
+                      <td colspan="13" style="text-align: center; color: var(--muted); padding: 24px;">Loading license inventory...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Mobile Responsive Cards List -->
+              <div id="admin-licenses-cards" class="admin-cards-list">
+                <div style="text-align: center; color: var(--muted); padding: 20px;">Loading license records...</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SUBTAB 3: CUSTOMERS DIRECTORY VIEW -->
+          <div id="admin-view-customers" class="admin-subview hidden">
+            <!-- Controls Bar: Search & Filter Chips -->
+            <div class="admin-controls-bar">
+              <div class="admin-search-wrap">
+                <svg class="admin-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input id="admin-search-customers" type="text" class="admin-search-input" placeholder="Search customer email, name, UID, phone number, ref code..." />
+              </div>
+              <div class="admin-filter-chips">
+                <button type="button" class="admin-chip-btn active" data-filter-customer="all">ALL (<span id="count-cust-all">0</span>)</button>
+                <button type="button" class="admin-chip-btn" data-filter-customer="active">ACTIVE LICENSE (<span id="count-cust-active">0</span>)</button>
+                <button type="button" class="admin-chip-btn" data-filter-customer="expired">EXPIRED (<span id="count-cust-expired">0</span>)</button>
+                <button type="button" class="admin-chip-btn" data-filter-customer="nolicense">NO LICENSE (<span id="count-cust-nolicense">0</span>)</button>
+                <button type="button" class="admin-chip-btn" data-filter-customer="connected">WHATSAPP CONNECTED (<span id="count-cust-connected">0</span>)</button>
+              </div>
+            </div>
+
+            <!-- Customers Directory Table & Mobile Cards Container -->
+            <div class="admin-table-container">
+              <div class="admin-table-header-row">
+                <h3 class="admin-table-title">Customer Accounts & Profiles</h3>
+                <div class="admin-table-actions">
+                  <button id="admin-refresh-customers-btn" type="button" class="admin-preset-btn" style="padding: 5px 12px; font-size: 11px;">
+                    ↻ Refresh
+                  </button>
+                </div>
+              </div>
+
+              <!-- Desktop Full Customers Table -->
+              <div class="admin-table-scroll">
+                <table class="admin-master-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Customer Profile</th>
+                      <th>UID</th>
+                      <th>WhatsApp Number</th>
+                      <th>WhatsApp Status</th>
+                      <th>Active License</th>
+                      <th>License Status</th>
+                      <th>Remaining Time</th>
+                      <th>Expiry Date</th>
+                      <th>Referral Code</th>
+                      <th>Referred By</th>
+                      <th>Qualifying Sales</th>
+                      <th>Rewards</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-customers-tbody">
+                    <tr>
+                      <td colspan="13" style="text-align: center; color: var(--muted); padding: 24px;">Loading customers directory...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Mobile Responsive Customer Cards List -->
+              <div id="admin-customers-cards" class="admin-cards-list">
+                <div style="text-align: center; color: var(--muted); padding: 20px;">Loading customer profiles...</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SUBTAB 4: EXPIRING WATCHLIST VIEW -->
+          <div id="admin-view-expiring" class="admin-subview hidden">
+            <div class="surface" style="padding: 20px; border-radius: 8px; border: 1px solid var(--admin-card-border); margin-bottom: 20px; background: #fffdf5; border-color: #fef3c7;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 24px;">⏳</span>
+                <div>
+                  <h3 style="font-size: 15px; font-weight: 800; color: #92400e; margin: 0 0 2px;">
+                    Subscription Expiration & Renewal Watch
+                  </h3>
+                  <p style="font-size: 12px; color: #b45309; margin: 0;">
+                    Real-time monitoring of licenses expiring within the next 48 hours or expired in the past 7 days. Use the direct WhatsApp contact link for instant renewal follow-ups.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="admin-table-container">
+              <div class="admin-table-header-row">
+                <h3 class="admin-table-title">Urgent Renewal Queue</h3>
+                <span id="admin-expiring-queue-count" class="admin-badge badge-expiring">0 Accounts</span>
+              </div>
+              <div class="admin-table-scroll">
+                <table class="admin-master-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Customer Email</th>
+                      <th>WhatsApp Phone</th>
+                      <th>License Key</th>
+                      <th>Duration</th>
+                      <th>Expiry Timestamp</th>
+                      <th>Live Remaining</th>
+                      <th>Status</th>
+                      <th>Direct Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-expiring-tbody">
+                    <tr>
+                      <td colspan="9" style="text-align: center; color: var(--muted); padding: 24px;">No licenses currently in the urgent expiry window.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div id="admin-expiring-cards" class="admin-cards-list"></div>
+            </div>
+          </div>
+
+          <!-- SUBTAB 5: REFERRALS AUDIT VIEW -->
+          <div id="admin-view-referrals" class="admin-subview hidden">
+            <!-- Referral Program Summary KPIs -->
+            <div class="admin-kpi-grid">
+              <div class="admin-kpi-card kpi-blue">
+                <div class="admin-kpi-card-header">
+                  <span class="admin-kpi-label">TOTAL REFERRERS</span>
+                  <span class="admin-kpi-icon">🔗</span>
+                </div>
+                <div id="admin-stat-referrers" class="admin-kpi-val">0</div>
+                <div class="admin-kpi-sub">Accounts with referral codes</div>
+              </div>
+
+              <div class="admin-kpi-card kpi-emerald">
+                <div class="admin-kpi-card-header">
+                  <span class="admin-kpi-label">REFERRED CUSTOMERS</span>
+                  <span class="admin-kpi-icon">👥</span>
+                </div>
+                <div id="admin-stat-referred-users" class="admin-kpi-val">0</div>
+                <div class="admin-kpi-sub">Customers registered via referral</div>
+              </div>
+
+              <div class="admin-kpi-card kpi-emerald">
+                <div class="admin-kpi-card-header">
+                  <span class="admin-kpi-label">QUALIFYING SALES</span>
+                  <span class="admin-kpi-icon">💰</span>
+                </div>
+                <div id="admin-stat-sales" class="admin-kpi-val" style="color: var(--teal);">₦0</div>
+                <div class="admin-kpi-sub">Cumulative attributed purchases</div>
+              </div>
+
+              <div class="admin-kpi-card kpi-amber">
+                <div class="admin-kpi-card-header">
+                  <span class="admin-kpi-label">REWARDS (EARNED / CLAIMED)</span>
+                  <span class="admin-kpi-icon">🎁</span>
+                </div>
+                <div id="admin-stat-rewards" class="admin-kpi-val" style="color: #b45309;">0 / 0 Days</div>
+                <div class="admin-kpi-sub">3 Free Days per ₦1,000 threshold</div>
+              </div>
+            </div>
+
+            <!-- Referrals Directory Table -->
+            <div class="admin-table-container">
+              <div class="admin-table-header-row">
+                <h3 class="admin-table-title">Referrer Accounts & Commission Audit</h3>
+                <button id="admin-refresh-referrals-btn" type="button" class="admin-preset-btn" style="padding: 5px 12px; font-size: 11px;">
+                  ↻ Refresh Referrals
+                </button>
+              </div>
+
+              <div class="admin-table-scroll">
+                <table class="admin-master-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Referrer Profile / Email</th>
+                      <th>Referral Code</th>
+                      <th>Referred Customers</th>
+                      <th>Qualifying Sales</th>
+                      <th>Earned Days</th>
+                      <th>Claimed Days</th>
+                      <th>Available Days</th>
+                      <th>Progress to Next ₦1,000</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-referrals-tbody">
+                    <tr>
+                      <td colspan="9" style="text-align: center; color: var(--muted); padding: 24px;">Loading referral records...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div id="admin-referrals-cards" class="admin-cards-list"></div>
+            </div>
+          </div>
+
+          <!-- SUBTAB 6: WHATSAPP & SYSTEM HEALTH VIEW -->
+          <div id="admin-view-system" class="admin-subview hidden">
+            <!-- System Stats Grid -->
+            <div class="admin-kpi-grid">
+              <div class="admin-kpi-card kpi-emerald">
+                <div class="admin-kpi-card-header">
+                  <span class="admin-kpi-label">SERVER UPTIME</span>
+                  <span class="admin-kpi-icon">⏱️</span>
+                </div>
+                <div id="admin-sys-uptime" class="admin-kpi-val" style="font-size: 18px; font-family: 'DM Mono', monospace;">—</div>
+                <div class="admin-kpi-sub">Continuous node process</div>
+              </div>
+
+              <div class="admin-kpi-card kpi-blue">
+                <div class="admin-kpi-card-header">
+                  <span class="admin-kpi-label">ACTIVE SESSIONS</span>
+                  <span class="admin-kpi-icon">📱</span>
+                </div>
+                <div id="admin-sys-controllers" class="admin-kpi-val">0</div>
+                <div class="admin-kpi-sub">In-memory Baileys controllers</div>
+              </div>
+
+              <div class="admin-kpi-card kpi-purple">
+                <div class="admin-kpi-card-header">
+                  <span class="admin-kpi-label">NUMBER LOCKS</span>
+                  <span class="admin-kpi-icon">🔒</span>
+                </div>
+                <div id="admin-sys-locks" class="admin-kpi-val">0</div>
+                <div class="admin-kpi-sub">Locked 1-phone-per-account</div>
+              </div>
+
+              <div class="admin-kpi-card kpi-slate">
+                <div class="admin-kpi-card-header">
+                  <span class="admin-kpi-label">PLATFORM / NODE</span>
+                  <span class="admin-kpi-icon">🖥️</span>
+                </div>
+                <div id="admin-sys-platform" class="admin-kpi-val" style="font-size: 16px;">Linux / ESM</div>
+                <div class="admin-kpi-sub">Railway / Container runtime</div>
+              </div>
+            </div>
+
+            <!-- WhatsApp Active Sessions Table -->
+            <div class="admin-table-container">
+              <div class="admin-table-header-row">
+                <h3 class="admin-table-title">Live WhatsApp Sockets & Connected Numbers</h3>
+              </div>
+              <div class="admin-table-scroll">
+                <table class="admin-master-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>User UID</th>
+                      <th>Locked Phone Number</th>
+                      <th>Connection State</th>
+                      <th>Connected Number</th>
+                      <th>Last Active</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-whatsapp-tbody">
+                    <tr>
+                      <td colspan="6" style="text-align: center; color: var(--muted); padding: 24px;">Loading WhatsApp session states...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- SUBTAB 7: RECENT ACTIVITY LOGS VIEW -->
+          <div id="admin-view-activity" class="admin-subview hidden">
+            <div class="surface" style="padding: 20px; border-radius: 8px; border: 1px solid var(--admin-card-border);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                <h3 style="font-size: 14px; font-weight: 800; color: var(--ink); margin: 0;">📜 Authoritative Real-Time Event Feed</h3>
+                <span class="admin-badge badge-active">Live Synchronized</span>
+              </div>
+              <div id="admin-activity-timeline" class="admin-activity-timeline">
+                <div style="text-align: center; color: var(--muted); padding: 24px;">Gathering event records...</div>
+              </div>
+            </div>
+          </div>
         </section>
+
+        <!-- ADMIN RECORD DETAIL INSPECTION MODAL -->
+        <div id="admin-detail-modal" class="admin-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="admin-modal-title">
+          <div class="admin-modal-box">
+            <div class="admin-modal-header">
+              <h3 id="admin-modal-title" class="admin-modal-title">Record Details</h3>
+              <button id="admin-modal-close-btn" type="button" class="admin-modal-close-btn">&times;</button>
+            </div>
+            <div id="admin-modal-body" class="admin-modal-body">
+              <!-- Dynamically populated detail rows -->
+            </div>
+          </div>
+        </div>
 
         <section id="section-instructions" class="surface instructions dashboard-tab-content">
           <div class="instruction-head"><h2>Pairing, in three clear moves.</h2><span>DIRECT LINK</span></div>
@@ -1732,8 +2204,7 @@
             } else {
               if (adminPanel) adminPanel.classList.add("hidden");
             }
-            loadAdminLicenses();
-            loadAdminReferrals();
+            loadAdminOverview();
           } else {
             if (tabBtnAdmin) tabBtnAdmin.classList.add("hidden");
             if (adminPanel) adminPanel.classList.add("hidden");
@@ -1951,10 +2422,39 @@
         });
       }
 
-      // Admin: Setup preset buttons
-      adminPresetBtns.forEach((btn) => {
+      // =========================================================================
+      // SOLVATECH BOT — SUPER ADMIN COMMAND CENTER CONTROLLER
+      // =========================================================================
+      let adminOverviewData = null;
+      let adminActiveSubtab = "overview";
+      let adminLicenseFilter = "all";
+      let adminLicenseSearch = "";
+      let adminCustomerFilter = "all";
+      let adminCustomerSearch = "";
+      let adminCountdownTimerId = null;
+
+      // Subtab Navigation
+      const adminSubnavBtns = document.querySelectorAll(".admin-subnav-btn");
+      adminSubnavBtns.forEach((btn) => {
         btn.addEventListener("click", () => {
-          adminPresetBtns.forEach((b) => b.classList.remove("active"));
+          adminSubnavBtns.forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          const target = btn.dataset.subtab;
+          adminActiveSubtab = target;
+
+          document.querySelectorAll(".admin-subview").forEach((view) => {
+            view.classList.add("hidden");
+          });
+          const viewEl = document.getElementById(`admin-view-${target}`);
+          if (viewEl) viewEl.classList.remove("hidden");
+        });
+      });
+
+      // Quick Preset Duration Selection
+      const adminPresetV2Btns = document.querySelectorAll(".admin-preset-card-btn");
+      adminPresetV2Btns.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          adminPresetV2Btns.forEach((b) => b.classList.remove("active"));
           btn.classList.add("active");
           const val = btn.dataset.days;
           if (val === "custom") {
@@ -1967,7 +2467,7 @@
         });
       });
 
-      // Admin: Generate License Code
+      // Admin: Generate License Key
       if (adminGenerateBtn) {
         adminGenerateBtn.addEventListener("click", async () => {
           let days = selectedAdminDays;
@@ -1984,7 +2484,7 @@
           }
 
           adminGenerateBtn.disabled = true;
-          adminGenerateBtn.textContent = "Generating Code...";
+          adminGenerateBtn.textContent = "Generating Key...";
           if (adminGenerateMsg) {
             adminGenerateMsg.className = "license-msg hidden";
             adminGenerateMsg.textContent = "";
@@ -2023,23 +2523,28 @@
               throw new Error(data.error || "License generation failed.");
             }
 
-            // Directly write to Firestore from authenticated admin client as permanent source of truth
+            // Write to Firestore if accessible
             if (db && data.license && data.license.code) {
               try {
                 await setDoc(doc(db, "licenses", data.license.code), data.license, { merge: true });
-                console.log("Directly persisted license to Firestore collection licenses:", data.license.code);
               } catch (fsErr) {
-                console.debug("Client Firestore direct save notice:", fsErr.message);
+                console.debug("Client Firestore save notice:", fsErr.message);
               }
             }
 
             if (adminGenerateMsg) {
               adminGenerateMsg.className = "license-msg success";
-              adminGenerateMsg.innerHTML = `Created code: <strong style="user-select:all; color:var(--teal);">${data.license.code}</strong> (${data.license.durationDays} Days)`;
+              adminGenerateMsg.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                  <span>Created Key: <strong style="user-select:all; color:var(--teal); font-family:'DM Mono', monospace; font-size:14px;">${data.license.code}</strong> (${data.license.durationDays} Days, ₦${(data.license.priceNgn || 0).toLocaleString()})</span>
+                  <button type="button" class="admin-copy-key-btn" onclick="navigator.clipboard.writeText('${data.license.code}').then(()=>alert('Key code copied to clipboard!'))">Copy Code</button>
+                </div>
+              `;
               adminGenerateMsg.classList.remove("hidden");
             }
 
-            loadAdminLicenses();
+            // Reload all admin data
+            loadAdminOverview();
           } catch (err) {
             if (adminGenerateMsg) {
               adminGenerateMsg.className = "license-msg error";
@@ -2048,87 +2553,716 @@
             }
           } finally {
             adminGenerateBtn.disabled = false;
-            adminGenerateBtn.textContent = "Generate New License Code";
+            adminGenerateBtn.textContent = "Generate License Key";
           }
         });
       }
 
-      // Admin: Refresh License Audit Table
-      if (adminRefreshLicensesBtn) {
-        adminRefreshLicensesBtn.addEventListener("click", () => {
-          loadAdminLicenses();
+      // Refresh All Buttons
+      const adminRefreshAllBtn = document.getElementById("admin-refresh-all-btn");
+      if (adminRefreshAllBtn) adminRefreshAllBtn.addEventListener("click", () => loadAdminOverview());
+      if (adminRefreshLicensesBtn) adminRefreshLicensesBtn.addEventListener("click", () => loadAdminOverview());
+      const adminRefreshCustomersBtn = document.getElementById("admin-refresh-customers-btn");
+      if (adminRefreshCustomersBtn) adminRefreshCustomersBtn.addEventListener("click", () => loadAdminOverview());
+
+      // Search & Filter Listeners: Licenses
+      const adminSearchLicensesInput = document.getElementById("admin-search-licenses");
+      if (adminSearchLicensesInput) {
+        adminSearchLicensesInput.addEventListener("input", (e) => {
+          adminLicenseSearch = (e.target.value || "").trim().toLowerCase();
+          renderLicensesTable();
         });
       }
+      document.querySelectorAll("[data-filter-license]").forEach((chip) => {
+        chip.addEventListener("click", () => {
+          document.querySelectorAll("[data-filter-license]").forEach((c) => c.classList.remove("active"));
+          chip.classList.add("active");
+          adminLicenseFilter = chip.dataset.filterLicense;
+          renderLicensesTable();
+        });
+      });
 
-      async function loadAdminLicenses() {
-        if (!currentUser || !adminLicensesTbody) return;
+      // Search & Filter Listeners: Customers
+      const adminSearchCustomersInput = document.getElementById("admin-search-customers");
+      if (adminSearchCustomersInput) {
+        adminSearchCustomersInput.addEventListener("input", (e) => {
+          adminCustomerSearch = (e.target.value || "").trim().toLowerCase();
+          renderCustomersTable();
+        });
+      }
+      document.querySelectorAll("[data-filter-customer]").forEach((chip) => {
+        chip.addEventListener("click", () => {
+          document.querySelectorAll("[data-filter-customer]").forEach((c) => c.classList.remove("active"));
+          chip.classList.add("active");
+          adminCustomerFilter = chip.dataset.filterCustomer;
+          renderCustomersTable();
+        });
+      });
 
-        function renderTable(licenses) {
-          if (!licenses || licenses.length === 0) {
-            adminLicensesTbody.innerHTML = `
-              <tr>
-                <td colspan="6" style="text-align: center; color: var(--muted); padding: 18px;">No licenses generated yet.</td>
-              </tr>
-            `;
-            return;
-          }
+      // Primary Admin Data Fetcher
+      async function loadAdminOverview() {
+        if (!currentUser || currentUser.email?.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) return;
 
-          adminLicensesTbody.innerHTML = licenses.map((lic) => {
-            const isUsed = lic.status === "used";
-            const statusBadge = isUsed 
-              ? `<span style="color:#a23e38; font-weight:700;">● USED</span>`
-              : `<span style="color:var(--teal); font-weight:700;">● UNUSED</span>`;
-            
-            return `
-              <tr>
-                <td><span class="code-pill">${lic.code}</span></td>
-                <td>${lic.durationDays} Day(s)</td>
-                <td>${statusBadge}</td>
-                <td><span style="font-size:10px; color:var(--muted);">${lic.redeemedByUid || "—"}</span></td>
-                <td>${lic.redeemedAt ? new Date(lic.redeemedAt).toLocaleString() : "—"}</td>
-                <td>${lic.expiresAt ? new Date(lic.expiresAt).toLocaleString() : "—"}</td>
-              </tr>
-            `;
-          }).join("");
-        }
+        const lastSyncEl = document.getElementById("admin-last-sync-time");
+        if (lastSyncEl) lastSyncEl.textContent = "Syncing with cloud...";
 
-        // 1. Direct Firestore collection read as permanent source of truth
-        if (db) {
-          try {
-            const snap = await getDocs(collection(db, "licenses"));
-            const firestoreList = [];
-            snap.forEach((d) => {
-              if (d.data() && d.data().code) firestoreList.push(d.data());
-            });
-            if (firestoreList.length > 0) {
-              firestoreList.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-              renderTable(firestoreList);
-              return;
-            }
-          } catch (fsErr) {
-            console.debug("Firestore direct getDocs note, falling back to API:", fsErr.message);
-          }
-        }
-
-        // 2. Fallback to API route
         try {
           let authHeader = await getAuthHeader();
           if (!authHeader) return;
 
-          let res = await fetch(getApiUrl("/admin/licenses"), {
+          let res = await fetch(getApiUrl("/admin/overview"), {
             headers: {
               "Accept": "application/json",
               "Authorization": authHeader,
             },
           });
 
+          if (res.status === 401) {
+            const refreshedToken = await getValidIdToken(true);
+            if (refreshedToken) {
+              authHeader = `Bearer ${refreshedToken}`;
+              res = await fetch(getApiUrl("/admin/overview"), {
+                headers: {
+                  "Accept": "application/json",
+                  "Authorization": authHeader,
+                },
+              });
+            }
+          }
+
           const data = await safeFetchJson(res);
-          if (!res.ok) return;
-          const licenses = data.licenses || [];
-          renderTable(licenses);
+          if (res.ok && data) {
+            adminOverviewData = data;
+            if (data.serverTime) {
+              const serverMs = new Date(data.serverTime).getTime();
+              cachedServerOffset = serverMs - Date.now();
+            }
+            if (lastSyncEl) {
+              lastSyncEl.textContent = `Synced: ${new Date().toLocaleTimeString()}`;
+            }
+
+            renderAdminDashboard();
+          }
         } catch (err) {
-          console.debug("Failed to load admin licenses table:", err.message);
+          console.debug("Failed to load admin overview:", err.message);
+          if (lastSyncEl) lastSyncEl.textContent = "Sync failed";
         }
+      }
+
+      // Backward compatible loadAdminLicenses
+      async function loadAdminLicenses() {
+        return loadAdminOverview();
+      }
+
+      // Master Render function for the whole Super Admin Console
+      function renderAdminDashboard() {
+        if (!adminOverviewData) return;
+        const d = adminOverviewData;
+
+        // 1. KPI Cards
+        const s = d.summary || {};
+        const elTotalUsers = document.getElementById("admin-kpi-total-users");
+        if (elTotalUsers) elTotalUsers.textContent = String(s.totalRegisteredCustomers || 0);
+
+        const elActiveLic = document.getElementById("admin-kpi-active-licenses");
+        if (elActiveLic) elActiveLic.textContent = String(s.activeLicenses || 0);
+
+        const elExpiringLic = document.getElementById("admin-kpi-expiring-licenses");
+        if (elExpiringLic) elExpiringLic.textContent = String(s.expiringSoonLicenses || 0);
+
+        const elExpiredLic = document.getElementById("admin-kpi-expired-licenses");
+        if (elExpiredLic) elExpiredLic.textContent = String(s.expiredLicenses || 0);
+
+        const elUnusedKeys = document.getElementById("admin-kpi-unused-keys");
+        if (elUnusedKeys) elUnusedKeys.textContent = String(s.unusedKeys || 0);
+
+        const elUsedKeys = document.getElementById("admin-kpi-used-keys");
+        if (elUsedKeys) elUsedKeys.textContent = String(s.usedKeys || 0);
+
+        const elWaConnected = document.getElementById("admin-kpi-whatsapp-connected");
+        if (elWaConnected) elWaConnected.textContent = String(s.whatsappConnectedCount || 0);
+
+        const elRevenue = document.getElementById("admin-kpi-total-revenue");
+        if (elRevenue) elRevenue.textContent = `₦${Number(s.totalQualifyingSalesNgn || 0).toLocaleString()}`;
+
+        const elRewards = document.getElementById("admin-kpi-reward-days");
+        if (elRewards) elRewards.textContent = `${s.totalRewardsEarnedDays || 0} / ${s.totalRewardsClaimedDays || 0}`;
+
+        const elTotalRef = document.getElementById("admin-kpi-total-referrers");
+        if (elTotalRef) elTotalRef.textContent = String(s.totalReferrers || 0);
+
+        // Subtab Badge Counts
+        const countLic = document.getElementById("admin-count-licenses");
+        if (countLic) countLic.textContent = String(s.totalLicensesGenerated || 0);
+
+        const countCust = document.getElementById("admin-count-customers");
+        if (countCust) countCust.textContent = String(s.totalRegisteredCustomers || 0);
+
+        const countExp = document.getElementById("admin-count-expiring");
+        if (countExp) countExp.textContent = String(s.expiringSoonLicenses || 0);
+
+        const countRef = document.getElementById("admin-count-referrals");
+        if (countRef) countRef.textContent = String(s.totalReferrers || 0);
+
+        const countConn = document.getElementById("admin-count-connected");
+        if (countConn) countConn.textContent = String(s.whatsappConnectedCount || 0);
+
+        // 2. Tier Breakdown
+        renderTierBreakdown();
+
+        // 3. Urgent Expiry Watchlist Preview (Overview) & Full Table (Subtab 4)
+        renderExpiringWatch();
+
+        // 4. Licenses Table & Mobile Cards (Subtab 2)
+        renderLicensesTable();
+
+        // 5. Customers Table & Mobile Cards (Subtab 3)
+        renderCustomersTable();
+
+        // 6. Referrals Audit (Subtab 5)
+        renderReferralsTable();
+
+        // 7. System & WhatsApp Health (Subtab 6)
+        renderSystemHealth();
+
+        // 8. Event Activity Timeline (Subtab 7)
+        renderActivityTimeline();
+
+        // 9. Start live countdown interval
+        startAdminLiveTimers();
+      }
+
+      // Render Tier Breakdown
+      function renderTierBreakdown() {
+        const grid = document.getElementById("admin-tier-breakdown-grid");
+        if (!grid || !adminOverviewData) return;
+        const tiers = adminOverviewData.tiers || [];
+
+        grid.innerHTML = tiers.map((t) => {
+          return `
+            <div style="padding: 12px; border-radius: 6px; background: var(--admin-neutral-50); border: 1px solid var(--admin-line);">
+              <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
+                <strong style="font-size: 13px; color: var(--ink);">${t.name}</strong>
+                <span style="font-size: 11px; font-weight: 700; color: var(--teal); font-family: 'DM Mono', monospace;">${t.priceFormatted}</span>
+              </div>
+              <div style="font-size: 11px; color: var(--muted); display: flex; justify-content: space-between;">
+                <span>Total Keys: <strong>${t.countTotal}</strong></span>
+                <span>Unused: <strong style="color: #0f766e;">${t.countUnused}</strong></span>
+              </div>
+            </div>
+          `;
+        }).join("");
+      }
+
+      // Render Urgent Expiry Watch
+      function renderExpiringWatch() {
+        if (!adminOverviewData) return;
+        const expiringList = adminOverviewData.expiringSoon || [];
+
+        // 1. Overview Tab Preview List
+        const previewEl = document.getElementById("admin-overview-expiring-list");
+        if (previewEl) {
+          if (expiringList.length === 0) {
+            previewEl.innerHTML = `
+              <div style="text-align: center; color: var(--muted); font-size: 12px; padding: 18px;">
+                🟢 All active customer subscriptions have healthy time remaining.
+              </div>
+            `;
+          } else {
+            previewEl.innerHTML = expiringList.slice(0, 5).map((item) => {
+              const remainingText = item.remainingMs > 0 ? formatRemainingCountdown(item.remainingMs) : "Expired";
+              const isUrgent = item.remainingMs > 0 && item.remainingMs < 24 * 3600 * 1000;
+              const badgeClass = isUrgent ? "badge-expiring" : "badge-expired";
+              const phoneDisplay = item.whatsappNumber ? `+${item.whatsappNumber}` : "No WA Linked";
+
+              return `
+                <div class="admin-expiring-card-item">
+                  <div style="display: flex; flex-direction: column; gap: 2px;">
+                    <strong style="font-size: 12px; color: var(--ink);">${item.email}</strong>
+                    <span style="font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace;">${phoneDisplay} • Key: ${item.code}</span>
+                  </div>
+                  <div style="text-align: right; display: flex; flex-direction: column; gap: 4px; align-items: flex-end;">
+                    <span class="admin-badge ${badgeClass}">${remainingText}</span>
+                    <span style="font-size: 10px; color: var(--muted);">Expires: ${new Date(item.expiresAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              `;
+            }).join("");
+          }
+        }
+
+        // 2. Full Expiring Queue (Subtab 4)
+        const countEl = document.getElementById("admin-expiring-queue-count");
+        if (countEl) countEl.textContent = `${expiringList.length} Account${expiringList.length === 1 ? "" : "s"}`;
+
+        const tbody = document.getElementById("admin-expiring-tbody");
+        if (tbody) {
+          if (expiringList.length === 0) {
+            tbody.innerHTML = `
+              <tr>
+                <td colspan="9" style="text-align: center; color: var(--muted); padding: 24px;">
+                  No licenses currently in the urgent expiry window (&lt; 48 hours or recent).
+                </td>
+              </tr>
+            `;
+          } else {
+            tbody.innerHTML = expiringList.map((item, idx) => {
+              const remainingText = item.remainingMs > 0 ? formatRemainingCountdown(item.remainingMs) : "Expired";
+              const isExpired = item.remainingMs <= 0;
+              const badge = isExpired ? `<span class="admin-badge badge-expired">EXPIRED</span>` : `<span class="admin-badge badge-expiring">EXPIRING SOON</span>`;
+              const phone = item.whatsappNumber || "";
+              const waLink = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(`Hello! Your Solvatech WhatsApp Bot license (${item.code}) is ${isExpired ? "expired" : "expiring soon"}. Contact us to renew your access.`)}` : null;
+
+              return `
+                <tr>
+                  <td>${idx + 1}</td>
+                  <td><strong>${item.email}</strong></td>
+                  <td><span class="code-pill">${phone ? `+${phone}` : "—"}</span></td>
+                  <td><span class="code-pill" style="font-weight:700;">${item.code}</span></td>
+                  <td>${item.durationDays} Days</td>
+                  <td>${new Date(item.expiresAt).toLocaleString()}</td>
+                  <td><strong style="color: ${isExpired ? '#b91c1c' : '#b45309'};">${remainingText}</strong></td>
+                  <td>${badge}</td>
+                  <td>
+                    ${waLink ? `<a href="${waLink}" target="_blank" rel="noopener noreferrer" class="admin-action-btn btn-wa-chat">💬 Chat on WA</a>` : `<span style="color:var(--muted); font-size:11px;">No Phone</span>`}
+                  </td>
+                </tr>
+              `;
+            }).join("");
+          }
+        }
+      }
+
+      // Render Licenses Table (Subtab 2)
+      function renderLicensesTable() {
+        if (!adminOverviewData) return;
+        const allLicenses = adminOverviewData.licenses || [];
+
+        // Count chips
+        const cAll = allLicenses.length;
+        const cUnused = allLicenses.filter((l) => l.status === "unused").length;
+        const cActive = allLicenses.filter((l) => l.status === "used" && l.computedStatus === "active").length;
+        const cExpiring = allLicenses.filter((l) => l.computedStatus === "expiring_soon").length;
+        const cExpired = allLicenses.filter((l) => l.status === "used" && l.computedStatus === "expired").length;
+
+        const elCAll = document.getElementById("count-lic-all");
+        if (elCAll) elCAll.textContent = String(cAll);
+        const elCUnused = document.getElementById("count-lic-unused");
+        if (elCUnused) elCUnused.textContent = String(cUnused);
+        const elCActive = document.getElementById("count-lic-active");
+        if (elCActive) elCActive.textContent = String(cActive);
+        const elCExpiring = document.getElementById("count-lic-expiring");
+        if (elCExpiring) elCExpiring.textContent = String(cExpiring);
+        const elCExpired = document.getElementById("count-lic-expired");
+        if (elCExpired) elCExpired.textContent = String(cExpired);
+
+        // Filter list
+        let filtered = allLicenses.filter((lic) => {
+          // Status filter
+          if (adminLicenseFilter === "unused" && lic.status !== "unused") return false;
+          if (adminLicenseFilter === "active" && lic.computedStatus !== "active") return false;
+          if (adminLicenseFilter === "expiring" && lic.computedStatus !== "expiring_soon") return false;
+          if (adminLicenseFilter === "expired" && lic.computedStatus !== "expired") return false;
+
+          // Search filter
+          if (adminLicenseSearch) {
+            const q = adminLicenseSearch;
+            const code = (lic.code || "").toLowerCase();
+            const email = (lic.redeemedByEmail || "").toLowerCase();
+            const uid = (lic.redeemedByUid || "").toLowerCase();
+            const phone = (lic.whatsappNumber || "").toLowerCase();
+            if (!code.includes(q) && !email.includes(q) && !uid.includes(q) && !phone.includes(q)) {
+              return false;
+            }
+          }
+          return true;
+        });
+
+        // 1. Desktop Table
+        const tbody = document.getElementById("admin-licenses-tbody");
+        if (tbody) {
+          if (filtered.length === 0) {
+            tbody.innerHTML = `
+              <tr>
+                <td colspan="13" style="text-align: center; color: var(--muted); padding: 24px;">
+                  No licenses match the selected filter or search term.
+                </td>
+              </tr>
+            `;
+          } else {
+            tbody.innerHTML = filtered.map((lic, idx) => {
+              const isUsed = lic.status === "used";
+              let badgeHtml = `<span class="admin-badge badge-unused">UNUSED</span>`;
+              if (isUsed) {
+                if (lic.computedStatus === "active") badgeHtml = `<span class="admin-badge badge-active">ACTIVE</span>`;
+                else if (lic.computedStatus === "expiring_soon") badgeHtml = `<span class="admin-badge badge-expiring">EXPIRING</span>`;
+                else badgeHtml = `<span class="admin-badge badge-expired">EXPIRED</span>`;
+              }
+
+              const createdStr = lic.createdAt ? new Date(lic.createdAt).toLocaleDateString() : "—";
+              const expiresStr = lic.expiresAt ? new Date(lic.expiresAt).toLocaleString() : "—";
+              const remainingStr = isUsed ? (lic.remainingMs > 0 ? formatRemainingCountdown(lic.remainingMs) : "Expired") : "Unused Key";
+
+              return `
+                <tr>
+                  <td>${idx + 1}</td>
+                  <td>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <span class="code-pill" style="font-weight: 700; color: var(--teal);">${lic.code}</span>
+                      <button type="button" class="admin-copy-key-btn" onclick="navigator.clipboard.writeText('${lic.code}').then(()=>alert('Copied ${lic.code}'))">Copy</button>
+                    </div>
+                  </td>
+                  <td>${badgeHtml}</td>
+                  <td><strong>${lic.tierName || `${lic.durationDays}D`}</strong></td>
+                  <td>${lic.durationDays} Days</td>
+                  <td style="font-family:'DM Mono', monospace; font-weight:700;">₦${(lic.priceNgn || 0).toLocaleString()}</td>
+                  <td>${createdStr}</td>
+                  <td><span style="font-size:11px; text-transform:uppercase; color:var(--muted);">${lic.status}</span></td>
+                  <td><span class="code-pill" style="font-size:10px;">${lic.redeemedByUid ? lic.redeemedByUid.slice(0, 8) + "..." : "—"}</span></td>
+                  <td>${lic.redeemedByEmail || "—"}</td>
+                  <td>${lic.whatsappNumber ? `+${lic.whatsappNumber}` : "—"}</td>
+                  <td>${expiresStr}</td>
+                  <td><strong style="color: ${lic.remainingMs > 0 ? 'var(--teal)' : 'var(--muted)'};">${remainingStr}</strong></td>
+                </tr>
+              `;
+            }).join("");
+          }
+        }
+
+        // 2. Mobile Cards
+        const cardsEl = document.getElementById("admin-licenses-cards");
+        if (cardsEl) {
+          if (filtered.length === 0) {
+            cardsEl.innerHTML = `<div style="text-align: center; color: var(--muted); padding: 20px;">No licenses found.</div>`;
+          } else {
+            cardsEl.innerHTML = filtered.map((lic) => {
+              const isUsed = lic.status === "used";
+              let badgeHtml = `<span class="admin-badge badge-unused">UNUSED</span>`;
+              if (isUsed) {
+                if (lic.computedStatus === "active") badgeHtml = `<span class="admin-badge badge-active">ACTIVE</span>`;
+                else if (lic.computedStatus === "expiring_soon") badgeHtml = `<span class="admin-badge badge-expiring">EXPIRING</span>`;
+                else badgeHtml = `<span class="admin-badge badge-expired">EXPIRED</span>`;
+              }
+              const remainingStr = isUsed ? (lic.remainingMs > 0 ? formatRemainingCountdown(lic.remainingMs) : "Expired") : "Unused Key";
+
+              return `
+                <div class="admin-card-row">
+                  <div class="admin-card-row-top">
+                    <div>
+                      <span class="code-pill" style="font-weight: 700; color: var(--teal); font-size: 13px;">${lic.code}</span>
+                      <button type="button" class="admin-copy-key-btn" style="margin-left:6px;" onclick="navigator.clipboard.writeText('${lic.code}')">Copy</button>
+                    </div>
+                    ${badgeHtml}
+                  </div>
+                  <div class="admin-card-grid-meta">
+                    <div><span class="admin-card-label">Tier / Price:</span> <strong>${lic.tierName || `${lic.durationDays}D`} (₦${(lic.priceNgn || 0).toLocaleString()})</strong></div>
+                    <div><span class="admin-card-label">Remaining:</span> <strong>${remainingStr}</strong></div>
+                    <div><span class="admin-card-label">Redeemed By:</span> <span>${lic.redeemedByEmail || "—"}</span></div>
+                    <div><span class="admin-card-label">WhatsApp:</span> <span>${lic.whatsappNumber ? `+${lic.whatsappNumber}` : "—"}</span></div>
+                  </div>
+                </div>
+              `;
+            }).join("");
+          }
+        }
+      }
+
+      // Render Customers Directory Table (Subtab 3)
+      function renderCustomersTable() {
+        if (!adminOverviewData) return;
+        const allCustomers = adminOverviewData.customers || [];
+
+        // Count chips
+        const cAll = allCustomers.length;
+        const cActive = allCustomers.filter((c) => c.licenseStatus === "active" || c.hasActiveLicense).length;
+        const cExpired = allCustomers.filter((c) => c.licenseStatus === "expired").length;
+        const cNoLicense = allCustomers.filter((c) => !c.hasActiveLicense && c.licenseStatus !== "expired").length;
+        const cConnected = allCustomers.filter((c) => c.whatsappConnected).length;
+
+        const elCAll = document.getElementById("count-cust-all");
+        if (elCAll) elCAll.textContent = String(cAll);
+        const elCActive = document.getElementById("count-cust-active");
+        if (elCActive) elCActive.textContent = String(cActive);
+        const elCExpired = document.getElementById("count-cust-expired");
+        if (elCExpired) elCExpired.textContent = String(cExpired);
+        const elCNoLic = document.getElementById("count-cust-nolicense");
+        if (elCNoLic) elCNoLic.textContent = String(cNoLicense);
+        const elCConn = document.getElementById("count-cust-connected");
+        if (elCConn) elCConn.textContent = String(cConnected);
+
+        // Filter list
+        let filtered = allCustomers.filter((cust) => {
+          if (adminCustomerFilter === "active" && !(cust.licenseStatus === "active" || cust.hasActiveLicense)) return false;
+          if (adminCustomerFilter === "expired" && cust.licenseStatus !== "expired") return false;
+          if (adminCustomerFilter === "nolicense" && (cust.hasActiveLicense || cust.licenseStatus === "expired")) return false;
+          if (adminCustomerFilter === "connected" && !cust.whatsappConnected) return false;
+
+          if (adminCustomerSearch) {
+            const q = adminCustomerSearch;
+            const email = (cust.email || "").toLowerCase();
+            const uid = (cust.uid || "").toLowerCase();
+            const phone = (cust.lockedPhoneNumber || cust.connectedPhoneNumber || "").toLowerCase();
+            const ref = (cust.referralCode || "").toLowerCase();
+            const byRef = (cust.referredByCode || "").toLowerCase();
+            if (!email.includes(q) && !uid.includes(q) && !phone.includes(q) && !ref.includes(q) && !byRef.includes(q)) {
+              return false;
+            }
+          }
+          return true;
+        });
+
+        // 1. Desktop Table
+        const tbody = document.getElementById("admin-customers-tbody");
+        if (tbody) {
+          if (filtered.length === 0) {
+            tbody.innerHTML = `
+              <tr>
+                <td colspan="13" style="text-align: center; color: var(--muted); padding: 24px;">
+                  No customer records match the selected filter.
+                </td>
+              </tr>
+            `;
+          } else {
+            tbody.innerHTML = filtered.map((cust, idx) => {
+              const waConnected = cust.whatsappConnected;
+              const waBadge = waConnected 
+                ? `<span class="admin-badge badge-active">CONNECTED</span>` 
+                : `<span class="admin-badge badge-neutral">DISCONNECTED</span>`;
+
+              let licBadge = `<span class="admin-badge badge-neutral">NO LICENSE</span>`;
+              if (cust.hasActiveLicense || cust.licenseStatus === "active") {
+                licBadge = `<span class="admin-badge badge-active">ACTIVE (${cust.licenseDurationDays || 0}D)</span>`;
+              } else if (cust.licenseStatus === "expired") {
+                licBadge = `<span class="admin-badge badge-expired">EXPIRED</span>`;
+              }
+
+              const remainingStr = cust.remainingMs > 0 ? formatRemainingCountdown(cust.remainingMs) : (cust.hasActiveLicense ? "Active" : "—");
+              const phone = cust.lockedPhoneNumber || cust.connectedPhoneNumber || "";
+              const phoneDisplay = phone ? `+${phone}` : "—";
+              const expiresStr = cust.expiresAt ? new Date(cust.expiresAt).toLocaleDateString() : "—";
+              const salesStr = `₦${Number(cust.qualifyingSalesNgn || 0).toLocaleString()}`;
+
+              return `
+                <tr>
+                  <td>${idx + 1}</td>
+                  <td>
+                    <div>
+                      <strong>${cust.email || "Registered User"}</strong>
+                      <div style="font-size: 10px; color: var(--muted);">Created: ${cust.createdAt ? new Date(cust.createdAt).toLocaleDateString() : "—"}</div>
+                    </div>
+                  </td>
+                  <td><span class="code-pill" style="font-size:10px;">${cust.uid ? cust.uid.slice(0, 8) + "..." : "—"}</span></td>
+                  <td>${phoneDisplay}</td>
+                  <td>${waBadge}</td>
+                  <td><span class="code-pill">${cust.activeLicenseCode || "—"}</span></td>
+                  <td>${licBadge}</td>
+                  <td><strong>${remainingStr}</strong></td>
+                  <td>${expiresStr}</td>
+                  <td><strong>${cust.referralCode || "—"}</strong></td>
+                  <td><span style="font-size:11px; color:var(--muted);">${cust.referredByCode || "Direct"}</span></td>
+                  <td style="font-weight:700; color:var(--teal);">${salesStr}</td>
+                  <td>${cust.availableRewardDays || 0}D Avail</td>
+                </tr>
+              `;
+            }).join("");
+          }
+        }
+
+        // 2. Mobile Cards
+        const cardsEl = document.getElementById("admin-customers-cards");
+        if (cardsEl) {
+          if (filtered.length === 0) {
+            cardsEl.innerHTML = `<div style="text-align: center; color: var(--muted); padding: 20px;">No customers found.</div>`;
+          } else {
+            cardsEl.innerHTML = filtered.map((cust) => {
+              const waConnected = cust.whatsappConnected;
+              const waBadge = waConnected ? `<span class="admin-badge badge-active">WA CONNECTED</span>` : `<span class="admin-badge badge-neutral">WA OFF</span>`;
+              const remainingStr = cust.remainingMs > 0 ? formatRemainingCountdown(cust.remainingMs) : (cust.hasActiveLicense ? "Active" : "No License");
+
+              return `
+                <div class="admin-card-row">
+                  <div class="admin-card-row-top">
+                    <strong>${cust.email}</strong>
+                    ${waBadge}
+                  </div>
+                  <div class="admin-card-grid-meta">
+                    <div><span class="admin-card-label">WhatsApp:</span> <span>${cust.lockedPhoneNumber ? `+${cust.lockedPhoneNumber}` : "Not locked"}</span></div>
+                    <div><span class="admin-card-label">License:</span> <span>${cust.activeLicenseCode || "None"} (${remainingStr})</span></div>
+                    <div><span class="admin-card-label">Ref Code:</span> <strong>${cust.referralCode || "—"}</strong></div>
+                    <div><span class="admin-card-label">Referred By:</span> <span>${cust.referredByCode || "Direct"}</span></div>
+                  </div>
+                </div>
+              `;
+            }).join("");
+          }
+        }
+      }
+
+      // Render Referrals Audit (Subtab 5)
+      function renderReferralsTable() {
+        if (!adminOverviewData) return;
+        const refData = adminOverviewData.referrals || {};
+        const referrers = refData.referrers || [];
+
+        const tbody = document.getElementById("admin-referrals-tbody");
+        if (tbody) {
+          if (referrers.length === 0) {
+            tbody.innerHTML = `
+              <tr>
+                <td colspan="9" style="text-align: center; color: var(--muted); padding: 24px;">
+                  No active referral accounts registered yet.
+                </td>
+              </tr>
+            `;
+          } else {
+            tbody.innerHTML = referrers.map((r, idx) => {
+              const sales = `₦${Number(r.qualifyingSalesNgn || 0).toLocaleString()}`;
+              const progressPct = Math.min(100, Math.max(0, Math.round(((r.progressNgn || 0) / 1000) * 100)));
+
+              return `
+                <tr>
+                  <td>${idx + 1}</td>
+                  <td>
+                    <strong>${r.email || r.uid || "Referrer"}</strong>
+                    <div style="font-size:10px; color:var(--muted); font-family:'DM Mono', monospace;">${r.uid}</div>
+                  </td>
+                  <td><strong style="color:var(--teal);">${r.referralCode || "—"}</strong></td>
+                  <td>${r.referredUsersCount || 0}</td>
+                  <td style="font-weight:700; color:var(--teal);">${sales}</td>
+                  <td>${r.earnedDaysTotal || 0} Days</td>
+                  <td>${r.claimedDaysTotal || 0} Days</td>
+                  <td><strong style="color:#0f766e;">${r.availableDays || 0} Days</strong></td>
+                  <td>
+                    <div style="font-size:10px; margin-bottom:2px; color:var(--muted);">₦${(r.progressNgn || 0).toLocaleString()} / ₦1,000 (${progressPct}%)</div>
+                    <div class="admin-progress-bar-wrap">
+                      <div class="admin-progress-bar-fill" style="width: ${progressPct}%;"></div>
+                    </div>
+                  </td>
+                </tr>
+              `;
+            }).join("");
+          }
+        }
+      }
+
+      // Render System Health (Subtab 6)
+      function renderSystemHealth() {
+        if (!adminOverviewData) return;
+        const sys = adminOverviewData.system || {};
+        const wa = adminOverviewData.whatsapp || {};
+
+        const uptimeEl = document.getElementById("admin-sys-uptime");
+        if (uptimeEl) uptimeEl.textContent = sys.uptimeFormatted || "—";
+
+        const sessEl = document.getElementById("admin-sys-controllers");
+        if (sessEl) sessEl.textContent = String(wa.totalActiveControllers || 0);
+
+        const locksEl = document.getElementById("admin-sys-locks");
+        if (locksEl) locksEl.textContent = String(wa.totalLockedNumbers || 0);
+
+        const platEl = document.getElementById("admin-sys-platform");
+        if (platEl) platEl.textContent = sys.platform || "Linux / Node.js";
+
+        // WhatsApp sessions list
+        const tbody = document.getElementById("admin-whatsapp-tbody");
+        if (tbody) {
+          const sessions = wa.sessions || [];
+          if (sessions.length === 0) {
+            tbody.innerHTML = `
+              <tr>
+                <td colspan="6" style="text-align: center; color: var(--muted); padding: 24px;">
+                  No active WhatsApp sessions or phone locks registered.
+                </td>
+              </tr>
+            `;
+          } else {
+            tbody.innerHTML = sessions.map((s, idx) => {
+              const isConn = s.connectionState === "open" || s.connectionState === "connected";
+              const badge = isConn 
+                ? `<span class="admin-badge badge-active">SOCKET OPEN</span>` 
+                : `<span class="admin-badge badge-neutral">${s.connectionState || "DISCONNECTED"}</span>`;
+
+              return `
+                <tr>
+                  <td>${idx + 1}</td>
+                  <td><span class="code-pill">${s.uid ? s.uid.slice(0, 10) + "..." : "—"}</span></td>
+                  <td><strong style="font-family:'DM Mono', monospace;">${s.lockedPhoneNumber ? `+${s.lockedPhoneNumber}` : "—"}</strong></td>
+                  <td>${badge}</td>
+                  <td>${s.connectedPhoneNumber ? `+${s.connectedPhoneNumber}` : "—"}</td>
+                  <td>${s.lastActive ? new Date(s.lastActive).toLocaleString() : "—"}</td>
+                </tr>
+              `;
+            }).join("");
+          }
+        }
+      }
+
+      // Render Activity Timeline (Subtab 7)
+      function renderActivityTimeline() {
+        if (!adminOverviewData) return;
+        const timelineEl = document.getElementById("admin-activity-timeline");
+        if (!timelineEl) return;
+
+        const events = adminOverviewData.activity || [];
+        if (events.length === 0) {
+          timelineEl.innerHTML = `<div style="text-align: center; color: var(--muted); padding: 24px;">No system events recorded yet.</div>`;
+          return;
+        }
+
+        timelineEl.innerHTML = events.map((ev) => {
+          let dotColor = "var(--teal)";
+          if (ev.type === "redemption") dotColor = "#15803d";
+          else if (ev.type === "generation") dotColor = "#6d28d9";
+          else if (ev.type === "expiry") dotColor = "#b91c1c";
+
+          const dt = ev.timestamp ? new Date(ev.timestamp).toLocaleString() : "—";
+          return `
+            <div class="admin-timeline-item">
+              <div class="admin-timeline-dot" style="background: ${dotColor};"></div>
+              <div class="admin-timeline-content">
+                <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                  <strong style="font-size: 13px; color: var(--ink);">${ev.title || "System Event"}</strong>
+                  <span style="font-size: 10px; color: var(--muted); font-family: 'DM Mono', monospace;">${dt}</span>
+                </div>
+                <p style="font-size: 12px; color: var(--muted); margin: 2px 0 0;">${ev.description || ""}</p>
+              </div>
+            </div>
+          `;
+        }).join("");
+      }
+
+      // Start live countdown loop for admin data
+      function startAdminLiveTimers() {
+        if (adminCountdownTimerId) clearInterval(adminCountdownTimerId);
+        adminCountdownTimerId = setInterval(() => {
+          if (!adminOverviewData) return;
+          const nowAdjusted = Date.now() + cachedServerOffset;
+
+          // Update remainingMs on items in memory
+          if (Array.isArray(adminOverviewData.licenses)) {
+            adminOverviewData.licenses.forEach((lic) => {
+              if (lic.expiresAt) {
+                lic.remainingMs = Math.max(0, new Date(lic.expiresAt).getTime() - nowAdjusted);
+              }
+            });
+          }
+
+          if (Array.isArray(adminOverviewData.customers)) {
+            adminOverviewData.customers.forEach((cust) => {
+              if (cust.expiresAt) {
+                cust.remainingMs = Math.max(0, new Date(cust.expiresAt).getTime() - nowAdjusted);
+              }
+            });
+          }
+
+          if (Array.isArray(adminOverviewData.expiringSoon)) {
+            adminOverviewData.expiringSoon.forEach((item) => {
+              if (item.expiresAt) {
+                item.remainingMs = Math.max(0, new Date(item.expiresAt).getTime() - nowAdjusted);
+              }
+            });
+          }
+        }, 5000);
       }
 
       // =========================================================================
