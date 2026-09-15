@@ -2599,6 +2599,205 @@
         });
       });
 
+      // Modal Dialog Controls
+      const adminDetailModal = document.getElementById("admin-detail-modal");
+      const adminModalTitle = document.getElementById("admin-modal-title");
+      const adminModalBody = document.getElementById("admin-modal-body");
+      const adminModalCloseBtn = document.getElementById("admin-modal-close-btn");
+
+      function closeAdminDetailModal() {
+        if (adminDetailModal) adminDetailModal.classList.add("hidden");
+      }
+
+      if (adminModalCloseBtn) {
+        adminModalCloseBtn.addEventListener("click", closeAdminDetailModal);
+      }
+      if (adminDetailModal) {
+        adminDetailModal.addEventListener("click", (e) => {
+          if (e.target === adminDetailModal) closeAdminDetailModal();
+        });
+      }
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && adminDetailModal && !adminDetailModal.classList.contains("hidden")) {
+          closeAdminDetailModal();
+        }
+      });
+
+      // Format countdown adhering strictly to user requested format
+      function formatAdminCountdown(ms, isLifetime = false, expiresAt = null) {
+        if (isLifetime) return "LIFETIME";
+        if (expiresAt) {
+          const targetMs = new Date(expiresAt).getTime();
+          const nowAdjusted = Date.now() + cachedServerOffset;
+          ms = targetMs - nowAdjusted;
+        }
+        if (ms == null) return "—";
+
+        if (ms > 0) {
+          const totalSeconds = Math.floor(ms / 1000);
+          const days = Math.floor(totalSeconds / 86400);
+          const hours = Math.floor((totalSeconds % 86400) / 3600);
+          const minutes = Math.floor((totalSeconds % 3600) / 60);
+          const seconds = totalSeconds % 60;
+
+          if (days >= 1) {
+            if (hours > 0) {
+              if (days < 7 && minutes > 0) {
+                return `${days} days ${hours} hours ${minutes} minutes`;
+              }
+              return `${days} days ${hours} hours`;
+            }
+            return `${days} day${days === 1 ? "" : "s"}`;
+          }
+          if (hours >= 1) {
+            if (minutes > 0) return `${hours} hours ${minutes} minutes`;
+            return `${hours} hour${hours === 1 ? "" : "s"}`;
+          }
+          if (minutes >= 1) {
+            if (seconds > 0) return `${minutes} minutes ${seconds} seconds`;
+            return `${minutes} minute${minutes === 1 ? "" : "s"}`;
+          }
+          return `${seconds} seconds`;
+        } else {
+          const pastMs = Math.abs(ms);
+          const pastSeconds = Math.floor(pastMs / 1000);
+          const pastMinutes = Math.floor(pastSeconds / 60);
+          const pastHours = Math.floor(pastSeconds / 3600);
+          const pastDays = Math.floor(pastSeconds / 86400);
+
+          if (pastDays >= 1) return `EXPIRED ${pastDays} day${pastDays === 1 ? "" : "s"} ago`;
+          if (pastHours >= 1) return `EXPIRED ${pastHours} hour${pastHours === 1 ? "" : "s"} ago`;
+          if (pastMinutes >= 1) return `EXPIRED ${pastMinutes} minutes ago`;
+          return `EXPIRED ${pastSeconds} seconds ago`;
+        }
+      }
+
+      // Open License Detail Modal
+      window.openLicenseDetail = function(code) {
+        if (!adminOverviewData) return;
+        const allLicenses = adminOverviewData.licenses || [];
+        const lic = allLicenses.find((l) => l.code === code);
+        if (!lic) return;
+
+        if (adminModalTitle) adminModalTitle.textContent = `License Key: ${lic.code}`;
+        if (adminModalBody) {
+          const isUsed = lic.status === "used";
+          const isLifetime = lic.durationDays >= 9999;
+          let badgeHtml = `<span class="admin-badge badge-unused"><span class="badge-dot"></span>UNUSED</span>`;
+          if (isUsed) {
+            if (isLifetime) badgeHtml = `<span class="admin-badge badge-lifetime"><span class="badge-dot"></span>LIFETIME</span>`;
+            else if (lic.computedStatus === "active") badgeHtml = `<span class="admin-badge badge-active"><span class="badge-dot"></span>ACTIVE</span>`;
+            else if (lic.computedStatus === "expiring_soon") badgeHtml = `<span class="admin-badge badge-expiring"><span class="badge-dot"></span>EXPIRING SOON</span>`;
+            else badgeHtml = `<span class="admin-badge badge-expired"><span class="badge-dot"></span>EXPIRED</span>`;
+          }
+
+          const countdownText = isUsed ? formatAdminCountdown(lic.remainingMs, isLifetime, lic.expiresAt) : "Key Not Redeemed";
+          const phone = lic.whatsappNumber || "";
+          const waLink = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(`Hello! Regarding your Solvatech Bot license (${lic.code}). Status: ${lic.computedStatus ? lic.computedStatus.toUpperCase() : 'ACTIVE'}.`)}` : null;
+
+          adminModalBody.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--admin-card-border);">
+              <div>
+                <span class="code-pill" style="font-size: 16px; font-weight: 800; color: var(--teal);">${lic.code}</span>
+                <button type="button" class="admin-copy-key-btn" style="margin-left: 8px;" onclick="navigator.clipboard.writeText('${lic.code}').then(()=>alert('License key copied!'))">Copy Code</button>
+              </div>
+              <div>${badgeHtml}</div>
+            </div>
+
+            <h4 style="font-size: 12px; text-transform: uppercase; color: var(--muted); letter-spacing: 0.05em; margin: 12px 0 8px;">1. License Specifications</h4>
+            <div class="admin-detail-row"><span class="admin-detail-label">Subscription Tier:</span> <span class="admin-detail-value">${lic.tierName || `${lic.durationDays} Days Plan`}</span></div>
+            <div class="admin-detail-row"><span class="admin-detail-label">Duration Days:</span> <span class="admin-detail-value">${lic.durationDays} Days</span></div>
+            <div class="admin-detail-row"><span class="admin-detail-label">Price / Value:</span> <span class="admin-detail-value" style="color: var(--teal);">₦${Number(lic.priceNgn || 0).toLocaleString()}</span></div>
+            <div class="admin-detail-row"><span class="admin-detail-label">Created At:</span> <span class="admin-detail-value">${lic.createdAt ? new Date(lic.createdAt).toLocaleString() : "—"}</span></div>
+            <div class="admin-detail-row"><span class="admin-detail-label">State:</span> <span class="admin-detail-value" style="text-transform: uppercase;">${lic.status || "unused"}</span></div>
+
+            <h4 style="font-size: 12px; text-transform: uppercase; color: var(--muted); letter-spacing: 0.05em; margin: 16px 0 8px;">2. Customer & Device Information</h4>
+            <div class="admin-detail-row"><span class="admin-detail-label">Customer Email:</span> <span class="admin-detail-value"><strong>${lic.customerEmail || lic.redeemedByEmail || "Not Claimed"}</strong></span></div>
+            <div class="admin-detail-row"><span class="admin-detail-label">Firebase UID:</span> <span class="admin-detail-value" style="font-family: 'DM Mono', monospace; font-size: 11px;">${lic.redeemedByUid || "—"}</span></div>
+            <div class="admin-detail-row"><span class="admin-detail-label">WhatsApp Number:</span> <span class="admin-detail-value">${phone ? `+${phone}` : "No WA Linked"}</span></div>
+
+            <h4 style="font-size: 12px; text-transform: uppercase; color: var(--muted); letter-spacing: 0.05em; margin: 16px 0 8px;">3. Activation & Expiration Countdown</h4>
+            <div class="admin-detail-row"><span class="admin-detail-label">Redeemed At:</span> <span class="admin-detail-value">${lic.redeemedAt ? new Date(lic.redeemedAt).toLocaleString() : "—"}</span></div>
+            <div class="admin-detail-row"><span class="admin-detail-label">Expiration Date:</span> <span class="admin-detail-value">${lic.expiresAt ? new Date(lic.expiresAt).toLocaleString() : "—"}</span></div>
+            <div class="admin-detail-row"><span class="admin-detail-label">Live Time Remaining:</span> <span class="admin-detail-value" style="color: ${lic.remainingMs > 0 ? '#0f766e' : '#b91c1c'};" data-admin-expiry="${lic.expiresAt || ''}">${countdownText}</span></div>
+
+            <div style="margin-top: 20px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;">
+              ${waLink ? `<a href="${waLink}" target="_blank" rel="noopener noreferrer" class="admin-action-btn btn-wa-chat" style="padding: 8px 14px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">💬 Open WhatsApp Chat</a>` : ''}
+              <button type="button" class="admin-preset-btn" style="padding: 8px 14px;" onclick="document.getElementById('admin-detail-modal').classList.add('hidden')">Close Details</button>
+            </div>
+          `;
+          if (adminDetailModal) adminDetailModal.classList.remove("hidden");
+        }
+      };
+
+      // Open Customer Detail Modal
+      window.openCustomerDetail = function(uid) {
+        if (!adminOverviewData) return;
+        const allCustomers = adminOverviewData.customers || [];
+        const cust = allCustomers.find((c) => c.uid === uid);
+        if (!cust) return;
+
+        if (adminModalTitle) adminModalTitle.textContent = `Customer Profile: ${cust.email || cust.uid}`;
+        if (adminModalBody) {
+          const isLifetime = cust.uid === "admin" || cust.licenseStatus === "lifetime";
+          const countdownText = cust.expiresAt ? formatAdminCountdown(cust.remainingMs, isLifetime, cust.expiresAt) : (cust.hasActiveLicense ? "Active" : "No Active License");
+          const phone = cust.phoneNumber || cust.lockedPhoneNumber || cust.connectedPhoneNumber || "";
+          const waLink = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(`Hello ${cust.displayName || ''}! This is Solvatech Bot Support regarding your account.`)}` : null;
+
+          let licBadge = `<span class="admin-badge badge-neutral"><span class="badge-dot"></span>NO LICENSE</span>`;
+          if (isLifetime) licBadge = `<span class="admin-badge badge-lifetime"><span class="badge-dot"></span>LIFETIME</span>`;
+          else if (cust.licenseStatus === "active" || cust.hasActiveLicense) licBadge = `<span class="admin-badge badge-active"><span class="badge-dot"></span>ACTIVE</span>`;
+          else if (cust.licenseStatus === "expiring_soon") licBadge = `<span class="admin-badge badge-expiring"><span class="badge-dot"></span>EXPIRING SOON</span>`;
+          else if (cust.licenseStatus === "expired") licBadge = `<span class="admin-badge badge-expired"><span class="badge-dot"></span>EXPIRED</span>`;
+
+          const waBadge = cust.whatsappStatus === "connected" || cust.whatsappConnected
+            ? `<span class="admin-badge badge-connected"><span class="badge-dot"></span>CONNECTED</span>`
+            : `<span class="admin-badge badge-disconnected"><span class="badge-dot"></span>${(cust.whatsappStatus || "DISCONNECTED").toUpperCase()}</span>`;
+
+          adminModalBody.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--admin-card-border);">
+              <div>
+                <strong style="font-size: 15px; color: var(--ink);">${cust.displayName || "Registered User"}</strong>
+                <div style="font-size: 12px; color: var(--muted);">${cust.email || "No Email"}</div>
+              </div>
+              <div style="display: flex; gap: 6px;">
+                ${licBadge}
+                ${waBadge}
+              </div>
+            </div>
+
+            <h4 style="font-size: 12px; text-transform: uppercase; color: var(--muted); letter-spacing: 0.05em; margin: 12px 0 8px;">1. Account & Profile</h4>
+            <div class="admin-detail-row"><span class="admin-detail-label">Firebase UID:</span> <span class="admin-detail-value" style="font-family: 'DM Mono', monospace; font-size: 11px;">${cust.uid}</span></div>
+            <div class="admin-detail-row"><span class="admin-detail-label">Registered Date:</span> <span class="admin-detail-value">${cust.createdAt ? new Date(cust.createdAt).toLocaleString() : "—"}</span></div>
+
+            <h4 style="font-size: 12px; text-transform: uppercase; color: var(--muted); letter-spacing: 0.05em; margin: 16px 0 8px;">2. WhatsApp Connection State</h4>
+            <div class="admin-detail-row"><span class="admin-detail-label">Locked Phone Number:</span> <span class="admin-detail-value">${phone ? `+${phone}` : "Not Paired"}</span></div>
+            <div class="admin-detail-row"><span class="admin-detail-label">WhatsApp Status:</span> <span class="admin-detail-value" style="text-transform: uppercase;">${cust.whatsappStatus || "Never Paired"}</span></div>
+            <div class="admin-detail-row"><span class="admin-detail-label">Bot Number / ID:</span> <span class="admin-detail-value">${cust.botNumber ? `+${cust.botNumber}` : "—"}</span></div>
+
+            <h4 style="font-size: 12px; text-transform: uppercase; color: var(--muted); letter-spacing: 0.05em; margin: 16px 0 8px;">3. Subscription & License Details</h4>
+            <div class="admin-detail-row"><span class="admin-detail-label">Active Key:</span> <span class="admin-detail-value"><span class="code-pill">${cust.activeLicense?.code || cust.activeLicenseCode || "None"}</span></span></div>
+            <div class="admin-detail-row"><span class="admin-detail-label">License Duration:</span> <span class="admin-detail-value">${cust.activeLicense?.durationDays ? cust.activeLicense.durationDays + " Days" : "—"}</span></div>
+            <div class="admin-detail-row"><span class="admin-detail-label">Expiration Date:</span> <span class="admin-detail-value">${cust.expiresAt ? new Date(cust.expiresAt).toLocaleString() : "—"}</span></div>
+            <div class="admin-detail-row"><span class="admin-detail-label">Time Remaining:</span> <span class="admin-detail-value" style="color: ${cust.remainingMs > 0 ? '#0f766e' : '#b91c1c'};" data-admin-expiry="${cust.expiresAt || ''}">${countdownText}</span></div>
+
+            <h4 style="font-size: 12px; text-transform: uppercase; color: var(--muted); letter-spacing: 0.05em; margin: 16px 0 8px;">4. Referral & Rewards Profile</h4>
+            <div class="admin-detail-row"><span class="admin-detail-label">Referral Code:</span> <span class="admin-detail-value"><strong>${cust.referralCode || "—"}</strong></span></div>
+            <div class="admin-detail-row"><span class="admin-detail-label">Referred By:</span> <span class="admin-detail-value">${cust.referredByCode || "Direct (Organic)"}</span></div>
+            <div class="admin-detail-row"><span class="admin-detail-label">Customers Referred:</span> <span class="admin-detail-value">${cust.referredCount || 0}</span></div>
+            <div class="admin-detail-row"><span class="admin-detail-label">Attributed Sales:</span> <span class="admin-detail-value" style="color: var(--teal);">₦${Number(cust.qualifyingSalesNgn || 0).toLocaleString()}</span></div>
+            <div class="admin-detail-row"><span class="admin-detail-label">Rewards (Earned / Claimed):</span> <span class="admin-detail-value">${cust.earnedDaysTotal || 0} / ${cust.claimedDaysTotal || 0} Days</span></div>
+            <div class="admin-detail-row"><span class="admin-detail-label">Available Reward Days:</span> <span class="admin-detail-value" style="color: #0f766e; font-weight: 800;">${cust.availableDays || 0} Days</span></div>
+
+            <div style="margin-top: 20px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;">
+              ${waLink ? `<a href="${waLink}" target="_blank" rel="noopener noreferrer" class="admin-action-btn btn-wa-chat" style="padding: 8px 14px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">💬 Open WhatsApp Chat</a>` : ''}
+              <button type="button" class="admin-preset-btn" style="padding: 8px 14px;" onclick="document.getElementById('admin-detail-modal').classList.add('hidden')">Close Profile</button>
+            </div>
+          `;
+          if (adminDetailModal) adminDetailModal.classList.remove("hidden");
+        }
+      };
+
       // Primary Admin Data Fetcher
       async function loadAdminOverview() {
         if (!currentUser || currentUser.email?.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) return;
@@ -2633,8 +2832,8 @@
           const data = await safeFetchJson(res);
           if (res.ok && data) {
             adminOverviewData = data;
-            if (data.serverTime) {
-              const serverMs = new Date(data.serverTime).getTime();
+            if (data.serverTime || data.systemHealth?.serverTime) {
+              const serverMs = new Date(data.serverTime || data.systemHealth?.serverTime).getTime();
               cachedServerOffset = serverMs - Date.now();
             }
             if (lastSyncEl) {
@@ -2658,17 +2857,18 @@
       function renderAdminDashboard() {
         if (!adminOverviewData) return;
         const d = adminOverviewData;
+        const s = d.overview || d.summary || {};
 
         // 1. KPI Cards
-        const s = d.summary || {};
+        const totalUsers = s.totalUsers ?? s.totalRegisteredCustomers ?? (d.customers?.length || 0);
         const elTotalUsers = document.getElementById("admin-kpi-total-users");
-        if (elTotalUsers) elTotalUsers.textContent = String(s.totalRegisteredCustomers || 0);
+        if (elTotalUsers) elTotalUsers.textContent = String(totalUsers);
 
         const elActiveLic = document.getElementById("admin-kpi-active-licenses");
         if (elActiveLic) elActiveLic.textContent = String(s.activeLicenses || 0);
 
         const elExpiringLic = document.getElementById("admin-kpi-expiring-licenses");
-        if (elExpiringLic) elExpiringLic.textContent = String(s.expiringSoonLicenses || 0);
+        if (elExpiringLic) elExpiringLic.textContent = String(s.expiringSoon || s.expiringSoonLicenses || 0);
 
         const elExpiredLic = document.getElementById("admin-kpi-expired-licenses");
         if (elExpiredLic) elExpiredLic.textContent = String(s.expiredLicenses || 0);
@@ -2680,32 +2880,37 @@
         if (elUsedKeys) elUsedKeys.textContent = String(s.usedKeys || 0);
 
         const elWaConnected = document.getElementById("admin-kpi-whatsapp-connected");
-        if (elWaConnected) elWaConnected.textContent = String(s.whatsappConnectedCount || 0);
+        if (elWaConnected) elWaConnected.textContent = String(s.connectedWhatsApp ?? s.whatsappConnectedCount ?? 0);
 
+        const totalRev = s.totalRevenueNgn ?? s.totalQualifyingSalesNgn ?? 0;
         const elRevenue = document.getElementById("admin-kpi-total-revenue");
-        if (elRevenue) elRevenue.textContent = `₦${Number(s.totalQualifyingSalesNgn || 0).toLocaleString()}`;
+        if (elRevenue) elRevenue.textContent = `₦${Number(totalRev).toLocaleString()}`;
 
+        const rEarned = s.rewardsEarnedDays ?? (d.referrals?.summary?.totalRewardsEarnedDays || 0);
+        const rClaimed = s.rewardsClaimedDays ?? (d.referrals?.summary?.totalRewardsClaimedDays || 0);
         const elRewards = document.getElementById("admin-kpi-reward-days");
-        if (elRewards) elRewards.textContent = `${s.totalRewardsEarnedDays || 0} / ${s.totalRewardsClaimedDays || 0}`;
+        if (elRewards) elRewards.textContent = `${rEarned} / ${rClaimed}`;
 
+        const totalRef = s.totalReferrers ?? (d.referrals?.summary?.totalReferrers || 0);
         const elTotalRef = document.getElementById("admin-kpi-total-referrers");
-        if (elTotalRef) elTotalRef.textContent = String(s.totalReferrers || 0);
+        if (elTotalRef) elTotalRef.textContent = String(totalRef);
 
         // Subtab Badge Counts
         const countLic = document.getElementById("admin-count-licenses");
-        if (countLic) countLic.textContent = String(s.totalLicensesGenerated || 0);
+        if (countLic) countLic.textContent = String((d.licenses || []).length);
 
         const countCust = document.getElementById("admin-count-customers");
-        if (countCust) countCust.textContent = String(s.totalRegisteredCustomers || 0);
+        if (countCust) countCust.textContent = String(totalUsers);
 
+        const expiringList = (d.licenses || []).filter(l => l.computedStatus === "expiring_soon" || (l.status === "used" && l.remainingMs > 0 && l.remainingMs <= 48 * 3600 * 1000));
         const countExp = document.getElementById("admin-count-expiring");
-        if (countExp) countExp.textContent = String(s.expiringSoonLicenses || 0);
+        if (countExp) countExp.textContent = String(expiringList.length);
 
         const countRef = document.getElementById("admin-count-referrals");
-        if (countRef) countRef.textContent = String(s.totalReferrers || 0);
+        if (countRef) countRef.textContent = String(totalRef);
 
         const countConn = document.getElementById("admin-count-connected");
-        if (countConn) countConn.textContent = String(s.whatsappConnectedCount || 0);
+        if (countConn) countConn.textContent = String(s.connectedWhatsApp ?? s.whatsappConnectedCount ?? 0);
 
         // 2. Tier Breakdown
         renderTierBreakdown();
@@ -2736,18 +2941,31 @@
       function renderTierBreakdown() {
         const grid = document.getElementById("admin-tier-breakdown-grid");
         if (!grid || !adminOverviewData) return;
-        const tiers = adminOverviewData.tiers || [];
+        const allLicenses = adminOverviewData.licenses || [];
 
-        grid.innerHTML = tiers.map((t) => {
+        const defaultTiers = [
+          { name: "1 Day (Trial)", days: 1, price: 150 },
+          { name: "7 Days (Weekly)", days: 7, price: 750 },
+          { name: "15 Days (Bi-Weekly)", days: 15, price: 1400 },
+          { name: "30 Days (Monthly)", days: 30, price: 2500 },
+          { name: "90 Days (Quarterly)", days: 90, price: 6800 },
+          { name: "180 Days (Half-Year)", days: 180, price: 12500 },
+          { name: "365 Days (Yearly)", days: 365, price: 22000 },
+        ];
+
+        grid.innerHTML = defaultTiers.map((t) => {
+          const matching = allLicenses.filter((l) => l.durationDays === t.days);
+          const totalKeys = matching.length;
+          const unusedKeys = matching.filter((l) => l.status === "unused").length;
           return `
             <div style="padding: 12px; border-radius: 6px; background: var(--admin-neutral-50); border: 1px solid var(--admin-line);">
               <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
                 <strong style="font-size: 13px; color: var(--ink);">${t.name}</strong>
-                <span style="font-size: 11px; font-weight: 700; color: var(--teal); font-family: 'DM Mono', monospace;">${t.priceFormatted}</span>
+                <span style="font-size: 11px; font-weight: 700; color: var(--teal); font-family: 'DM Mono', monospace;">₦${t.price.toLocaleString()}</span>
               </div>
               <div style="font-size: 11px; color: var(--muted); display: flex; justify-content: space-between;">
-                <span>Total Keys: <strong>${t.countTotal}</strong></span>
-                <span>Unused: <strong style="color: #0f766e;">${t.countUnused}</strong></span>
+                <span>Total Keys: <strong>${totalKeys}</strong></span>
+                <span>Unused: <strong style="color: #0f766e;">${unusedKeys}</strong></span>
               </div>
             </div>
           `;
@@ -2757,7 +2975,11 @@
       // Render Urgent Expiry Watch
       function renderExpiringWatch() {
         if (!adminOverviewData) return;
-        const expiringList = adminOverviewData.expiringSoon || [];
+        const allLicenses = adminOverviewData.licenses || [];
+        const expiringList = allLicenses.filter((lic) => {
+          if (lic.status !== "used" || !lic.expiresAt) return false;
+          return lic.computedStatus === "expiring_soon" || (lic.remainingMs > 0 && lic.remainingMs <= 48 * 3600 * 1000) || lic.computedStatus === "expired";
+        }).sort((a, b) => (a.remainingMs ?? 0) - (b.remainingMs ?? 0));
 
         // 1. Overview Tab Preview List
         const previewEl = document.getElementById("admin-overview-expiring-list");
@@ -2770,19 +2992,19 @@
             `;
           } else {
             previewEl.innerHTML = expiringList.slice(0, 5).map((item) => {
-              const remainingText = item.remainingMs > 0 ? formatRemainingCountdown(item.remainingMs) : "Expired";
+              const countdown = formatAdminCountdown(item.remainingMs, item.durationDays >= 9999, item.expiresAt);
               const isUrgent = item.remainingMs > 0 && item.remainingMs < 24 * 3600 * 1000;
-              const badgeClass = isUrgent ? "badge-expiring" : "badge-expired";
+              const badgeClass = item.remainingMs > 0 ? (isUrgent ? "badge-expiring" : "badge-active") : "badge-expired";
               const phoneDisplay = item.whatsappNumber ? `+${item.whatsappNumber}` : "No WA Linked";
 
               return `
-                <div class="admin-expiring-card-item">
+                <div class="admin-expiring-card-item" style="cursor: pointer;" onclick="openLicenseDetail('${item.code}')">
                   <div style="display: flex; flex-direction: column; gap: 2px;">
-                    <strong style="font-size: 12px; color: var(--ink);">${item.email}</strong>
+                    <strong style="font-size: 12px; color: var(--ink);">${item.customerEmail || item.redeemedByEmail || "Customer"}</strong>
                     <span style="font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace;">${phoneDisplay} • Key: ${item.code}</span>
                   </div>
                   <div style="text-align: right; display: flex; flex-direction: column; gap: 4px; align-items: flex-end;">
-                    <span class="admin-badge ${badgeClass}">${remainingText}</span>
+                    <span class="admin-badge ${badgeClass}" data-admin-expiry="${item.expiresAt}">${countdown}</span>
                     <span style="font-size: 10px; color: var(--muted);">Expires: ${new Date(item.expiresAt).toLocaleDateString()}</span>
                   </div>
                 </div>
@@ -2807,23 +3029,23 @@
             `;
           } else {
             tbody.innerHTML = expiringList.map((item, idx) => {
-              const remainingText = item.remainingMs > 0 ? formatRemainingCountdown(item.remainingMs) : "Expired";
+              const countdown = formatAdminCountdown(item.remainingMs, item.durationDays >= 9999, item.expiresAt);
               const isExpired = item.remainingMs <= 0;
-              const badge = isExpired ? `<span class="admin-badge badge-expired">EXPIRED</span>` : `<span class="admin-badge badge-expiring">EXPIRING SOON</span>`;
+              const badge = isExpired ? `<span class="admin-badge badge-expired"><span class="badge-dot"></span>EXPIRED</span>` : `<span class="admin-badge badge-expiring"><span class="badge-dot"></span>EXPIRING SOON</span>`;
               const phone = item.whatsappNumber || "";
               const waLink = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(`Hello! Your Solvatech WhatsApp Bot license (${item.code}) is ${isExpired ? "expired" : "expiring soon"}. Contact us to renew your access.`)}` : null;
 
               return `
-                <tr>
+                <tr style="cursor: pointer;" onclick="openLicenseDetail('${item.code}')">
                   <td>${idx + 1}</td>
-                  <td><strong>${item.email}</strong></td>
+                  <td><strong>${item.customerEmail || item.redeemedByEmail || "Customer"}</strong></td>
                   <td><span class="code-pill">${phone ? `+${phone}` : "—"}</span></td>
-                  <td><span class="code-pill" style="font-weight:700;">${item.code}</span></td>
+                  <td><span class="code-pill" style="font-weight:700; color:var(--teal);">${item.code}</span></td>
                   <td>${item.durationDays} Days</td>
                   <td>${new Date(item.expiresAt).toLocaleString()}</td>
-                  <td><strong style="color: ${isExpired ? '#b91c1c' : '#b45309'};">${remainingText}</strong></td>
+                  <td><strong style="color: ${isExpired ? '#b91c1c' : '#b45309'};" data-admin-expiry="${item.expiresAt}">${countdown}</strong></td>
                   <td>${badge}</td>
-                  <td>
+                  <td onclick="event.stopPropagation();">
                     ${waLink ? `<a href="${waLink}" target="_blank" rel="noopener noreferrer" class="admin-action-btn btn-wa-chat">💬 Chat on WA</a>` : `<span style="color:var(--muted); font-size:11px;">No Phone</span>`}
                   </td>
                 </tr>
@@ -2860,18 +3082,21 @@
         let filtered = allLicenses.filter((lic) => {
           // Status filter
           if (adminLicenseFilter === "unused" && lic.status !== "unused") return false;
+          if (adminLicenseFilter === "used" && lic.status !== "used") return false;
           if (adminLicenseFilter === "active" && lic.computedStatus !== "active") return false;
           if (adminLicenseFilter === "expiring" && lic.computedStatus !== "expiring_soon") return false;
           if (adminLicenseFilter === "expired" && lic.computedStatus !== "expired") return false;
+          if (adminLicenseFilter === "lifetime" && lic.durationDays < 9999) return false;
 
           // Search filter
           if (adminLicenseSearch) {
             const q = adminLicenseSearch;
             const code = (lic.code || "").toLowerCase();
-            const email = (lic.redeemedByEmail || "").toLowerCase();
+            const email = (lic.customerEmail || lic.redeemedByEmail || "").toLowerCase();
             const uid = (lic.redeemedByUid || "").toLowerCase();
             const phone = (lic.whatsappNumber || "").toLowerCase();
-            if (!code.includes(q) && !email.includes(q) && !uid.includes(q) && !phone.includes(q)) {
+            const tier = (lic.tierName || "").toLowerCase();
+            if (!code.includes(q) && !email.includes(q) && !uid.includes(q) && !phone.includes(q) && !tier.includes(q)) {
               return false;
             }
           }
@@ -2892,23 +3117,25 @@
           } else {
             tbody.innerHTML = filtered.map((lic, idx) => {
               const isUsed = lic.status === "used";
-              let badgeHtml = `<span class="admin-badge badge-unused">UNUSED</span>`;
+              const isLifetime = lic.durationDays >= 9999;
+              let badgeHtml = `<span class="admin-badge badge-unused"><span class="badge-dot"></span>UNUSED</span>`;
               if (isUsed) {
-                if (lic.computedStatus === "active") badgeHtml = `<span class="admin-badge badge-active">ACTIVE</span>`;
-                else if (lic.computedStatus === "expiring_soon") badgeHtml = `<span class="admin-badge badge-expiring">EXPIRING</span>`;
-                else badgeHtml = `<span class="admin-badge badge-expired">EXPIRED</span>`;
+                if (isLifetime) badgeHtml = `<span class="admin-badge badge-lifetime"><span class="badge-dot"></span>LIFETIME</span>`;
+                else if (lic.computedStatus === "active") badgeHtml = `<span class="admin-badge badge-active"><span class="badge-dot"></span>ACTIVE</span>`;
+                else if (lic.computedStatus === "expiring_soon") badgeHtml = `<span class="admin-badge badge-expiring"><span class="badge-dot"></span>EXPIRING</span>`;
+                else badgeHtml = `<span class="admin-badge badge-expired"><span class="badge-dot"></span>EXPIRED</span>`;
               }
 
               const createdStr = lic.createdAt ? new Date(lic.createdAt).toLocaleDateString() : "—";
               const expiresStr = lic.expiresAt ? new Date(lic.expiresAt).toLocaleString() : "—";
-              const remainingStr = isUsed ? (lic.remainingMs > 0 ? formatRemainingCountdown(lic.remainingMs) : "Expired") : "Unused Key";
+              const remainingStr = isUsed ? formatAdminCountdown(lic.remainingMs, isLifetime, lic.expiresAt) : "Unused Key";
 
               return `
-                <tr>
+                <tr style="cursor: pointer;" onclick="openLicenseDetail('${lic.code}')">
                   <td>${idx + 1}</td>
-                  <td>
+                  <td onclick="event.stopPropagation();">
                     <div style="display: flex; align-items: center; gap: 6px;">
-                      <span class="code-pill" style="font-weight: 700; color: var(--teal);">${lic.code}</span>
+                      <span class="code-pill" style="font-weight: 700; color: var(--teal); cursor: pointer;" onclick="openLicenseDetail('${lic.code}')">${lic.code}</span>
                       <button type="button" class="admin-copy-key-btn" onclick="navigator.clipboard.writeText('${lic.code}').then(()=>alert('Copied ${lic.code}'))">Copy</button>
                     </div>
                   </td>
@@ -2919,10 +3146,10 @@
                   <td>${createdStr}</td>
                   <td><span style="font-size:11px; text-transform:uppercase; color:var(--muted);">${lic.status}</span></td>
                   <td><span class="code-pill" style="font-size:10px;">${lic.redeemedByUid ? lic.redeemedByUid.slice(0, 8) + "..." : "—"}</span></td>
-                  <td>${lic.redeemedByEmail || "—"}</td>
+                  <td>${lic.customerEmail || lic.redeemedByEmail || "—"}</td>
                   <td>${lic.whatsappNumber ? `+${lic.whatsappNumber}` : "—"}</td>
                   <td>${expiresStr}</td>
-                  <td><strong style="color: ${lic.remainingMs > 0 ? 'var(--teal)' : 'var(--muted)'};">${remainingStr}</strong></td>
+                  <td><strong style="color: ${lic.remainingMs > 0 ? 'var(--teal)' : 'var(--muted)'};" data-admin-expiry="${lic.expiresAt || ''}">${remainingStr}</strong></td>
                 </tr>
               `;
             }).join("");
@@ -2937,27 +3164,29 @@
           } else {
             cardsEl.innerHTML = filtered.map((lic) => {
               const isUsed = lic.status === "used";
-              let badgeHtml = `<span class="admin-badge badge-unused">UNUSED</span>`;
+              const isLifetime = lic.durationDays >= 9999;
+              let badgeHtml = `<span class="admin-badge badge-unused"><span class="badge-dot"></span>UNUSED</span>`;
               if (isUsed) {
-                if (lic.computedStatus === "active") badgeHtml = `<span class="admin-badge badge-active">ACTIVE</span>`;
-                else if (lic.computedStatus === "expiring_soon") badgeHtml = `<span class="admin-badge badge-expiring">EXPIRING</span>`;
-                else badgeHtml = `<span class="admin-badge badge-expired">EXPIRED</span>`;
+                if (isLifetime) badgeHtml = `<span class="admin-badge badge-lifetime"><span class="badge-dot"></span>LIFETIME</span>`;
+                else if (lic.computedStatus === "active") badgeHtml = `<span class="admin-badge badge-active"><span class="badge-dot"></span>ACTIVE</span>`;
+                else if (lic.computedStatus === "expiring_soon") badgeHtml = `<span class="admin-badge badge-expiring"><span class="badge-dot"></span>EXPIRING</span>`;
+                else badgeHtml = `<span class="admin-badge badge-expired"><span class="badge-dot"></span>EXPIRED</span>`;
               }
-              const remainingStr = isUsed ? (lic.remainingMs > 0 ? formatRemainingCountdown(lic.remainingMs) : "Expired") : "Unused Key";
+              const remainingStr = isUsed ? formatAdminCountdown(lic.remainingMs, isLifetime, lic.expiresAt) : "Unused Key";
 
               return `
-                <div class="admin-card-row">
+                <div class="admin-card-row" style="cursor: pointer;" onclick="openLicenseDetail('${lic.code}')">
                   <div class="admin-card-row-top">
-                    <div>
-                      <span class="code-pill" style="font-weight: 700; color: var(--teal); font-size: 13px;">${lic.code}</span>
+                    <div onclick="event.stopPropagation();">
+                      <span class="code-pill" style="font-weight: 700; color: var(--teal); font-size: 13px;" onclick="openLicenseDetail('${lic.code}')">${lic.code}</span>
                       <button type="button" class="admin-copy-key-btn" style="margin-left:6px;" onclick="navigator.clipboard.writeText('${lic.code}')">Copy</button>
                     </div>
                     ${badgeHtml}
                   </div>
                   <div class="admin-card-grid-meta">
                     <div><span class="admin-card-label">Tier / Price:</span> <strong>${lic.tierName || `${lic.durationDays}D`} (₦${(lic.priceNgn || 0).toLocaleString()})</strong></div>
-                    <div><span class="admin-card-label">Remaining:</span> <strong>${remainingStr}</strong></div>
-                    <div><span class="admin-card-label">Redeemed By:</span> <span>${lic.redeemedByEmail || "—"}</span></div>
+                    <div><span class="admin-card-label">Remaining:</span> <strong data-admin-expiry="${lic.expiresAt || ''}">${remainingStr}</strong></div>
+                    <div><span class="admin-card-label">Redeemed By:</span> <span>${lic.customerEmail || lic.redeemedByEmail || "—"}</span></div>
                     <div><span class="admin-card-label">WhatsApp:</span> <span>${lic.whatsappNumber ? `+${lic.whatsappNumber}` : "—"}</span></div>
                   </div>
                 </div>
@@ -2974,10 +3203,10 @@
 
         // Count chips
         const cAll = allCustomers.length;
-        const cActive = allCustomers.filter((c) => c.licenseStatus === "active" || c.hasActiveLicense).length;
+        const cActive = allCustomers.filter((c) => c.licenseStatus === "active" || c.hasActiveLicense || c.licenseStatus === "lifetime").length;
         const cExpired = allCustomers.filter((c) => c.licenseStatus === "expired").length;
-        const cNoLicense = allCustomers.filter((c) => !c.hasActiveLicense && c.licenseStatus !== "expired").length;
-        const cConnected = allCustomers.filter((c) => c.whatsappConnected).length;
+        const cNoLicense = allCustomers.filter((c) => !c.hasActiveLicense && c.licenseStatus !== "expired" && c.licenseStatus !== "active" && c.licenseStatus !== "lifetime").length;
+        const cConnected = allCustomers.filter((c) => c.whatsappConnected || c.whatsappStatus === "connected").length;
 
         const elCAll = document.getElementById("count-cust-all");
         if (elCAll) elCAll.textContent = String(cAll);
@@ -2992,19 +3221,25 @@
 
         // Filter list
         let filtered = allCustomers.filter((cust) => {
-          if (adminCustomerFilter === "active" && !(cust.licenseStatus === "active" || cust.hasActiveLicense)) return false;
-          if (adminCustomerFilter === "expired" && cust.licenseStatus !== "expired") return false;
-          if (adminCustomerFilter === "nolicense" && (cust.hasActiveLicense || cust.licenseStatus === "expired")) return false;
-          if (adminCustomerFilter === "connected" && !cust.whatsappConnected) return false;
+          const isLifetime = cust.uid === "admin" || cust.licenseStatus === "lifetime";
+          const isActive = cust.licenseStatus === "active" || cust.hasActiveLicense || isLifetime;
+          const isExpired = cust.licenseStatus === "expired";
+          const isConnected = cust.whatsappConnected || cust.whatsappStatus === "connected";
+
+          if (adminCustomerFilter === "active" && !isActive) return false;
+          if (adminCustomerFilter === "expired" && !isExpired) return false;
+          if (adminCustomerFilter === "nolicense" && (isActive || isExpired)) return false;
+          if (adminCustomerFilter === "connected" && !isConnected) return false;
 
           if (adminCustomerSearch) {
             const q = adminCustomerSearch;
             const email = (cust.email || "").toLowerCase();
+            const name = (cust.displayName || "").toLowerCase();
             const uid = (cust.uid || "").toLowerCase();
-            const phone = (cust.lockedPhoneNumber || cust.connectedPhoneNumber || "").toLowerCase();
+            const phone = (cust.phoneNumber || cust.lockedPhoneNumber || cust.connectedPhoneNumber || "").toLowerCase();
             const ref = (cust.referralCode || "").toLowerCase();
             const byRef = (cust.referredByCode || "").toLowerCase();
-            if (!email.includes(q) && !uid.includes(q) && !phone.includes(q) && !ref.includes(q) && !byRef.includes(q)) {
+            if (!email.includes(q) && !name.includes(q) && !uid.includes(q) && !phone.includes(q) && !ref.includes(q) && !byRef.includes(q)) {
               return false;
             }
           }
@@ -3024,44 +3259,49 @@
             `;
           } else {
             tbody.innerHTML = filtered.map((cust, idx) => {
-              const waConnected = cust.whatsappConnected;
+              const waConnected = cust.whatsappConnected || cust.whatsappStatus === "connected";
               const waBadge = waConnected 
-                ? `<span class="admin-badge badge-active">CONNECTED</span>` 
-                : `<span class="admin-badge badge-neutral">DISCONNECTED</span>`;
+                ? `<span class="admin-badge badge-connected"><span class="badge-dot"></span>CONNECTED</span>` 
+                : `<span class="admin-badge badge-disconnected"><span class="badge-dot"></span>${(cust.whatsappStatus || "DISCONNECTED").toUpperCase()}</span>`;
 
-              let licBadge = `<span class="admin-badge badge-neutral">NO LICENSE</span>`;
-              if (cust.hasActiveLicense || cust.licenseStatus === "active") {
-                licBadge = `<span class="admin-badge badge-active">ACTIVE (${cust.licenseDurationDays || 0}D)</span>`;
+              const isLifetime = cust.uid === "admin" || cust.licenseStatus === "lifetime";
+              let licBadge = `<span class="admin-badge badge-neutral"><span class="badge-dot"></span>NO LICENSE</span>`;
+              if (isLifetime) {
+                licBadge = `<span class="admin-badge badge-lifetime"><span class="badge-dot"></span>LIFETIME</span>`;
+              } else if (cust.hasActiveLicense || cust.licenseStatus === "active") {
+                licBadge = `<span class="admin-badge badge-active"><span class="badge-dot"></span>ACTIVE</span>`;
+              } else if (cust.licenseStatus === "expiring_soon") {
+                licBadge = `<span class="admin-badge badge-expiring"><span class="badge-dot"></span>EXPIRING SOON</span>`;
               } else if (cust.licenseStatus === "expired") {
-                licBadge = `<span class="admin-badge badge-expired">EXPIRED</span>`;
+                licBadge = `<span class="admin-badge badge-expired"><span class="badge-dot"></span>EXPIRED</span>`;
               }
 
-              const remainingStr = cust.remainingMs > 0 ? formatRemainingCountdown(cust.remainingMs) : (cust.hasActiveLicense ? "Active" : "—");
-              const phone = cust.lockedPhoneNumber || cust.connectedPhoneNumber || "";
+              const remainingStr = cust.expiresAt ? formatAdminCountdown(cust.remainingMs, isLifetime, cust.expiresAt) : (cust.hasActiveLicense ? "Active" : "—");
+              const phone = cust.phoneNumber || cust.lockedPhoneNumber || cust.connectedPhoneNumber || "";
               const phoneDisplay = phone ? `+${phone}` : "—";
               const expiresStr = cust.expiresAt ? new Date(cust.expiresAt).toLocaleDateString() : "—";
               const salesStr = `₦${Number(cust.qualifyingSalesNgn || 0).toLocaleString()}`;
 
               return `
-                <tr>
+                <tr style="cursor: pointer;" onclick="openCustomerDetail('${cust.uid}')">
                   <td>${idx + 1}</td>
                   <td>
                     <div>
-                      <strong>${cust.email || "Registered User"}</strong>
+                      <strong>${cust.displayName ? `${cust.displayName} (${cust.email || 'No email'})` : (cust.email || "Registered User")}</strong>
                       <div style="font-size: 10px; color: var(--muted);">Created: ${cust.createdAt ? new Date(cust.createdAt).toLocaleDateString() : "—"}</div>
                     </div>
                   </td>
                   <td><span class="code-pill" style="font-size:10px;">${cust.uid ? cust.uid.slice(0, 8) + "..." : "—"}</span></td>
                   <td>${phoneDisplay}</td>
                   <td>${waBadge}</td>
-                  <td><span class="code-pill">${cust.activeLicenseCode || "—"}</span></td>
+                  <td><span class="code-pill">${cust.activeLicense?.code || cust.activeLicenseCode || "—"}</span></td>
                   <td>${licBadge}</td>
-                  <td><strong>${remainingStr}</strong></td>
+                  <td><strong data-admin-expiry="${cust.expiresAt || ''}">${remainingStr}</strong></td>
                   <td>${expiresStr}</td>
                   <td><strong>${cust.referralCode || "—"}</strong></td>
                   <td><span style="font-size:11px; color:var(--muted);">${cust.referredByCode || "Direct"}</span></td>
                   <td style="font-weight:700; color:var(--teal);">${salesStr}</td>
-                  <td>${cust.availableRewardDays || 0}D Avail</td>
+                  <td>${cust.availableDays || cust.availableRewardDays || 0}D Avail</td>
                 </tr>
               `;
             }).join("");
@@ -3075,19 +3315,21 @@
             cardsEl.innerHTML = `<div style="text-align: center; color: var(--muted); padding: 20px;">No customers found.</div>`;
           } else {
             cardsEl.innerHTML = filtered.map((cust) => {
-              const waConnected = cust.whatsappConnected;
-              const waBadge = waConnected ? `<span class="admin-badge badge-active">WA CONNECTED</span>` : `<span class="admin-badge badge-neutral">WA OFF</span>`;
-              const remainingStr = cust.remainingMs > 0 ? formatRemainingCountdown(cust.remainingMs) : (cust.hasActiveLicense ? "Active" : "No License");
+              const waConnected = cust.whatsappConnected || cust.whatsappStatus === "connected";
+              const waBadge = waConnected ? `<span class="admin-badge badge-connected"><span class="badge-dot"></span>CONNECTED</span>` : `<span class="admin-badge badge-disconnected"><span class="badge-dot"></span>OFFLINE</span>`;
+              const isLifetime = cust.uid === "admin" || cust.licenseStatus === "lifetime";
+              const remainingStr = cust.expiresAt ? formatAdminCountdown(cust.remainingMs, isLifetime, cust.expiresAt) : (cust.hasActiveLicense ? "Active" : "No License");
+              const phone = cust.phoneNumber || cust.lockedPhoneNumber || cust.connectedPhoneNumber || "";
 
               return `
-                <div class="admin-card-row">
+                <div class="admin-card-row" style="cursor: pointer;" onclick="openCustomerDetail('${cust.uid}')">
                   <div class="admin-card-row-top">
-                    <strong>${cust.email}</strong>
+                    <strong>${cust.email || cust.displayName || "Customer"}</strong>
                     ${waBadge}
                   </div>
                   <div class="admin-card-grid-meta">
-                    <div><span class="admin-card-label">WhatsApp:</span> <span>${cust.lockedPhoneNumber ? `+${cust.lockedPhoneNumber}` : "Not locked"}</span></div>
-                    <div><span class="admin-card-label">License:</span> <span>${cust.activeLicenseCode || "None"} (${remainingStr})</span></div>
+                    <div><span class="admin-card-label">WhatsApp:</span> <span>${phone ? `+${phone}` : "Not linked"}</span></div>
+                    <div><span class="admin-card-label">License:</span> <span>${cust.activeLicense?.code || cust.activeLicenseCode || "None"} (<strong data-admin-expiry="${cust.expiresAt || ''}">${remainingStr}</strong>)</span></div>
                     <div><span class="admin-card-label">Ref Code:</span> <strong>${cust.referralCode || "—"}</strong></div>
                     <div><span class="admin-card-label">Referred By:</span> <span>${cust.referredByCode || "Direct"}</span></div>
                   </div>
@@ -3120,14 +3362,14 @@
               const progressPct = Math.min(100, Math.max(0, Math.round(((r.progressNgn || 0) / 1000) * 100)));
 
               return `
-                <tr>
+                <tr style="cursor: pointer;" onclick="openCustomerDetail('${r.uid}')">
                   <td>${idx + 1}</td>
                   <td>
                     <strong>${r.email || r.uid || "Referrer"}</strong>
                     <div style="font-size:10px; color:var(--muted); font-family:'DM Mono', monospace;">${r.uid}</div>
                   </td>
                   <td><strong style="color:var(--teal);">${r.referralCode || "—"}</strong></td>
-                  <td>${r.referredUsersCount || 0}</td>
+                  <td>${r.referredUsersCount || r.referredCount || 0}</td>
                   <td style="font-weight:700; color:var(--teal);">${sales}</td>
                   <td>${r.earnedDaysTotal || 0} Days</td>
                   <td>${r.claimedDaysTotal || 0} Days</td>
@@ -3148,48 +3390,53 @@
       // Render System Health (Subtab 6)
       function renderSystemHealth() {
         if (!adminOverviewData) return;
-        const sys = adminOverviewData.system || {};
-        const wa = adminOverviewData.whatsapp || {};
+        const sys = adminOverviewData.systemHealth || adminOverviewData.system || {};
+        const waList = adminOverviewData.whatsappSessions || [];
 
         const uptimeEl = document.getElementById("admin-sys-uptime");
-        if (uptimeEl) uptimeEl.textContent = sys.uptimeFormatted || "—";
+        if (uptimeEl) {
+          const upSec = sys.uptimeSeconds || 0;
+          const h = Math.floor(upSec / 3600);
+          const m = Math.floor((upSec % 3600) / 60);
+          const s = upSec % 60;
+          uptimeEl.textContent = `${h}h ${m}m ${s}s`;
+        }
 
         const sessEl = document.getElementById("admin-sys-controllers");
-        if (sessEl) sessEl.textContent = String(wa.totalActiveControllers || 0);
+        if (sessEl) sessEl.textContent = String(waList.length);
 
         const locksEl = document.getElementById("admin-sys-locks");
-        if (locksEl) locksEl.textContent = String(wa.totalLockedNumbers || 0);
+        if (locksEl) locksEl.textContent = String(waList.length);
 
         const platEl = document.getElementById("admin-sys-platform");
-        if (platEl) platEl.textContent = sys.platform || "Linux / Node.js";
+        if (platEl) platEl.textContent = `${sys.platform || "Linux"} (${sys.nodeVersion || "Node.js"})`;
 
         // WhatsApp sessions list
         const tbody = document.getElementById("admin-whatsapp-tbody");
         if (tbody) {
-          const sessions = wa.sessions || [];
-          if (sessions.length === 0) {
+          if (waList.length === 0) {
             tbody.innerHTML = `
               <tr>
                 <td colspan="6" style="text-align: center; color: var(--muted); padding: 24px;">
-                  No active WhatsApp sessions or phone locks registered.
+                  No active WhatsApp sessions registered.
                 </td>
               </tr>
             `;
           } else {
-            tbody.innerHTML = sessions.map((s, idx) => {
-              const isConn = s.connectionState === "open" || s.connectionState === "connected";
+            tbody.innerHTML = waList.map((s, idx) => {
+              const isConn = s.status === "connected" || s.connectionState === "open";
               const badge = isConn 
-                ? `<span class="admin-badge badge-active">SOCKET OPEN</span>` 
-                : `<span class="admin-badge badge-neutral">${s.connectionState || "DISCONNECTED"}</span>`;
+                ? `<span class="admin-badge badge-connected"><span class="badge-dot"></span>CONNECTED</span>` 
+                : `<span class="admin-badge badge-disconnected"><span class="badge-dot"></span>${(s.status || "DISCONNECTED").toUpperCase()}</span>`;
 
               return `
-                <tr>
+                <tr style="cursor: pointer;" onclick="openCustomerDetail('${s.uid}')">
                   <td>${idx + 1}</td>
                   <td><span class="code-pill">${s.uid ? s.uid.slice(0, 10) + "..." : "—"}</span></td>
-                  <td><strong style="font-family:'DM Mono', monospace;">${s.lockedPhoneNumber ? `+${s.lockedPhoneNumber}` : "—"}</strong></td>
+                  <td><strong style="font-family:'DM Mono', monospace;">${s.lockedPhoneNumber || s.phoneNumber ? `+${s.lockedPhoneNumber || s.phoneNumber}` : "—"}</strong></td>
                   <td>${badge}</td>
-                  <td>${s.connectedPhoneNumber ? `+${s.connectedPhoneNumber}` : "—"}</td>
-                  <td>${s.lastActive ? new Date(s.lastActive).toLocaleString() : "—"}</td>
+                  <td>${s.botNumber ? `+${s.botNumber}` : "—"}</td>
+                  <td>${s.connectedAt ? new Date(s.connectedAt).toLocaleString() : "—"}</td>
                 </tr>
               `;
             }).join("");
@@ -3203,7 +3450,7 @@
         const timelineEl = document.getElementById("admin-activity-timeline");
         if (!timelineEl) return;
 
-        const events = adminOverviewData.activity || [];
+        const events = adminOverviewData.recentActivity || adminOverviewData.activity || [];
         if (events.length === 0) {
           timelineEl.innerHTML = `<div style="text-align: center; color: var(--muted); padding: 24px;">No system events recorded yet.</div>`;
           return;
@@ -3211,58 +3458,47 @@
 
         timelineEl.innerHTML = events.map((ev) => {
           let dotColor = "var(--teal)";
-          if (ev.type === "redemption") dotColor = "#15803d";
-          else if (ev.type === "generation") dotColor = "#6d28d9";
-          else if (ev.type === "expiry") dotColor = "#b91c1c";
+          if (ev.type === "LICENSE_REDEEMED") dotColor = "#15803d";
+          else if (ev.type === "LICENSE_GENERATED") dotColor = "#6d28d9";
+          else if (ev.type === "REFERRAL_PURCHASE") dotColor = "#d97706";
 
           const dt = ev.timestamp ? new Date(ev.timestamp).toLocaleString() : "—";
           return `
-            <div class="admin-timeline-item">
-              <div class="admin-timeline-dot" style="background: ${dotColor};"></div>
-              <div class="admin-timeline-content">
+            <div class="admin-activity-item">
+              <div class="admin-activity-icon" style="background: ${dotColor}15; color: ${dotColor};">
+                ${ev.type === "LICENSE_REDEEMED" ? "🔑" : ev.type === "LICENSE_GENERATED" ? "⚡" : "💰"}
+              </div>
+              <div class="admin-activity-content">
                 <div style="display: flex; justify-content: space-between; align-items: baseline;">
-                  <strong style="font-size: 13px; color: var(--ink);">${ev.title || "System Event"}</strong>
-                  <span style="font-size: 10px; color: var(--muted); font-family: 'DM Mono', monospace;">${dt}</span>
+                  <strong class="admin-activity-title">${ev.title || "System Event"}</strong>
+                  <span class="admin-activity-time">${dt}</span>
                 </div>
-                <p style="font-size: 12px; color: var(--muted); margin: 2px 0 0;">${ev.description || ""}</p>
+                <p class="admin-activity-desc">${ev.description || ""}</p>
               </div>
             </div>
           `;
         }).join("");
       }
 
-      // Start live countdown loop for admin data
+      // Live 1-second interval updating countdown tags across the whole Super Admin interface
       function startAdminLiveTimers() {
         if (adminCountdownTimerId) clearInterval(adminCountdownTimerId);
         adminCountdownTimerId = setInterval(() => {
-          if (!adminOverviewData) return;
-          const nowAdjusted = Date.now() + cachedServerOffset;
-
-          // Update remainingMs on items in memory
-          if (Array.isArray(adminOverviewData.licenses)) {
-            adminOverviewData.licenses.forEach((lic) => {
-              if (lic.expiresAt) {
-                lic.remainingMs = Math.max(0, new Date(lic.expiresAt).getTime() - nowAdjusted);
+          document.querySelectorAll("[data-admin-expiry]").forEach((el) => {
+            const exp = el.getAttribute("data-admin-expiry");
+            if (exp) {
+              const text = formatAdminCountdown(null, false, exp);
+              el.textContent = text;
+              if (text.startsWith("EXPIRED")) {
+                el.classList.add("expired");
+                el.classList.remove("expiring");
+              } else if (text.includes("minute") || text.includes("second") || text.includes("1 day")) {
+                el.classList.add("expiring");
+                el.classList.remove("expired");
               }
-            });
-          }
-
-          if (Array.isArray(adminOverviewData.customers)) {
-            adminOverviewData.customers.forEach((cust) => {
-              if (cust.expiresAt) {
-                cust.remainingMs = Math.max(0, new Date(cust.expiresAt).getTime() - nowAdjusted);
-              }
-            });
-          }
-
-          if (Array.isArray(adminOverviewData.expiringSoon)) {
-            adminOverviewData.expiringSoon.forEach((item) => {
-              if (item.expiresAt) {
-                item.remainingMs = Math.max(0, new Date(item.expiresAt).getTime() - nowAdjusted);
-              }
-            });
-          }
-        }, 5000);
+            }
+          });
+        }, 1000);
       }
 
       // =========================================================================
