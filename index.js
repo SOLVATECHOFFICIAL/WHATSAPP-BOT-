@@ -72,8 +72,8 @@ const staticOptions = {
   }
 };
 
-app.use(express.static(publicDir, staticOptions));
 app.use(express.static(rootDir, staticOptions));
+app.use(express.static(publicDir, staticOptions));
 
 /**
  * ARCHITECTURAL NOTE - STORAGE ON RAILWAY & PRODUCTION:
@@ -730,6 +730,10 @@ for (const p of prefixes) {
 app.use((request, response, next) => {
   if (prefixes.some((p) => request.path.startsWith(`${p}/`))) {
     return response.status(404).json({ error: "API endpoint not found.", code: "ENDPOINT_NOT_FOUND" });
+  }
+  const rootIndex = path.join(rootDir, "index.html");
+  if (fs.existsSync(rootIndex)) {
+    return response.sendFile(rootIndex);
   }
   response.sendFile(path.join(publicDir, "index.html"));
 });
