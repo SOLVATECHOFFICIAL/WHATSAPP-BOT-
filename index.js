@@ -32,7 +32,7 @@ const apiPrefix = String(process.env.BOT_API_PREFIX || "/bot-api").replace(/\/$/
 
 // Explicit CORS configuration for Railway, GitHub Pages frontend, and local development
 const allowedOrigins = [
-  "https://web-production-3c1de8.up.railway.app",
+  "https://web-production-215ab.up.railway.app",
   "https://solvatechofficial.github.io",
   "http://localhost:3000",
   "http://127.0.0.1:3000",
@@ -51,11 +51,11 @@ app.use((req, res, next) => {
       res.setHeader("Access-Control-Allow-Origin", origin);
       res.setHeader("Access-Control-Allow-Credentials", "true");
     } else {
-      res.setHeader("Access-Control-Allow-Origin", "https://web-production-3c1de8.up.railway.app");
+      res.setHeader("Access-Control-Allow-Origin", "https://web-production-215ab.up.railway.app");
       res.setHeader("Access-Control-Allow-Credentials", "true");
     }
   } else {
-    res.setHeader("Access-Control-Allow-Origin", "https://web-production-3c1de8.up.railway.app");
+    res.setHeader("Access-Control-Allow-Origin", "https://web-production-215ab.up.railway.app");
     res.setHeader("Access-Control-Allow-Credentials", "true");
   }
 

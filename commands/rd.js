@@ -1,4 +1,4 @@
-import { getDeletedMessageForRestore } from "../lib/deleted-messages.js";
+import { getDeletedMessageForRestore, ensureMediaDownloaded } from "../lib/deleted-messages.js";
 import { getMessageContent, unwrapMediaMessage } from "../lib/helpers.js";
 
 export default async function rd({ sock, message, chatId, sender, reply, userId = "default" }) {
@@ -11,6 +11,11 @@ export default async function rd({ sock, message, chatId, sender, reply, userId 
 
   if (!deletedRecord) {
     return reply("ℹ️ No deleted messages found in the 24-hour cache for this chat. (Messages must be observed before deletion to be cached).");
+  }
+
+  // Download media buffer on demand if available
+  if (deletedRecord.mediaType && !deletedRecord.mediaBuffer) {
+    await ensureMediaDownloaded(deletedRecord, sock);
   }
 
   const senderNumber = (deletedRecord.sender || "").split("@")[0].split(":")[0];

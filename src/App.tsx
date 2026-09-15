@@ -68,7 +68,7 @@ async function readResponse(response: Response) {
   return payload;
 }
 
-const RAILWAY_URL = 'https://web-production-3c1de8.up.railway.app';
+const RAILWAY_URL = 'https://web-production-215ab.up.railway.app';
 const isSelfHosted = typeof window !== 'undefined' && (
   window.location.hostname.includes('railway.app') ||
   window.location.hostname === 'localhost' ||
