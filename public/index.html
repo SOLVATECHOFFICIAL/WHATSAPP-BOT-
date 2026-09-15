@@ -222,7 +222,37 @@
           <p class="lede">Request an 8-character WhatsApp pairing code, link your account in WhatsApp Linked Devices, and monitor your live connection.</p>
         </section>
 
-        <section class="grid">
+        <!-- DASHBOARD NAVIGATION TABS (Mobile-First Responsive Section Switcher) -->
+        <nav id="dashboard-nav" class="dashboard-nav" aria-label="Dashboard Sections">
+          <button type="button" class="dash-tab-btn active" data-tab="pair" id="tab-btn-pair">
+            <span class="dash-tab-icon">📱</span>
+            <span class="dash-tab-text">Pairing & Status</span>
+          </button>
+          <button type="button" class="dash-tab-btn" data-tab="license" id="tab-btn-license">
+            <span class="dash-tab-icon">🔑</span>
+            <span class="dash-tab-text">License</span>
+            <span id="tab-license-indicator" class="tab-chip">ACTIVE</span>
+          </button>
+          <button type="button" class="dash-tab-btn" data-tab="referrals" id="tab-btn-referrals">
+            <span class="dash-tab-icon">🎁</span>
+            <span class="dash-tab-text">Referrals</span>
+            <span id="tab-referral-chip" class="tab-chip bonus hidden">FREE DAYS</span>
+          </button>
+          <button type="button" class="dash-tab-btn" data-tab="commands" id="tab-btn-commands">
+            <span class="dash-tab-icon">⚡</span>
+            <span class="dash-tab-text">Commands</span>
+          </button>
+          <button type="button" class="dash-tab-btn hidden" data-tab="admin" id="tab-btn-admin">
+            <span class="dash-tab-icon">🛡️</span>
+            <span class="dash-tab-text">Admin Console</span>
+          </button>
+          <button type="button" class="dash-tab-btn dash-tab-all" data-tab="all" id="tab-btn-all" title="View all sections together">
+            <span class="dash-tab-icon">📑</span>
+            <span class="dash-tab-text">View All</span>
+          </button>
+        </nav>
+
+        <section id="section-pair" class="grid dashboard-tab-content">
           <article class="surface pair-card">
             <div class="card-top"><span>01 / PAIRING CONSOLE</span><small>MD 2.0</small></div>
             <h2>Get your pairing code</h2>
@@ -275,7 +305,7 @@
         </section>
 
         <!-- LICENSE STATUS & ONE-TIME REDEMPTION SECTION -->
-        <section class="grid" style="margin-top: 24px;">
+        <section id="section-license" class="grid dashboard-tab-content" style="margin-top: 24px;">
           <article class="surface license-card" style="grid-column: 1 / -1;">
             <div class="card-top">
               <span>03 / SOLVATECH LICENSE SYSTEM</span>
@@ -317,7 +347,7 @@
         </section>
 
         <!-- CUSTOMER REFERRAL PROGRAM SECTION -->
-        <section id="referral-section" class="grid" style="margin-top: 24px;">
+        <section id="referral-section" class="grid dashboard-tab-content" style="margin-top: 24px;">
           <article class="surface referral-card" style="grid-column: 1 / -1;">
             <div class="card-top">
               <span>04 / REFERRAL REWARDS</span>
@@ -400,6 +430,11 @@
                   ↻ Refresh
                 </button>
               </div>
+              <div class="table-scroll-hint">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                <span>Swipe table horizontally to view full details</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </div>
               <div class="admin-table-wrap">
                 <table class="admin-table">
                   <thead>
@@ -423,7 +458,7 @@
         </section>
 
         <!-- ADMIN ONLY LICENSE MANAGEMENT PANEL (Strictly for awoyinfasolomon1@gmail.com) -->
-        <section id="admin-panel" class="grid hidden" style="margin-top: 24px;">
+        <section id="admin-panel" class="grid dashboard-tab-content hidden" style="margin-top: 24px;">
           <article class="surface admin-card" style="grid-column: 1 / -1;">
             <div class="card-top">
               <span>ADMINISTRATION CONSOLE</span>
@@ -462,6 +497,11 @@
               </button>
             </div>
 
+            <div class="table-scroll-hint">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              <span>Swipe table horizontally to view full records</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </div>
             <div class="admin-table-wrap">
               <table class="admin-table">
                 <thead>
@@ -513,6 +553,11 @@
               </div>
             </div>
 
+            <div class="table-scroll-hint">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              <span>Swipe table horizontally to view full records</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </div>
             <div class="admin-table-wrap">
               <table class="admin-table">
                 <thead>
@@ -536,7 +581,7 @@
           </article>
         </section>
 
-        <section class="surface instructions">
+        <section id="section-instructions" class="surface instructions dashboard-tab-content">
           <div class="instruction-head"><h2>Pairing, in three clear moves.</h2><span>DIRECT LINK</span></div>
           <ol>
              <li><b>01</b><span><strong>Enter your number</strong>Input your local number (e.g. 09012345678) or international format.</span></li>
@@ -547,12 +592,12 @@
         </section>
 
         <!-- Built-in Commands Quick Reference -->
-        <section class="surface instructions" style="margin-top: 24px;">
+        <section id="section-commands" class="surface instructions dashboard-tab-content" style="margin-top: 24px;">
           <div class="instruction-head">
             <h2>SOLVATECH Bot Command Suite</h2>
             <span>PREFIX: .</span>
           </div>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 20px;">
+          <div class="commands-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 20px;">
             <div style="background: rgba(16,38,34,0.03); padding: 14px; border-radius: 4px; border: 1px solid var(--line);">
               <strong style="color: var(--teal); font-size: 13px; display: block; margin-bottom: 6px;">🛡️ Group Protection</strong>
               <div style="font-family: 'DM Mono', monospace; font-size: 11px; line-height: 1.8; color: var(--ink);">
@@ -916,6 +961,117 @@
         }
       }
 
+      // =========================================================================
+      // SOLVATECH BOT - RESPONSIVE DASHBOARD NAVIGATION TABS CONTROLLER
+      // =========================================================================
+      let activeDashTab = "pair";
+      try {
+        const saved = sessionStorage.getItem("solvatech_active_dash_tab");
+        if (saved) activeDashTab = saved;
+      } catch (e) {}
+
+      function switchDashboardTab(tabName) {
+        activeDashTab = tabName;
+        try {
+          sessionStorage.setItem("solvatech_active_dash_tab", tabName);
+        } catch (e) {}
+
+        const tabBtns = document.querySelectorAll(".dash-tab-btn");
+        tabBtns.forEach(btn => {
+          if (btn.getAttribute("data-tab") === tabName) {
+            btn.classList.add("active");
+          } else {
+            btn.classList.remove("active");
+          }
+        });
+
+        const sectionPair = $("section-pair");
+        const sectionLicense = $("section-license");
+        const sectionReferral = $("referral-section");
+        const sectionAdmin = $("admin-panel");
+        const sectionInstructions = $("section-instructions");
+        const sectionCommands = $("section-commands");
+
+        const isUserAdmin = currentUser && currentUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+
+        if (tabName === "all") {
+          if (sectionPair) sectionPair.classList.remove("hidden");
+          if (sectionLicense) sectionLicense.classList.remove("hidden");
+          if (sectionReferral) sectionReferral.classList.remove("hidden");
+          if (sectionAdmin) {
+            if (isUserAdmin) sectionAdmin.classList.remove("hidden");
+            else sectionAdmin.classList.add("hidden");
+          }
+          if (sectionInstructions) sectionInstructions.classList.remove("hidden");
+          if (sectionCommands) sectionCommands.classList.remove("hidden");
+        } else if (tabName === "pair") {
+          if (sectionPair) sectionPair.classList.remove("hidden");
+          if (sectionInstructions) sectionInstructions.classList.remove("hidden");
+          if (sectionLicense) sectionLicense.classList.add("hidden");
+          if (sectionReferral) sectionReferral.classList.add("hidden");
+          if (sectionAdmin) sectionAdmin.classList.add("hidden");
+          if (sectionCommands) sectionCommands.classList.add("hidden");
+        } else if (tabName === "license") {
+          if (sectionPair) sectionPair.classList.add("hidden");
+          if (sectionInstructions) sectionInstructions.classList.add("hidden");
+          if (sectionLicense) sectionLicense.classList.remove("hidden");
+          if (sectionReferral) sectionReferral.classList.add("hidden");
+          if (sectionAdmin) sectionAdmin.classList.add("hidden");
+          if (sectionCommands) sectionCommands.classList.add("hidden");
+        } else if (tabName === "referrals") {
+          if (sectionPair) sectionPair.classList.add("hidden");
+          if (sectionInstructions) sectionInstructions.classList.add("hidden");
+          if (sectionLicense) sectionLicense.classList.add("hidden");
+          if (sectionReferral) sectionReferral.classList.remove("hidden");
+          if (sectionAdmin) sectionAdmin.classList.add("hidden");
+          if (sectionCommands) sectionCommands.classList.add("hidden");
+        } else if (tabName === "commands") {
+          if (sectionPair) sectionPair.classList.add("hidden");
+          if (sectionInstructions) sectionInstructions.classList.add("hidden");
+          if (sectionLicense) sectionLicense.classList.add("hidden");
+          if (sectionReferral) sectionReferral.classList.add("hidden");
+          if (sectionAdmin) sectionAdmin.classList.add("hidden");
+          if (sectionCommands) sectionCommands.classList.remove("hidden");
+        } else if (tabName === "admin") {
+          if (sectionPair) sectionPair.classList.add("hidden");
+          if (sectionInstructions) sectionInstructions.classList.add("hidden");
+          if (sectionLicense) sectionLicense.classList.add("hidden");
+          if (sectionReferral) sectionReferral.classList.add("hidden");
+          if (sectionAdmin) {
+            if (isUserAdmin) sectionAdmin.classList.remove("hidden");
+            else sectionAdmin.classList.add("hidden");
+          }
+          if (sectionCommands) sectionCommands.classList.add("hidden");
+        }
+      }
+
+      function initDashboardTabs() {
+        const tabBtns = document.querySelectorAll(".dash-tab-btn");
+        tabBtns.forEach(btn => {
+          btn.onclick = () => {
+            const target = btn.getAttribute("data-tab");
+            if (target) {
+              switchDashboardTab(target);
+              // Smooth scroll to top of tabs on mobile devices
+              const nav = $("dashboard-nav");
+              if (nav && window.innerWidth <= 768) {
+                const navRect = nav.getBoundingClientRect();
+                if (navRect.top < 0 || navRect.top > 120) {
+                  nav.scrollIntoView({ behavior: "smooth", block: "start" });
+                }
+              }
+            }
+          };
+        });
+
+        // Ensure active tab is valid (fallback from admin if not admin)
+        const isUserAdmin = currentUser && currentUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+        if (activeDashTab === "admin" && !isUserAdmin) {
+          activeDashTab = "pair";
+        }
+        switchDashboardTab(activeDashTab);
+      }
+
       function renderAuthState(user) {
         currentUser = user;
         if (user && user.uid) {
@@ -952,6 +1108,7 @@
           if (authTopBadge) authTopBadge.classList.add("hidden");
 
           syncUserProfile(user);
+          initDashboardTabs();
           refresh();
           refreshLicenseStatus();
           refreshReferralStatus();
@@ -1137,6 +1294,8 @@
             db = getFirestore(app);
           }
         }
+
+        initDashboardTabs();
 
         onAuthStateChanged(auth, (user) => {
           if (user) {
@@ -1487,12 +1646,19 @@
             updateLicenseUI(data);
           }
 
-          // If current user is the administrator, reveal admin panel and populate records
+          // If current user is the administrator, reveal admin tab and populate records
+          const tabBtnAdmin = $("tab-btn-admin");
           if (data.isAdmin || currentUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
-            if (adminPanel) adminPanel.classList.remove("hidden");
+            if (tabBtnAdmin) tabBtnAdmin.classList.remove("hidden");
+            if (activeDashTab === "admin" || activeDashTab === "all") {
+              if (adminPanel) adminPanel.classList.remove("hidden");
+            } else {
+              if (adminPanel) adminPanel.classList.add("hidden");
+            }
             loadAdminLicenses();
             loadAdminReferrals();
           } else {
+            if (tabBtnAdmin) tabBtnAdmin.classList.add("hidden");
             if (adminPanel) adminPanel.classList.add("hidden");
           }
         } catch (err) {
@@ -1507,6 +1673,23 @@
         }
 
         const isUserAdmin = data.isAdmin || currentUser?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+
+        const tabLicenseIndicator = $("tab-license-indicator");
+        if (tabLicenseIndicator) {
+          if (isUserAdmin) {
+            tabLicenseIndicator.textContent = "ADMIN";
+            tabLicenseIndicator.className = "tab-chip";
+          } else if (data.status === "active") {
+            tabLicenseIndicator.textContent = "ACTIVE";
+            tabLicenseIndicator.className = "tab-chip";
+          } else if (data.status === "expired") {
+            tabLicenseIndicator.textContent = "EXPIRED";
+            tabLicenseIndicator.className = "tab-chip expired";
+          } else {
+            tabLicenseIndicator.textContent = "NONE";
+            tabLicenseIndicator.className = "tab-chip";
+          }
+        }
 
         if (isUserAdmin || data.durationDays === "Unlimited") {
           cachedServerExpiryTime = null;
@@ -2014,6 +2197,16 @@
 
         // Available free days claim banner
         const availableDays = Number(data.availableDays || 0);
+        const tabReferralChip = $("tab-referral-chip");
+        if (tabReferralChip) {
+          if (availableDays > 0) {
+            tabReferralChip.textContent = `+${availableDays}D FREE`;
+            tabReferralChip.classList.remove("hidden");
+          } else {
+            tabReferralChip.classList.add("hidden");
+          }
+        }
+
         if (referralClaimBanner && referralClaimTitle) {
           if (availableDays >= 3) {
             referralClaimTitle.textContent = `🎁 ${availableDays} FREE DAY${availableDays === 1 ? "" : "S"} AVAILABLE`;
