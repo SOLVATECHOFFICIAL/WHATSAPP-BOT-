@@ -103,6 +103,9 @@ function getFirebaseClientConfig() {
   return null;
 }
 
+app.get("/health", (_req, res) => res.json({ status: "ok" }));
+app.get("/healthz", (_req, res) => res.json({ status: "ok" }));
+
 const prefixes = Array.from(new Set([apiPrefix, "/api", "/bot-api"]));
 
 for (const p of prefixes) {
