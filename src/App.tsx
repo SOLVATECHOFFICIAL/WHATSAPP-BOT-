@@ -78,7 +78,11 @@ const isSelfHosted = typeof window !== 'undefined' && (
 const DEFAULT_BACKEND_URL = isSelfHosted ? window.location.origin : RAILWAY_URL;
 function getApiUrl(path: string) {
   let custom = typeof window !== 'undefined' ? (localStorage.getItem('solvatech_backend_url') || '') : '';
-  if (custom && (custom.includes('3c1de8') || custom.includes('localhost:5000'))) {
+  if (custom && (
+    custom.includes('3c1de8') ||
+    custom.includes('localhost:5000') ||
+    (!isSelfHosted && typeof window !== 'undefined' && (custom.includes(window.location.hostname) || custom.includes('solvatech.name.ng')))
+  )) {
     try { localStorage.removeItem('solvatech_backend_url'); } catch {}
     custom = '';
   }

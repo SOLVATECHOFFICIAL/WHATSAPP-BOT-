@@ -473,7 +473,11 @@
                            window.location.hostname.includes("run.app");
       const DEFAULT_BACKEND_URL = isSelfHosted ? window.location.origin : RAILWAY_URL;
       let customApiUrl = localStorage.getItem("solvatech_backend_url") || "";
-      if (customApiUrl && (customApiUrl.includes("3c1de8") || customApiUrl.includes("localhost:5000"))) {
+      if (customApiUrl && (
+        customApiUrl.includes("3c1de8") ||
+        customApiUrl.includes("localhost:5000") ||
+        (!isSelfHosted && (customApiUrl.includes(window.location.hostname) || customApiUrl.includes("solvatech.name.ng")))
+      )) {
         try { localStorage.removeItem("solvatech_backend_url"); } catch (e) {}
         customApiUrl = "";
       }
