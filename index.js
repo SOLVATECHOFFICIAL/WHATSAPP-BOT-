@@ -257,6 +257,7 @@ for (const p of prefixes) {
   app.post(`${p}/license/redeem`, requireAuth, async (request, response) => {
     try {
       const code = request.body?.code;
+      const candidateRef = request.body?.ref || request.query?.ref || "";
       if (!code) {
         return response.status(400).json({ error: "Please enter a valid license code." });
       }
@@ -266,6 +267,20 @@ for (const p of prefixes) {
         uid: request.verifiedUid,
         email: request.auth.email,
       };
+
+      // If user came in through a referral link or has a preserved referral code, ensure permanent attribution in Firebase before redemption
+      if (candidateRef) {
+        try {
+          await ensureUserReferralData(
+            request.verifiedUid,
+            request.auth.email,
+            candidateRef,
+            request.headers.authorization
+          );
+        } catch (refErr) {
+          logger.warn("Pre-redemption referral attribution notice", refErr.message);
+        }
+      }
 
       const result = await redeemLicenseCode(code, verifiedUser, request.headers.authorization);
 
@@ -317,7 +332,7 @@ for (const p of prefixes) {
 
   app.post(`${p}/referral/attribute`, requireAuth, async (request, response) => {
     try {
-      const candidateCode = request.body?.code || "";
+      const candidateCode = request.body?.code || request.body?.ref || request.query?.ref || "";
       if (!candidateCode) {
         return response.status(400).json({ error: "Referral code is required." });
       }

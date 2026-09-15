@@ -87,12 +87,139 @@
       </div>
     </div>
 
+    <!-- SITE UPDATES & NAVIGATION GUIDE MODAL -->
+    <div id="site-updates-modal" class="site-updates-modal hidden" role="dialog" aria-modal="true" aria-labelledby="updates-modal-title">
+      <div id="site-updates-backdrop" class="site-updates-backdrop"></div>
+      <div class="site-updates-dialog">
+        <div class="site-updates-header">
+          <div>
+            <span class="update-version-chip">PLATFORM RELEASE • V2.4 LIVE</span>
+            <h3 id="updates-modal-title">What's New & Navigation Guide</h3>
+            <p class="site-updates-subtitle">Discover the latest updates, default View All mode, and how to seamlessly navigate your console.</p>
+          </div>
+          <button id="site-updates-close-btn" class="site-updates-close" type="button" aria-label="Close update guide">✕</button>
+        </div>
+
+        <div class="site-updates-nav-switch">
+          <button type="button" id="modal-tab-whats-new" class="modal-switch-btn active" data-guide-target="guide-whats-new">
+            <span>✨</span> What's New
+          </button>
+          <button type="button" id="modal-tab-how-to" class="modal-switch-btn" data-guide-target="guide-how-to">
+            <span>🧭</span> How to Navigate
+          </button>
+        </div>
+
+        <div class="site-updates-body">
+          <!-- PANEL 1: WHAT'S NEW -->
+          <div id="guide-whats-new" class="guide-panel">
+            <div class="update-item-card">
+              <div class="update-item-icon">📑</div>
+              <div class="update-item-body">
+                <h4>Default "View All" Layout Enabled</h4>
+                <p>The dashboard now opens in full <strong>View All</strong> mode by default. You can see your Pairing Console, License Key Manager, Referral Program, and Bot Commands simultaneously on one streamlined page without extra clicks.</p>
+              </div>
+            </div>
+
+            <div class="update-item-card">
+              <div class="update-item-icon">🔗</div>
+              <div class="update-item-body">
+                <h4>Streamlined Referral Links (<code>?ref=CODE</code>)</h4>
+                <p>Referral links now use standard clean URL query parameters (e.g. <code>https://solvatech.name.ng/?ref=T6JTKUY</code>). Attribution is automatically detected upon visit, retained throughout Google Sign-In, and saved permanently to Firebase Firestore.</p>
+              </div>
+            </div>
+
+            <div class="update-item-card">
+              <div class="update-item-icon">📱</div>
+              <div class="update-item-body">
+                <h4>Smart Country Code Picker & Pairing 2.0</h4>
+                <p>Pairing console features country selection with flag indicators (+234 Nigeria, +1 USA/Canada, +44 UK, +91 India, +254 Kenya, +233 Ghana, etc.), live socket status, and 8-character pairing code generation.</p>
+              </div>
+            </div>
+
+            <div class="update-item-card">
+              <div class="update-item-icon">🔑</div>
+              <div class="update-item-body">
+                <h4>Cloud License Validation & Free Bonus Days</h4>
+                <p>Redeem lifetime and recurring license keys with instant Firestore validation. Refer friends to earn <strong>+3 Free Bonus Days</strong> per qualifying customer activation.</p>
+              </div>
+            </div>
+
+            <div class="update-item-card">
+              <div class="update-item-icon">⚡</div>
+              <div class="update-item-body">
+                <h4>Interactive WhatsApp Command Cards & PWA</h4>
+                <p>Comprehensive command reference with instant copy-to-clipboard syntax and full Progressive Web App (PWA) offline installation support.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- PANEL 2: HOW TO NAVIGATE -->
+          <div id="guide-how-to" class="guide-panel hidden">
+            <div class="nav-step-card">
+              <div class="nav-step-num">1</div>
+              <div class="nav-step-body">
+                <h4>Switch Views or Keep "View All"</h4>
+                <p>Use the navigation tabs above the dashboard to filter views: <code>View All</code> for the full picture, <code>Pairing & Status</code> for phone linking, <code>License</code> for key management, <code>Referrals</code> for reward tracking, and <code>Commands</code> for cheat sheet.</p>
+              </div>
+            </div>
+
+            <div class="nav-step-card">
+              <div class="nav-step-num">2</div>
+              <div class="nav-step-body">
+                <h4>Pair Your WhatsApp Number</h4>
+                <p>Select your country from the dropdown, enter your WhatsApp phone number, and click <strong>Get Pairing Code</strong>. On your phone, open <em>WhatsApp → Linked Devices → Link with phone number</em> and enter the 8-digit code.</p>
+              </div>
+            </div>
+
+            <div class="nav-step-card">
+              <div class="nav-step-num">3</div>
+              <div class="nav-step-body">
+                <h4>Manage & Activate Your License</h4>
+                <p>Go to the <strong>License</strong> tab or scroll down to the License Manager. Paste your license key from Solvatech Official and click <strong>Redeem Key</strong> to unlock continuous bot execution.</p>
+              </div>
+            </div>
+
+            <div class="nav-step-card">
+              <div class="nav-step-num">4</div>
+              <div class="nav-step-body">
+                <h4>Share Your Referral Link & Claim Free Days</h4>
+                <p>Navigate to <strong>Referrals</strong> to grab your link <code>https://solvatech.name.ng/?ref=YOUR_CODE</code>. When your invitees subscribe, click <strong>Claim Reward</strong> to add +3 free bonus days to your license.</p>
+              </div>
+            </div>
+
+            <div class="nav-step-card">
+              <div class="nav-step-num">5</div>
+              <div class="nav-step-body">
+                <h4>Send WhatsApp Bot Commands</h4>
+                <p>Once paired, you and your group members can trigger commands like <code>.menu</code>, <code>.status</code>, <code>.ping</code>, <code>.ai</code>, and <code>.help</code> directly inside WhatsApp chats.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="site-updates-footer">
+          <span class="updates-footer-hint">Click outside or press <kbd style="font-family:'DM Mono',monospace;background:rgba(0,0,0,0.06);padding:2px 5px;border-radius:3px;">Esc</kbd> to close.</span>
+          <div style="display:flex;gap:8px;">
+            <button id="guide-explore-btn" type="button" class="site-updates-primary-btn">
+              <span>Got it, let's explore</span> →
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <header class="topbar">
       <a class="brand" href="/">
         <span class="brand-mark"><img src="./solva.webp" alt="SOLVATECH BOT" class="solva-brand-logo" /></span>
         <span><strong>SOLVATECH BOT</strong><small>BY SOLVATECHOFFICIAL</small></span>
       </a>
       <div id="topbar-right" class="topbar-actions">
+        <!-- Site Updated Interactive Badge -->
+        <button id="site-update-badge-btn" class="site-update-badge" type="button" title="View latest updates and navigation guide">
+          <span class="update-live-pulse"></span>
+          <span class="update-badge-text">SITE UPDATED</span>
+          <span class="update-badge-tag">NEW</span>
+        </button>
         <button id="pwa-install-topbar-btn" class="pwa-topbar-install-btn pwa-hide-standalone hidden" type="button" title="Install SOLVATECH BOT app">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
           <span>INSTALL APP</span>
@@ -135,6 +262,15 @@
             <p style="font-size: 13px; color: var(--muted); margin-bottom: 20px; line-height: 1.6;">
               Sign in with your Google account to allocate an encrypted, single-owner session workspace. Your pairing keys, session credentials, and commands remain strictly protected.
             </p>
+
+            <!-- Referral Code Detection Indicator (only displayed when ?ref=CODE query param is present) -->
+            <div id="auth-referral-banner" class="auth-referral-banner hidden">
+              <span class="auth-referral-icon">🎁</span>
+              <div class="auth-referral-info">
+                <span class="auth-referral-title">Referral Invite Active</span>
+                <span class="auth-referral-detail">Referred by <strong id="auth-referral-code-label">—</strong>. Attributing to your account upon registration.</span>
+              </div>
+            </div>
 
             <button id="google-signin-btn" class="google-auth-button" type="button">
               <svg viewBox="0 0 24 24">
@@ -222,9 +358,27 @@
           <p class="lede">Request an 8-character WhatsApp pairing code, link your account in WhatsApp Linked Devices, and monitor your live connection.</p>
         </section>
 
+        <!-- DASHBOARD UPDATE NOTICE BANNER -->
+        <div id="dashboard-update-notice" class="dashboard-update-notice">
+          <div class="dash-update-content">
+            <span class="dash-update-pulse"></span>
+            <span class="dash-update-text"><strong>Platform Updated:</strong> Default view is now set to <em>View All</em> with quick access to pairing, licensing, and referral rewards.</span>
+          </div>
+          <div class="dash-update-actions">
+            <button id="open-updates-modal-dash-btn" class="dash-update-btn" type="button">
+              <span>What's New & Guide</span> →
+            </button>
+            <button id="dismiss-dash-update-btn" class="dash-update-dismiss" type="button" title="Dismiss notice">✕</button>
+          </div>
+        </div>
+
         <!-- DASHBOARD NAVIGATION TABS (Mobile-First Responsive Section Switcher) -->
         <nav id="dashboard-nav" class="dashboard-nav" aria-label="Dashboard Sections">
-          <button type="button" class="dash-tab-btn active" data-tab="pair" id="tab-btn-pair">
+          <button type="button" class="dash-tab-btn active dash-tab-all" data-tab="all" id="tab-btn-all" title="View all sections together">
+            <span class="dash-tab-icon">📑</span>
+            <span class="dash-tab-text">View All</span>
+          </button>
+          <button type="button" class="dash-tab-btn" data-tab="pair" id="tab-btn-pair">
             <span class="dash-tab-icon">📱</span>
             <span class="dash-tab-text">Pairing & Status</span>
           </button>
@@ -245,10 +399,6 @@
           <button type="button" class="dash-tab-btn hidden" data-tab="admin" id="tab-btn-admin">
             <span class="dash-tab-icon">🛡️</span>
             <span class="dash-tab-text">Admin Console</span>
-          </button>
-          <button type="button" class="dash-tab-btn dash-tab-all" data-tab="all" id="tab-btn-all" title="View all sections together">
-            <span class="dash-tab-icon">📑</span>
-            <span class="dash-tab-text">View All</span>
           </button>
         </nav>
 
@@ -360,12 +510,15 @@
 
             <!-- Referral Link Box -->
             <div class="referral-box">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
                 <span class="muted-label" style="font-size: 11px; letter-spacing: 0.05em;">YOUR EXCLUSIVE REFERRAL LINK</span>
-                <span id="referral-code-pill" class="referral-pill">CODE: —</span>
+                <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                  <span id="referral-referred-by-pill" class="referral-referred-pill hidden">Referred by: —</span>
+                  <span id="referral-code-pill" class="referral-pill">CODE: —</span>
+                </div>
               </div>
               <div class="referral-input-row">
-                <input id="referral-link-input" type="text" readonly value="https://solvatech.name.ng/..." spellcheck="false" />
+                <input id="referral-link-input" type="text" readonly value="https://solvatech.name.ng/?ref=..." spellcheck="false" />
                 <button id="referral-copy-btn" class="license-btn" type="button" style="padding: 10px 18px; white-space: nowrap;">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px; vertical-align: -2px;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                   <span>Copy Link</span>
@@ -923,8 +1076,73 @@
       }
 
       async function syncUserProfile(user) {
-        // User profile and session state are managed authoritatively by backend API routes.
-        return;
+        if (!user || !user.uid) return;
+        const candidateRef = sessionStorage.getItem("solvatech_ref_code") || localStorage.getItem("solvatech_ref_code") || "";
+
+        // 1. Direct Firebase Firestore customer write via Client SDK (if initialized)
+        if (db) {
+          try {
+            const userDocRef = doc(db, "users", user.uid);
+            const userSnap = await getDoc(userDocRef);
+            const nowIso = new Date().toISOString();
+
+            const profileData = {
+              id: user.uid,
+              email: user.email || "",
+              displayName: user.displayName || (user.email ? user.email.split("@")[0] : "SOLVATECH User"),
+              lastLoginAt: nowIso,
+              updatedAt: nowIso,
+            };
+
+            if (!userSnap.exists()) {
+              profileData.createdAt = nowIso;
+            }
+
+            const existing = userSnap.exists() ? (userSnap.data() || {}) : {};
+            // If user does not have a permanent referrer yet and a candidate referral code is present
+            if (!existing.referredBy && !existing.referredByCode && candidateRef) {
+              const cleanRef = candidateRef.trim().toUpperCase().replace(/^REF-/, "");
+              profileData.referredByCode = cleanRef;
+              profileData.referredAt = nowIso;
+
+              // Query Firestore to find referrer's UID
+              try {
+                const usersSnap = await getDocs(collection(db, "users"));
+                usersSnap.forEach((uDoc) => {
+                  if (uDoc.id === user.uid) return; // Prevent self-referral
+                  const uData = uDoc.data() || {};
+                  const uCode = (uData.referralCode || "").toUpperCase().replace(/^REF-/, "");
+                  if (uCode === cleanRef) {
+                    profileData.referredBy = uDoc.id;
+                    profileData.referredByUid = uDoc.id;
+                  }
+                });
+              } catch (lookupErr) {
+                console.debug("Client Firestore referrer resolution notice:", lookupErr.message);
+              }
+            }
+
+            await setDoc(userDocRef, profileData, { merge: true });
+            console.log("Customer profile and permanent referral attribution synced to Firebase Firestore");
+          } catch (fsErr) {
+            console.debug("Client Firestore user profile sync notice:", fsErr.message);
+          }
+        }
+
+        // 2. Authoritative backend synchronization & permanent Firestore persistence
+        try {
+          const authHeader = await getAuthHeader();
+          if (authHeader && candidateRef) {
+            await fetch(getApiUrl("/referral/attribute"), {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": authHeader,
+              },
+              body: JSON.stringify({ code: candidateRef, ref: candidateRef }),
+            }).catch(() => {});
+          }
+        } catch (_err) {}
       }
 
       function updateStatusUI(data) {
@@ -964,7 +1182,7 @@
       // =========================================================================
       // SOLVATECH BOT - RESPONSIVE DASHBOARD NAVIGATION TABS CONTROLLER
       // =========================================================================
-      let activeDashTab = "pair";
+      let activeDashTab = "all";
       try {
         const saved = sessionStorage.getItem("solvatech_active_dash_tab");
         if (saved) activeDashTab = saved;
@@ -1067,10 +1285,108 @@
         // Ensure active tab is valid (fallback from admin if not admin)
         const isUserAdmin = currentUser && currentUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
         if (activeDashTab === "admin" && !isUserAdmin) {
-          activeDashTab = "pair";
+          activeDashTab = "all";
         }
         switchDashboardTab(activeDashTab);
       }
+
+      // =========================================================================
+      // SOLVATECH BOT - SITE UPDATES & NAVIGATION GUIDE MODAL CONTROLLER
+      // =========================================================================
+      const siteUpdatesModal = document.getElementById("site-updates-modal");
+      const siteUpdateBadgeBtn = document.getElementById("site-update-badge-btn");
+      const openUpdatesModalDashBtn = document.getElementById("open-updates-modal-dash-btn");
+      const siteUpdatesCloseBtn = document.getElementById("site-updates-close-btn");
+      const siteUpdatesBackdrop = document.getElementById("site-updates-backdrop");
+      const guideExploreBtn = document.getElementById("guide-explore-btn");
+      const dismissDashUpdateBtn = document.getElementById("dismiss-dash-update-btn");
+      const dashboardUpdateNotice = document.getElementById("dashboard-update-notice");
+
+      const modalTabWhatsNew = document.getElementById("modal-tab-whats-new");
+      const modalTabHowTo = document.getElementById("modal-tab-how-to");
+      const guideWhatsNew = document.getElementById("guide-whats-new");
+      const guideHowTo = document.getElementById("guide-how-to");
+
+      function openSiteUpdatesModal(targetTab = "guide-whats-new") {
+        if (!siteUpdatesModal) return;
+        siteUpdatesModal.classList.remove("hidden");
+        document.body.style.overflow = "hidden";
+        switchGuideModalTab(targetTab);
+      }
+
+      function closeSiteUpdatesModal() {
+        if (!siteUpdatesModal) return;
+        siteUpdatesModal.classList.add("hidden");
+        document.body.style.overflow = "";
+      }
+
+      function switchGuideModalTab(targetPanelId) {
+        if (targetPanelId === "guide-whats-new") {
+          if (modalTabWhatsNew) modalTabWhatsNew.classList.add("active");
+          if (modalTabHowTo) modalTabHowTo.classList.remove("active");
+          if (guideWhatsNew) guideWhatsNew.classList.remove("hidden");
+          if (guideHowTo) guideHowTo.classList.add("hidden");
+        } else {
+          if (modalTabWhatsNew) modalTabWhatsNew.classList.remove("active");
+          if (modalTabHowTo) modalTabHowTo.classList.add("active");
+          if (guideWhatsNew) guideWhatsNew.classList.add("hidden");
+          if (guideHowTo) guideHowTo.classList.remove("hidden");
+        }
+      }
+
+      if (siteUpdateBadgeBtn) {
+        siteUpdateBadgeBtn.addEventListener("click", () => {
+          openSiteUpdatesModal("guide-whats-new");
+        });
+      }
+
+      if (openUpdatesModalDashBtn) {
+        openUpdatesModalDashBtn.addEventListener("click", () => {
+          openSiteUpdatesModal("guide-whats-new");
+        });
+      }
+
+      if (siteUpdatesCloseBtn) {
+        siteUpdatesCloseBtn.addEventListener("click", closeSiteUpdatesModal);
+      }
+
+      if (siteUpdatesBackdrop) {
+        siteUpdatesBackdrop.addEventListener("click", closeSiteUpdatesModal);
+      }
+
+      if (guideExploreBtn) {
+        guideExploreBtn.addEventListener("click", closeSiteUpdatesModal);
+      }
+
+      if (modalTabWhatsNew) {
+        modalTabWhatsNew.addEventListener("click", () => switchGuideModalTab("guide-whats-new"));
+      }
+
+      if (modalTabHowTo) {
+        modalTabHowTo.addEventListener("click", () => switchGuideModalTab("guide-how-to"));
+      }
+
+      if (dismissDashUpdateBtn && dashboardUpdateNotice) {
+        dismissDashUpdateBtn.addEventListener("click", () => {
+          dashboardUpdateNotice.style.display = "none";
+          try {
+            sessionStorage.setItem("solvatech_dash_notice_dismissed", "true");
+          } catch (e) {}
+        });
+
+        try {
+          if (sessionStorage.getItem("solvatech_dash_notice_dismissed") === "true") {
+            dashboardUpdateNotice.style.display = "none";
+          }
+        } catch (e) {}
+      }
+
+      // Keyboard Esc listener for modal
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && siteUpdatesModal && !siteUpdatesModal.classList.contains("hidden")) {
+          closeSiteUpdatesModal();
+        }
+      });
 
       function renderAuthState(user) {
         currentUser = user;
@@ -1773,13 +2089,15 @@
             let authHeader = await getAuthHeader();
             if (!authHeader) throw new Error("Authentication session expired. Please sign in again.");
 
+            const candidateRef = sessionStorage.getItem("solvatech_ref_code") || localStorage.getItem("solvatech_ref_code") || "";
+
             let res = await fetch(getApiUrl("/license/redeem"), {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
                 "Authorization": authHeader,
               },
-              body: JSON.stringify({ code: rawCode }),
+              body: JSON.stringify({ code: rawCode, ref: candidateRef }),
             });
 
             if (res.status === 401) {
@@ -1792,7 +2110,7 @@
                     "Content-Type": "application/json",
                     "Authorization": authHeader,
                   },
-                  body: JSON.stringify({ code: rawCode }),
+                  body: JSON.stringify({ code: rawCode, ref: candidateRef }),
                 });
               }
             }
@@ -1807,6 +2125,19 @@
               try {
                 const expiryDateStr = data.license?.expiresAt || data.expiresAt;
                 const daysVal = data.license?.durationDays || data.durationDays;
+                const userUpdates = {
+                  activeLicense: {
+                    code: rawCode,
+                    durationDays: daysVal,
+                    expiresAt: expiryDateStr,
+                    status: "active"
+                  },
+                  updatedAt: new Date().toISOString()
+                };
+                if (candidateRef) {
+                  userUpdates.referredByCode = candidateRef.trim().toUpperCase().replace(/^REF-/, "");
+                }
+
                 await Promise.all([
                   setDoc(doc(db, "user_licenses", currentUser.uid), {
                     uid: currentUser.uid,
@@ -1825,15 +2156,7 @@
                     redeemedAt: new Date().toISOString(),
                     expiresAt: expiryDateStr
                   }, { merge: true }),
-                  setDoc(doc(db, "users", currentUser.uid), {
-                    activeLicense: {
-                      code: rawCode,
-                      durationDays: daysVal,
-                      expiresAt: expiryDateStr,
-                      status: "active"
-                    },
-                    updatedAt: new Date().toISOString()
-                  }, { merge: true })
+                  setDoc(doc(db, "users", currentUser.uid), userUpdates, { merge: true })
                 ]);
                 console.log("Directly persisted license redemption to Firestore for UID:", currentUser.uid);
               } catch (fsErr) {
@@ -2076,29 +2399,50 @@
       const adminStatRewards = document.getElementById("admin-stat-rewards");
       const adminReferralsTbody = document.getElementById("admin-referrals-tbody");
 
-      // 1. Capture referral code from URL if present
+      // 1. Capture referral code from URL if present (?ref=CODE)
       function captureReferralCodeFromUrl() {
         try {
           const params = new URLSearchParams(window.location.search);
           let code = params.get("ref") || params.get("r");
+          // Backward compatibility if opened as /<CODE>
           if (!code && window.location.pathname) {
             const parts = window.location.pathname.split("/").filter(Boolean);
             if (parts.length === 1) {
               const seg = parts[0].trim().toUpperCase();
-              if (!seg.includes(".") && !["API", "BOT-API", "AUTH", "LOGIN", "ADMIN", "HEALTH", "STATUS"].includes(seg)) {
+              if (!seg.includes(".") && !["API", "BOT-API", "AUTH", "LOGIN", "ADMIN", "HEALTH", "STATUS", "DASHBOARD"].includes(seg)) {
                 code = seg;
               }
             }
           }
           if (code) {
             const clean = code.trim().toUpperCase().replace(/^REF-/, "");
-            if (clean && clean.length >= 4 && clean.length <= 16) {
+            if (clean && clean.length >= 4 && clean.length <= 16 && /^[A-Z0-9_-]+$/.test(clean)) {
               localStorage.setItem("solvatech_ref_code", clean);
+              sessionStorage.setItem("solvatech_ref_code", clean);
+              updateAuthReferralBanner(clean);
               return clean;
             }
           }
         } catch (_e) {}
-        return localStorage.getItem("solvatech_ref_code") || null;
+
+        const preserved = sessionStorage.getItem("solvatech_ref_code") || localStorage.getItem("solvatech_ref_code") || null;
+        if (preserved) {
+          updateAuthReferralBanner(preserved);
+        } else {
+          updateAuthReferralBanner(null);
+        }
+        return preserved;
+      }
+
+      function updateAuthReferralBanner(code) {
+        const banner = document.getElementById("auth-referral-banner");
+        const label = document.getElementById("auth-referral-code-label");
+        if (banner && label && code) {
+          label.textContent = code;
+          banner.classList.remove("hidden");
+        } else if (banner) {
+          banner.classList.add("hidden");
+        }
       }
 
       // Automatically capture referral code upon initial script execution
@@ -2111,7 +2455,7 @@
           let authHeader = await getAuthHeader();
           if (!authHeader) return;
 
-          const candidateRef = localStorage.getItem("solvatech_ref_code") || "";
+          const candidateRef = sessionStorage.getItem("solvatech_ref_code") || localStorage.getItem("solvatech_ref_code") || "";
           const queryParam = candidateRef ? `?ref=${encodeURIComponent(candidateRef)}` : "";
 
           let res = await fetch(getApiUrl(`/referral/me${queryParam}`), {
@@ -2152,7 +2496,19 @@
 
         if (referralLinkInput) {
           const code = data.referralCode || "";
-          referralLinkInput.value = data.referralLink || (code ? `https://solvatech.name.ng/${code}` : "https://solvatech.name.ng/");
+          const cleanCode = code ? String(code).trim().toUpperCase().replace(/^REF-/, "") : "";
+          referralLinkInput.value = cleanCode ? `https://solvatech.name.ng/?ref=${cleanCode}` : "https://solvatech.name.ng/";
+        }
+
+        const referredByPill = document.getElementById("referral-referred-by-pill");
+        if (referredByPill) {
+          const refCode = data.referredByCode || (data.referredBy ? "Active" : null);
+          if (refCode) {
+            referredByPill.textContent = `Referred by: ${refCode}`;
+            referredByPill.classList.remove("hidden");
+          } else {
+            referredByPill.classList.add("hidden");
+          }
         }
 
         if (referralStatPeople) {

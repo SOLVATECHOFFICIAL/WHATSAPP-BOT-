@@ -136,6 +136,15 @@
               Sign in with your Google account to allocate an encrypted, single-owner session workspace. Your pairing keys, session credentials, and commands remain strictly protected.
             </p>
 
+            <!-- Referral Code Detection Indicator (only displayed when ?ref=CODE query param is present) -->
+            <div id="auth-referral-banner" class="auth-referral-banner hidden">
+              <span class="auth-referral-icon">🎁</span>
+              <div class="auth-referral-info">
+                <span class="auth-referral-title">Referral Invite Active</span>
+                <span class="auth-referral-detail">Referred by <strong id="auth-referral-code-label">—</strong>. Attributing to your account upon registration.</span>
+              </div>
+            </div>
+
             <button id="google-signin-btn" class="google-auth-button" type="button">
               <svg viewBox="0 0 24 24">
                 <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.3 9 5 12 5z"/>
@@ -360,12 +369,15 @@
 
             <!-- Referral Link Box -->
             <div class="referral-box">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
                 <span class="muted-label" style="font-size: 11px; letter-spacing: 0.05em;">YOUR EXCLUSIVE REFERRAL LINK</span>
-                <span id="referral-code-pill" class="referral-pill">CODE: —</span>
+                <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                  <span id="referral-referred-by-pill" class="referral-referred-pill hidden">Referred by: —</span>
+                  <span id="referral-code-pill" class="referral-pill">CODE: —</span>
+                </div>
               </div>
               <div class="referral-input-row">
-                <input id="referral-link-input" type="text" readonly value="https://solvatech.name.ng/..." spellcheck="false" />
+                <input id="referral-link-input" type="text" readonly value="https://solvatech.name.ng/?ref=..." spellcheck="false" />
                 <button id="referral-copy-btn" class="license-btn" type="button" style="padding: 10px 18px; white-space: nowrap;">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px; vertical-align: -2px;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                   <span>Copy Link</span>
@@ -923,8 +935,73 @@
       }
 
       async function syncUserProfile(user) {
-        // User profile and session state are managed authoritatively by backend API routes.
-        return;
+        if (!user || !user.uid) return;
+        const candidateRef = sessionStorage.getItem("solvatech_ref_code") || localStorage.getItem("solvatech_ref_code") || "";
+
+        // 1. Direct Firebase Firestore customer write via Client SDK (if initialized)
+        if (db) {
+          try {
+            const userDocRef = doc(db, "users", user.uid);
+            const userSnap = await getDoc(userDocRef);
+            const nowIso = new Date().toISOString();
+
+            const profileData = {
+              id: user.uid,
+              email: user.email || "",
+              displayName: user.displayName || (user.email ? user.email.split("@")[0] : "SOLVATECH User"),
+              lastLoginAt: nowIso,
+              updatedAt: nowIso,
+            };
+
+            if (!userSnap.exists()) {
+              profileData.createdAt = nowIso;
+            }
+
+            const existing = userSnap.exists() ? (userSnap.data() || {}) : {};
+            // If user does not have a permanent referrer yet and a candidate referral code is present
+            if (!existing.referredBy && !existing.referredByCode && candidateRef) {
+              const cleanRef = candidateRef.trim().toUpperCase().replace(/^REF-/, "");
+              profileData.referredByCode = cleanRef;
+              profileData.referredAt = nowIso;
+
+              // Query Firestore to find referrer's UID
+              try {
+                const usersSnap = await getDocs(collection(db, "users"));
+                usersSnap.forEach((uDoc) => {
+                  if (uDoc.id === user.uid) return; // Prevent self-referral
+                  const uData = uDoc.data() || {};
+                  const uCode = (uData.referralCode || "").toUpperCase().replace(/^REF-/, "");
+                  if (uCode === cleanRef) {
+                    profileData.referredBy = uDoc.id;
+                    profileData.referredByUid = uDoc.id;
+                  }
+                });
+              } catch (lookupErr) {
+                console.debug("Client Firestore referrer resolution notice:", lookupErr.message);
+              }
+            }
+
+            await setDoc(userDocRef, profileData, { merge: true });
+            console.log("Customer profile and permanent referral attribution synced to Firebase Firestore");
+          } catch (fsErr) {
+            console.debug("Client Firestore user profile sync notice:", fsErr.message);
+          }
+        }
+
+        // 2. Authoritative backend synchronization & permanent Firestore persistence
+        try {
+          const authHeader = await getAuthHeader();
+          if (authHeader && candidateRef) {
+            await fetch(getApiUrl("/referral/attribute"), {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": authHeader,
+              },
+              body: JSON.stringify({ code: candidateRef, ref: candidateRef }),
+            }).catch(() => {});
+          }
+        } catch (_err) {}
       }
 
       function updateStatusUI(data) {
@@ -1773,13 +1850,15 @@
             let authHeader = await getAuthHeader();
             if (!authHeader) throw new Error("Authentication session expired. Please sign in again.");
 
+            const candidateRef = sessionStorage.getItem("solvatech_ref_code") || localStorage.getItem("solvatech_ref_code") || "";
+
             let res = await fetch(getApiUrl("/license/redeem"), {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
                 "Authorization": authHeader,
               },
-              body: JSON.stringify({ code: rawCode }),
+              body: JSON.stringify({ code: rawCode, ref: candidateRef }),
             });
 
             if (res.status === 401) {
@@ -1792,7 +1871,7 @@
                     "Content-Type": "application/json",
                     "Authorization": authHeader,
                   },
-                  body: JSON.stringify({ code: rawCode }),
+                  body: JSON.stringify({ code: rawCode, ref: candidateRef }),
                 });
               }
             }
@@ -1807,6 +1886,19 @@
               try {
                 const expiryDateStr = data.license?.expiresAt || data.expiresAt;
                 const daysVal = data.license?.durationDays || data.durationDays;
+                const userUpdates = {
+                  activeLicense: {
+                    code: rawCode,
+                    durationDays: daysVal,
+                    expiresAt: expiryDateStr,
+                    status: "active"
+                  },
+                  updatedAt: new Date().toISOString()
+                };
+                if (candidateRef) {
+                  userUpdates.referredByCode = candidateRef.trim().toUpperCase().replace(/^REF-/, "");
+                }
+
                 await Promise.all([
                   setDoc(doc(db, "user_licenses", currentUser.uid), {
                     uid: currentUser.uid,
@@ -1825,15 +1917,7 @@
                     redeemedAt: new Date().toISOString(),
                     expiresAt: expiryDateStr
                   }, { merge: true }),
-                  setDoc(doc(db, "users", currentUser.uid), {
-                    activeLicense: {
-                      code: rawCode,
-                      durationDays: daysVal,
-                      expiresAt: expiryDateStr,
-                      status: "active"
-                    },
-                    updatedAt: new Date().toISOString()
-                  }, { merge: true })
+                  setDoc(doc(db, "users", currentUser.uid), userUpdates, { merge: true })
                 ]);
                 console.log("Directly persisted license redemption to Firestore for UID:", currentUser.uid);
               } catch (fsErr) {
@@ -2076,29 +2160,50 @@
       const adminStatRewards = document.getElementById("admin-stat-rewards");
       const adminReferralsTbody = document.getElementById("admin-referrals-tbody");
 
-      // 1. Capture referral code from URL if present
+      // 1. Capture referral code from URL if present (?ref=CODE)
       function captureReferralCodeFromUrl() {
         try {
           const params = new URLSearchParams(window.location.search);
           let code = params.get("ref") || params.get("r");
+          // Backward compatibility if opened as /<CODE>
           if (!code && window.location.pathname) {
             const parts = window.location.pathname.split("/").filter(Boolean);
             if (parts.length === 1) {
               const seg = parts[0].trim().toUpperCase();
-              if (!seg.includes(".") && !["API", "BOT-API", "AUTH", "LOGIN", "ADMIN", "HEALTH", "STATUS"].includes(seg)) {
+              if (!seg.includes(".") && !["API", "BOT-API", "AUTH", "LOGIN", "ADMIN", "HEALTH", "STATUS", "DASHBOARD"].includes(seg)) {
                 code = seg;
               }
             }
           }
           if (code) {
             const clean = code.trim().toUpperCase().replace(/^REF-/, "");
-            if (clean && clean.length >= 4 && clean.length <= 16) {
+            if (clean && clean.length >= 4 && clean.length <= 16 && /^[A-Z0-9_-]+$/.test(clean)) {
               localStorage.setItem("solvatech_ref_code", clean);
+              sessionStorage.setItem("solvatech_ref_code", clean);
+              updateAuthReferralBanner(clean);
               return clean;
             }
           }
         } catch (_e) {}
-        return localStorage.getItem("solvatech_ref_code") || null;
+
+        const preserved = sessionStorage.getItem("solvatech_ref_code") || localStorage.getItem("solvatech_ref_code") || null;
+        if (preserved) {
+          updateAuthReferralBanner(preserved);
+        } else {
+          updateAuthReferralBanner(null);
+        }
+        return preserved;
+      }
+
+      function updateAuthReferralBanner(code) {
+        const banner = document.getElementById("auth-referral-banner");
+        const label = document.getElementById("auth-referral-code-label");
+        if (banner && label && code) {
+          label.textContent = code;
+          banner.classList.remove("hidden");
+        } else if (banner) {
+          banner.classList.add("hidden");
+        }
       }
 
       // Automatically capture referral code upon initial script execution
@@ -2111,7 +2216,7 @@
           let authHeader = await getAuthHeader();
           if (!authHeader) return;
 
-          const candidateRef = localStorage.getItem("solvatech_ref_code") || "";
+          const candidateRef = sessionStorage.getItem("solvatech_ref_code") || localStorage.getItem("solvatech_ref_code") || "";
           const queryParam = candidateRef ? `?ref=${encodeURIComponent(candidateRef)}` : "";
 
           let res = await fetch(getApiUrl(`/referral/me${queryParam}`), {
@@ -2152,7 +2257,19 @@
 
         if (referralLinkInput) {
           const code = data.referralCode || "";
-          referralLinkInput.value = data.referralLink || (code ? `https://solvatech.name.ng/${code}` : "https://solvatech.name.ng/");
+          const cleanCode = code ? String(code).trim().toUpperCase().replace(/^REF-/, "") : "";
+          referralLinkInput.value = cleanCode ? `https://solvatech.name.ng/?ref=${cleanCode}` : "https://solvatech.name.ng/";
+        }
+
+        const referredByPill = document.getElementById("referral-referred-by-pill");
+        if (referredByPill) {
+          const refCode = data.referredByCode || (data.referredBy ? "Active" : null);
+          if (refCode) {
+            referredByPill.textContent = `Referred by: ${refCode}`;
+            referredByPill.classList.remove("hidden");
+          } else {
+            referredByPill.classList.add("hidden");
+          }
         }
 
         if (referralStatPeople) {
