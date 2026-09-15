@@ -15,6 +15,12 @@ import {
   getUserLicenseStatus,
   ADMIN_EMAIL,
 } from "./lib/license.js";
+import {
+  ensureUserReferralData,
+  getReferralStats,
+  claimReferralReward,
+  getAdminReferralAudit,
+} from "./lib/referral.js";
 
 process.on("uncaughtException", (error) => {
   logger.error("Process uncaught exception handled gracefully", error?.stack || error?.message);
@@ -287,8 +293,85 @@ for (const p of prefixes) {
   });
 
   // --------------------------------------------------------------------------
-  // ADMIN LICENSE MANAGEMENT ROUTES (Strictly Admin Email: awoyinfasolomon1@gmail.com)
+  // REFERRAL SYSTEM ROUTES (Permanent Firebase Source of Truth)
   // --------------------------------------------------------------------------
+  app.get(`${p}/referral/me`, requireAuth, async (request, response) => {
+    try {
+      const candidateCode = request.query?.ref || "";
+      await ensureUserReferralData(
+        request.verifiedUid,
+        request.auth.email,
+        candidateCode,
+        request.headers.authorization
+      );
+      const stats = await getReferralStats(request.verifiedUid);
+      response.json({
+        success: true,
+        ...stats,
+      });
+    } catch (error) {
+      logger.error("Get referral stats error", error.stack || error.message);
+      response.status(500).json({ error: "Failed to load referral details." });
+    }
+  });
+
+  app.post(`${p}/referral/attribute`, requireAuth, async (request, response) => {
+    try {
+      const candidateCode = request.body?.code || "";
+      if (!candidateCode) {
+        return response.status(400).json({ error: "Referral code is required." });
+      }
+      await ensureUserReferralData(
+        request.verifiedUid,
+        request.auth.email,
+        candidateCode,
+        request.headers.authorization
+      );
+      const stats = await getReferralStats(request.verifiedUid);
+      response.json({
+        success: true,
+        message: "Referral attribution processed.",
+        ...stats,
+      });
+    } catch (error) {
+      logger.error("Attribute referral error", error.stack || error.message);
+      response.status(500).json({ error: "Failed to attribute referral code." });
+    }
+  });
+
+  app.post(`${p}/referral/claim`, requireAuth, async (request, response) => {
+    try {
+      const result = await claimReferralReward(
+        request.verifiedUid,
+        request.auth.email,
+        request.headers.authorization
+      );
+      response.json(result);
+    } catch (error) {
+      logger.warn(`Referral claim failed for user ${request.verifiedUid}: ${error.message}`);
+      const statusCode = error.code === "NO_REWARD_AVAILABLE" ? 400 : 500;
+      response.status(statusCode).json({
+        error: error.message || "Failed to claim referral reward.",
+        code: error.code || "CLAIM_FAILED",
+      });
+    }
+  });
+
+  // --------------------------------------------------------------------------
+  // ADMIN LICENSE & REFERRAL AUDIT ROUTES (Strictly Admin Email: awoyinfasolomon1@gmail.com)
+  // --------------------------------------------------------------------------
+  app.get(`${p}/admin/referrals`, requireAuth, requireAdmin, async (_request, response) => {
+    try {
+      const audit = await getAdminReferralAudit();
+      response.json({
+        success: true,
+        ...audit,
+      });
+    } catch (error) {
+      logger.error("Admin referral audit error", error.stack || error.message);
+      response.status(500).json({ error: "Failed to list referral audit data." });
+    }
+  });
   app.get(`${p}/admin/licenses`, requireAuth, requireAdmin, async (_request, response) => {
     try {
       const licenses = await listAllLicenses();

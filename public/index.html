@@ -316,6 +316,112 @@
           </article>
         </section>
 
+        <!-- CUSTOMER REFERRAL PROGRAM SECTION -->
+        <section id="referral-section" class="grid" style="margin-top: 24px;">
+          <article class="surface referral-card" style="grid-column: 1 / -1;">
+            <div class="card-top">
+              <span>04 / REFERRAL REWARDS</span>
+              <span id="referral-badge" class="license-badge active">EARN FREE DAYS</span>
+            </div>
+            <h2>Invite Friends & Earn Free Days</h2>
+            <p style="font-size: 13px; color: var(--muted); margin-bottom: 18px; line-height: 1.6;">
+              Share your personal link. For every <strong>₦1,000</strong> of qualifying license purchases made by customers you refer, you permanently earn <strong>3 FREE DAYS</strong> of active bot runtime.
+            </p>
+
+            <!-- Referral Link Box -->
+            <div class="referral-box">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span class="muted-label" style="font-size: 11px; letter-spacing: 0.05em;">YOUR EXCLUSIVE REFERRAL LINK</span>
+                <span id="referral-code-pill" class="referral-pill">CODE: —</span>
+              </div>
+              <div class="referral-input-row">
+                <input id="referral-link-input" type="text" readonly value="https://solvatech.name.ng/..." spellcheck="false" />
+                <button id="referral-copy-btn" class="license-btn" type="button" style="padding: 10px 18px; white-space: nowrap;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px; vertical-align: -2px;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  <span>Copy Link</span>
+                </button>
+              </div>
+              <p id="referral-copy-msg" class="license-msg success hidden" style="margin-top: 8px;">Referral link copied to clipboard!</p>
+            </div>
+
+            <!-- Referral Stats Grid -->
+            <div class="referral-metrics-grid">
+              <div class="referral-metric-item">
+                <span class="muted-label">PEOPLE REFERRED</span>
+                <span id="referral-stat-people" class="referral-metric-val">0</span>
+              </div>
+              <div class="referral-metric-item">
+                <span class="muted-label">QUALIFYING SALES</span>
+                <span id="referral-stat-sales" class="referral-metric-val">₦0</span>
+              </div>
+              <div class="referral-metric-item">
+                <span class="muted-label">AVAILABLE FREE DAYS</span>
+                <span id="referral-stat-available" class="referral-metric-val" style="color: var(--teal);">0 Days</span>
+              </div>
+              <div class="referral-metric-item">
+                <span class="muted-label">TOTAL EARNED / CLAIMED</span>
+                <span id="referral-stat-totals" class="referral-metric-val">0 / 0 Days</span>
+              </div>
+            </div>
+
+            <!-- Progress Toward Next ₦1,000 Reward -->
+            <div class="referral-progress-card">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 12px; flex-wrap: wrap; gap: 6px;">
+                <span id="referral-progress-label">Qualifying Sales: <strong>₦0 / ₦1,000</strong></span>
+                <span id="referral-needed-label" style="color: var(--teal); font-weight: 600;">₦1,000 more to earn 3 free days</span>
+              </div>
+              <div class="referral-progress-track">
+                <div id="referral-progress-bar" class="referral-progress-fill" style="width: 0%;"></div>
+              </div>
+            </div>
+
+            <!-- Claim Reward Banner (shown when availableDays >= 3) -->
+            <div id="referral-claim-banner" class="referral-claim-banner hidden">
+              <div style="display: flex; align-items: center; gap: 14px;">
+                <div class="claim-gift-badge">🎁</div>
+                <div>
+                  <h4 id="referral-claim-title" style="margin: 0; font-size: 14px; font-weight: 700; color: #fff;">3 FREE DAYS AVAILABLE</h4>
+                  <p style="margin: 3px 0 0; font-size: 12px; color: rgba(255, 255, 255, 0.9);">
+                    Claim your reward to immediately extend your active bot license.
+                  </p>
+                </div>
+              </div>
+              <button id="referral-claim-btn" class="claim-action-button" type="button">
+                CLAIM REWARD
+              </button>
+            </div>
+            <p id="referral-claim-feedback" class="license-msg hidden" style="margin-top: 12px;"></p>
+
+            <!-- Referral Activity History -->
+            <div style="margin-top: 24px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <strong style="font-size: 13px; color: var(--ink);">Referral Activity & Purchases</strong>
+                <button id="referral-refresh-btn" type="button" class="admin-preset-btn" style="padding: 4px 10px; font-size: 11px;">
+                  ↻ Refresh
+                </button>
+              </div>
+              <div class="admin-table-wrap">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Customer</th>
+                      <th>License Duration</th>
+                      <th>Qualifying Amount</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="referral-activity-tbody">
+                    <tr>
+                      <td colspan="5" style="text-align: center; color: var(--muted); padding: 18px;">No referral purchases recorded yet. Share your link to start earning!</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </article>
+        </section>
+
         <!-- ADMIN ONLY LICENSE MANAGEMENT PANEL (Strictly for awoyinfasolomon1@gmail.com) -->
         <section id="admin-panel" class="grid hidden" style="margin-top: 24px;">
           <article class="surface admin-card" style="grid-column: 1 / -1;">
@@ -371,6 +477,58 @@
                 <tbody id="admin-licenses-tbody">
                   <tr>
                     <td colspan="6" style="text-align: center; color: var(--muted); padding: 18px;">Loading license records...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Admin Referral Audit Sub-Section -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 32px; border-top: 1px solid var(--line); padding-top: 20px;">
+              <div>
+                <strong style="font-size: 13px; color: var(--ink);">Referral Program Performance & Audit</strong>
+                <p style="font-size: 11px; color: var(--muted); margin: 2px 0 0;">Permanent referrer accounts, qualifying sales, and rewards accounting.</p>
+              </div>
+              <button id="admin-refresh-referrals-btn" type="button" class="admin-preset-btn" style="padding: 4px 10px; font-size: 10px;">
+                ↻ Refresh Referrals
+              </button>
+            </div>
+
+            <!-- Admin Referral Summary Stats -->
+            <div class="referral-metrics-grid" style="margin-top: 14px; margin-bottom: 14px;">
+              <div class="referral-metric-item">
+                <span class="muted-label">TOTAL REFERRERS</span>
+                <span id="admin-stat-referrers" class="referral-metric-val">0</span>
+              </div>
+              <div class="referral-metric-item">
+                <span class="muted-label">REFERRED CUSTOMERS</span>
+                <span id="admin-stat-referred-users" class="referral-metric-val">0</span>
+              </div>
+              <div class="referral-metric-item">
+                <span class="muted-label">TOTAL QUALIFYING SALES</span>
+                <span id="admin-stat-sales" class="referral-metric-val" style="color: var(--teal);">₦0</span>
+              </div>
+              <div class="referral-metric-item">
+                <span class="muted-label">REWARDS (EARNED / CLAIMED)</span>
+                <span id="admin-stat-rewards" class="referral-metric-val">0 / 0 Days</span>
+              </div>
+            </div>
+
+            <div class="admin-table-wrap">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Referrer UID / Email</th>
+                    <th>Referral Code</th>
+                    <th>Referred Users</th>
+                    <th>Qualifying Sales</th>
+                    <th>Earned Days</th>
+                    <th>Claimed Days</th>
+                    <th>Available Days</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-referrals-tbody">
+                  <tr>
+                    <td colspan="7" style="text-align: center; color: var(--muted); padding: 18px;">Loading referral records...</td>
                   </tr>
                 </tbody>
               </table>
@@ -796,10 +954,12 @@
           syncUserProfile(user);
           refresh();
           refreshLicenseStatus();
+          refreshReferralStatus();
           if (!statusIntervalId) {
             statusIntervalId = setInterval(() => {
               refresh();
               refreshLicenseStatus();
+              refreshReferralStatus();
             }, 4000);
           }
         } else {
@@ -882,6 +1042,33 @@
         }
       }
 
+      // Safe JSON Serializer to prevent any Circular Structure errors
+      function safeJsonStringify(obj) {
+        if (!obj || typeof obj !== "object") return String(obj);
+        try {
+          const seen = new WeakSet();
+          return JSON.stringify(obj, (key, value) => {
+            if (typeof value === "object" && value !== null) {
+              if (seen.has(value)) {
+                return undefined;
+              }
+              seen.add(value);
+            }
+            return value;
+          });
+        } catch {
+          if (obj && obj.uid) {
+            return JSON.stringify({
+              uid: obj.uid,
+              email: obj.email || "",
+              displayName: obj.displayName || "",
+              photoURL: obj.photoURL || ""
+            });
+          }
+          return "{}";
+        }
+      }
+
       // Studio Preview Session Provider (for development environments)
       async function startPreviewSession() {
         showAuthError("");
@@ -897,13 +1084,20 @@
           if (!res.ok) throw new Error("Could not create studio preview session.");
           const data = await res.json();
           if (data && data.token && data.user) {
+            const cleanUser = {
+              uid: String(data.user.uid || "admin_preview_user"),
+              email: String(data.user.email || "awoyinfasolomon1@gmail.com"),
+              displayName: String(data.user.displayName || "Admin User"),
+              photoURL: String(data.user.photoURL || "")
+            };
+
             sessionStorage.setItem("solvatech_preview_token", data.token);
-            sessionStorage.setItem("solvatech_preview_user", JSON.stringify(data.user));
+            sessionStorage.setItem("solvatech_preview_user", safeJsonStringify(cleanUser));
             localStorage.setItem("solvatech_preview_token", data.token);
-            localStorage.setItem("solvatech_preview_user", JSON.stringify(data.user));
+            localStorage.setItem("solvatech_preview_user", safeJsonStringify(cleanUser));
 
             const previewUser = {
-              ...data.user,
+              ...cleanUser,
               getIdToken: async () => data.token,
               type: "preview"
             };
@@ -1297,6 +1491,7 @@
           if (data.isAdmin || currentUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
             if (adminPanel) adminPanel.classList.remove("hidden");
             loadAdminLicenses();
+            loadAdminReferrals();
           } else {
             if (adminPanel) adminPanel.classList.add("hidden");
           }
@@ -1470,7 +1665,10 @@
             }
             if (licenseCodeInput) licenseCodeInput.value = "";
 
-            await refreshLicenseStatus();
+            await Promise.all([
+              refreshLicenseStatus(),
+              refreshReferralStatus()
+            ]);
           } catch (err) {
             if (licenseMsg) {
               licenseMsg.className = "license-msg error";
@@ -1664,6 +1862,382 @@
         } catch (err) {
           console.debug("Failed to load admin licenses table:", err.message);
         }
+      }
+
+      // =========================================================================
+      // SOLVATECH BOT - CUSTOMER REFERRAL SYSTEM CONTROLLER
+      // =========================================================================
+      const referralCodePill = document.getElementById("referral-code-pill");
+      const referralLinkInput = document.getElementById("referral-link-input");
+      const referralCopyBtn = document.getElementById("referral-copy-btn");
+      const referralCopyMsg = document.getElementById("referral-copy-msg");
+      const referralStatPeople = document.getElementById("referral-stat-people");
+      const referralStatSales = document.getElementById("referral-stat-sales");
+      const referralStatAvailable = document.getElementById("referral-stat-available");
+      const referralStatTotals = document.getElementById("referral-stat-totals");
+      const referralProgressLabel = document.getElementById("referral-progress-label");
+      const referralNeededLabel = document.getElementById("referral-needed-label");
+      const referralProgressBar = document.getElementById("referral-progress-bar");
+      const referralClaimBanner = document.getElementById("referral-claim-banner");
+      const referralClaimTitle = document.getElementById("referral-claim-title");
+      const referralClaimBtn = document.getElementById("referral-claim-btn");
+      const referralClaimFeedback = document.getElementById("referral-claim-feedback");
+      const referralActivityTbody = document.getElementById("referral-activity-tbody");
+      const referralRefreshBtn = document.getElementById("referral-refresh-btn");
+
+      // Admin Referral Elements
+      const adminRefreshReferralsBtn = document.getElementById("admin-refresh-referrals-btn");
+      const adminStatReferrers = document.getElementById("admin-stat-referrers");
+      const adminStatReferredUsers = document.getElementById("admin-stat-referred-users");
+      const adminStatSales = document.getElementById("admin-stat-sales");
+      const adminStatRewards = document.getElementById("admin-stat-rewards");
+      const adminReferralsTbody = document.getElementById("admin-referrals-tbody");
+
+      // 1. Capture referral code from URL if present
+      function captureReferralCodeFromUrl() {
+        try {
+          const params = new URLSearchParams(window.location.search);
+          let code = params.get("ref") || params.get("r");
+          if (!code && window.location.pathname) {
+            const parts = window.location.pathname.split("/").filter(Boolean);
+            if (parts.length === 1) {
+              const seg = parts[0].trim().toUpperCase();
+              if (!seg.includes(".") && !["API", "BOT-API", "AUTH", "LOGIN", "ADMIN", "HEALTH", "STATUS"].includes(seg)) {
+                code = seg;
+              }
+            }
+          }
+          if (code) {
+            const clean = code.trim().toUpperCase().replace(/^REF-/, "");
+            if (clean && clean.length >= 4 && clean.length <= 16) {
+              localStorage.setItem("solvatech_ref_code", clean);
+              return clean;
+            }
+          }
+        } catch (_e) {}
+        return localStorage.getItem("solvatech_ref_code") || null;
+      }
+
+      // Automatically capture referral code upon initial script execution
+      captureReferralCodeFromUrl();
+
+      // 2. Fetch user's referral status from backend
+      async function refreshReferralStatus() {
+        if (!currentUser) return;
+        try {
+          let authHeader = await getAuthHeader();
+          if (!authHeader) return;
+
+          const candidateRef = localStorage.getItem("solvatech_ref_code") || "";
+          const queryParam = candidateRef ? `?ref=${encodeURIComponent(candidateRef)}` : "";
+
+          let res = await fetch(getApiUrl(`/referral/me${queryParam}`), {
+            headers: {
+              "Accept": "application/json",
+              "Authorization": authHeader,
+            },
+          });
+
+          if (res.status === 401) {
+            const refreshedToken = await getValidIdToken(true);
+            if (refreshedToken) {
+              authHeader = `Bearer ${refreshedToken}`;
+              res = await fetch(getApiUrl(`/referral/me${queryParam}`), {
+                headers: {
+                  "Accept": "application/json",
+                  "Authorization": authHeader,
+                },
+              });
+            }
+          }
+
+          const data = await safeFetchJson(res);
+          if (res.ok && data) {
+            updateReferralUI(data);
+          }
+        } catch (err) {
+          console.debug("Referral poll error:", err.message);
+        }
+      }
+
+      function updateReferralUI(data) {
+        if (!data) return;
+
+        if (referralCodePill) {
+          referralCodePill.textContent = `CODE: ${data.referralCode || "—"}`;
+        }
+
+        if (referralLinkInput) {
+          const code = data.referralCode || "";
+          referralLinkInput.value = data.referralLink || (code ? `https://solvatech.name.ng/${code}` : "https://solvatech.name.ng/");
+        }
+
+        if (referralStatPeople) {
+          referralStatPeople.textContent = String(data.referredCount || 0);
+        }
+
+        if (referralStatSales) {
+          const sales = Number(data.qualifyingSalesNgn || 0);
+          referralStatSales.textContent = `₦${sales.toLocaleString()}`;
+        }
+
+        if (referralStatAvailable) {
+          const avail = Number(data.availableDays || 0);
+          referralStatAvailable.textContent = `${avail} Day${avail === 1 ? "" : "s"}`;
+        }
+
+        if (referralStatTotals) {
+          const earned = Number(data.earnedDaysTotal || 0);
+          const claimed = Number(data.claimedDaysTotal || 0);
+          referralStatTotals.textContent = `${earned} / ${claimed} Days`;
+        }
+
+        const progressNgn = Number(data.progressNgn || 0);
+        const neededNgn = Number(data.neededForNextRewardNgn || 1000);
+
+        if (referralProgressLabel) {
+          referralProgressLabel.innerHTML = `Qualifying Sales: <strong>₦${progressNgn.toLocaleString()} / ₦1,000</strong>`;
+        }
+
+        if (referralNeededLabel) {
+          if (neededNgn <= 0 || progressNgn >= 1000) {
+            referralNeededLabel.textContent = "Reward threshold reached!";
+          } else {
+            referralNeededLabel.textContent = `₦${neededNgn.toLocaleString()} more to earn 3 free days`;
+          }
+        }
+
+        if (referralProgressBar) {
+          const pct = Math.min(100, Math.max(0, Math.round((progressNgn / 1000) * 100)));
+          referralProgressBar.style.width = `${pct}%`;
+        }
+
+        // Available free days claim banner
+        const availableDays = Number(data.availableDays || 0);
+        if (referralClaimBanner && referralClaimTitle) {
+          if (availableDays >= 3) {
+            referralClaimTitle.textContent = `🎁 ${availableDays} FREE DAY${availableDays === 1 ? "" : "S"} AVAILABLE`;
+            referralClaimBanner.classList.remove("hidden");
+          } else {
+            referralClaimBanner.classList.add("hidden");
+          }
+        }
+
+        // Render referral purchases history
+        if (referralActivityTbody) {
+          const purchases = Array.isArray(data.purchases) ? data.purchases : [];
+          if (purchases.length === 0) {
+            referralActivityTbody.innerHTML = `
+              <tr>
+                <td colspan="5" style="text-align: center; color: var(--muted); padding: 18px;">
+                  No referral purchases recorded yet. Share your link to start earning!
+                </td>
+              </tr>
+            `;
+          } else {
+            referralActivityTbody.innerHTML = purchases.map((p) => {
+              const dt = p.createdAt ? new Date(p.createdAt).toLocaleDateString(undefined, {
+                month: "short",
+                day: "numeric",
+                year: "numeric"
+              }) : "—";
+              const buyer = p.buyerEmailMasked || (p.buyerUid ? `${p.buyerUid.slice(0, 6)}...` : "Referred User");
+              const duration = `${p.durationDays || 0} Day(s)`;
+              const amount = `₦${Number(p.qualifyingAmountNgn || 0).toLocaleString()}`;
+              return `
+                <tr>
+                  <td>${dt}</td>
+                  <td><span class="code-pill">${buyer}</span></td>
+                  <td>${duration}</td>
+                  <td style="font-weight: 700; color: var(--teal);">${amount}</td>
+                  <td><span style="color: var(--teal); font-weight: 700;">● QUALIFIED</span></td>
+                </tr>
+              `;
+            }).join("");
+          }
+        }
+      }
+
+      // Copy Referral Link
+      if (referralCopyBtn && referralLinkInput) {
+        referralCopyBtn.addEventListener("click", async () => {
+          const link = referralLinkInput.value;
+          if (!link) return;
+
+          try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              await navigator.clipboard.writeText(link);
+            } else {
+              referralLinkInput.select();
+              document.execCommand("copy");
+            }
+
+            if (referralCopyMsg) {
+              referralCopyMsg.textContent = "Referral link copied to clipboard!";
+              referralCopyMsg.classList.remove("hidden");
+              setTimeout(() => {
+                referralCopyMsg.classList.add("hidden");
+              }, 3000);
+            }
+          } catch (_err) {
+            referralLinkInput.select();
+          }
+        });
+      }
+
+      // Claim Referral Reward
+      if (referralClaimBtn) {
+        referralClaimBtn.addEventListener("click", async () => {
+          try {
+            referralClaimBtn.disabled = true;
+            referralClaimBtn.textContent = "CLAIMING...";
+            if (referralClaimFeedback) referralClaimFeedback.classList.add("hidden");
+
+            let authHeader = await getAuthHeader();
+            if (!authHeader) throw new Error("Authentication required.");
+
+            let res = await fetch(getApiUrl("/referral/claim"), {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "Authorization": authHeader,
+              },
+            });
+
+            if (res.status === 401) {
+              const refreshedToken = await getValidIdToken(true);
+              if (refreshedToken) {
+                authHeader = `Bearer ${refreshedToken}`;
+                res = await fetch(getApiUrl("/referral/claim"), {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "Authorization": authHeader,
+                  },
+                });
+              }
+            }
+
+            const data = await safeFetchJson(res);
+            if (!res.ok) {
+              throw new Error(data.error || "Failed to claim referral reward.");
+            }
+
+            if (referralClaimFeedback) {
+              referralClaimFeedback.className = "license-msg success";
+              referralClaimFeedback.textContent = data.message || `Success! Claimed ${data.daysAwarded || 3} free days.`;
+              referralClaimFeedback.classList.remove("hidden");
+            }
+
+            await Promise.all([
+              refreshLicenseStatus(),
+              refreshReferralStatus(),
+            ]);
+          } catch (err) {
+            if (referralClaimFeedback) {
+              referralClaimFeedback.className = "license-msg error";
+              referralClaimFeedback.textContent = err.message || "Failed to claim reward.";
+              referralClaimFeedback.classList.remove("hidden");
+            }
+          } finally {
+            if (referralClaimBtn) {
+              referralClaimBtn.disabled = false;
+              referralClaimBtn.textContent = "CLAIM REWARD";
+            }
+          }
+        });
+      }
+
+      if (referralRefreshBtn) {
+        referralRefreshBtn.addEventListener("click", () => {
+          refreshReferralStatus();
+        });
+      }
+
+      // 3. Admin Referral Audit Loader
+      async function loadAdminReferrals() {
+        if (!currentUser || currentUser.email?.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) return;
+
+        try {
+          let authHeader = await getAuthHeader();
+          if (!authHeader) return;
+
+          let res = await fetch(getApiUrl("/admin/referrals"), {
+            headers: {
+              "Accept": "application/json",
+              "Authorization": authHeader,
+            },
+          });
+
+          if (res.status === 401) {
+            const refreshedToken = await getValidIdToken(true);
+            if (refreshedToken) {
+              authHeader = `Bearer ${refreshedToken}`;
+              res = await fetch(getApiUrl("/admin/referrals"), {
+                headers: {
+                  "Accept": "application/json",
+                  "Authorization": authHeader,
+                },
+              });
+            }
+          }
+
+          const data = await safeFetchJson(res);
+          if (!res.ok) return;
+
+          if (data.summary) {
+            if (adminStatReferrers) adminStatReferrers.textContent = String(data.summary.totalReferrers || 0);
+            if (adminStatReferredUsers) adminStatReferredUsers.textContent = String(data.summary.totalReferredCustomers || 0);
+            if (adminStatSales) {
+              const totalSales = Number(data.summary.totalQualifyingSalesNgn || 0);
+              adminStatSales.textContent = `₦${totalSales.toLocaleString()}`;
+            }
+            if (adminStatRewards) {
+              const earned = Number(data.summary.totalRewardsEarnedDays || 0);
+              const claimed = Number(data.summary.totalRewardsClaimedDays || 0);
+              adminStatRewards.textContent = `${earned} / ${claimed} Days`;
+            }
+          }
+
+          if (adminReferralsTbody) {
+            const referrers = Array.isArray(data.referrers) ? data.referrers : [];
+            if (referrers.length === 0) {
+              adminReferralsTbody.innerHTML = `
+                <tr>
+                  <td colspan="7" style="text-align: center; color: var(--muted); padding: 18px;">
+                    No referral accounts active yet.
+                  </td>
+                </tr>
+              `;
+            } else {
+              adminReferralsTbody.innerHTML = referrers.map((r) => {
+                const idLabel = r.email || r.uid || "—";
+                const sales = `₦${Number(r.qualifyingSalesNgn || 0).toLocaleString()}`;
+                return `
+                  <tr>
+                    <td><span class="code-pill">${idLabel}</span></td>
+                    <td><strong>${r.referralCode || "—"}</strong></td>
+                    <td>${r.referredUsersCount || 0}</td>
+                    <td style="font-weight: 700; color: var(--teal);">${sales}</td>
+                    <td>${r.earnedDaysTotal || 0} Days</td>
+                    <td>${r.claimedDaysTotal || 0} Days</td>
+                    <td style="font-weight: 700; color: var(--teal);">${r.availableDays || 0} Days</td>
+                  </tr>
+                `;
+              }).join("");
+            }
+          }
+        } catch (err) {
+          console.debug("Failed to load admin referrals:", err.message);
+        }
+      }
+
+      if (adminRefreshReferralsBtn) {
+        adminRefreshReferralsBtn.addEventListener("click", () => {
+          loadAdminReferrals();
+        });
       }
 
       // =========================================================================
