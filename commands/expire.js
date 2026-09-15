@@ -1,4 +1,4 @@
-import { getUserLicenseStatus } from "../lib/license.js";
+import { getUserLicenseStatus, syncAllFromFirestore } from "../lib/license.js";
 
 function formatDuration(ms) {
   const totalSeconds = Math.max(0, Math.floor(ms / 1000));
@@ -27,6 +27,9 @@ export default async function expire({
   sock,
 }) {
   try {
+    // Authoritatively fetch all existing license records, activations, and keys from Firebase Firestore
+    await syncAllFromFirestore().catch(() => {});
+
     // Resolve real user identifier from all available sources: phone number, verifiedUid, email, or userId
     const phone =
       botNumber ||

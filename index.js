@@ -13,6 +13,7 @@ import {
   listAllLicenses,
   redeemLicenseCode,
   getUserLicenseStatus,
+  syncAllFromFirestore,
   ADMIN_EMAIL,
 } from "./lib/license.js";
 import {
@@ -745,6 +746,13 @@ app.use((error, _request, response, _next) => {
 
 app.listen(PORT, "0.0.0.0", () => {
   logger.info("SOLVATECH BOT web server listening", String(PORT));
+  syncAllFromFirestore()
+    .then((res) => {
+      logger.info(`Firestore license sync loaded ${res.licensesCount} license(s) and ${res.userLicensesCount} user activation(s).`);
+    })
+    .catch((err) => {
+      logger.warn("Initial Firestore license sync note", err.message);
+    });
   restoreAllSessions().catch((error) => {
     logger.warn("Auto-restore session error", error.message);
   });
