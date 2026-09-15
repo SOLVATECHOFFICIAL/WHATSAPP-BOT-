@@ -261,7 +261,7 @@ for (const p of prefixes) {
         email: request.auth.email,
       };
 
-      const result = await redeemLicenseCode(code, verifiedUser);
+      const result = await redeemLicenseCode(code, verifiedUser, request.headers.authorization);
 
       // Auto-reconnect existing saved session if present and valid
       const controller = getWhatsAppController(request.safeUserId, {
@@ -311,7 +311,7 @@ for (const p of prefixes) {
         return response.status(400).json({ error: "Valid duration in days is required (1-365)." });
       }
 
-      const created = await createLicenseRecord(days, request.auth.email);
+      const created = await createLicenseRecord(days, request.auth.email, request.headers.authorization);
       logger.info(`Admin generated new ${days}-day license: ${created.code}`);
       response.json({
         success: true,

@@ -451,7 +451,11 @@
         initializeFirestore,
         doc,
         setDoc,
-        getDoc
+        getDoc,
+        getDocs,
+        collection,
+        query,
+        orderBy
       } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
 
       const $ = (id) => document.getElementById(id);
@@ -1420,6 +1424,45 @@
               throw new Error(data.error || "Redemption failed.");
             }
 
+            // Directly write to Firestore from authenticated customer client as permanent source of truth
+            if (db && currentUser && currentUser.uid) {
+              try {
+                const expiryDateStr = data.license?.expiresAt || data.expiresAt;
+                const daysVal = data.license?.durationDays || data.durationDays;
+                await Promise.all([
+                  setDoc(doc(db, "user_licenses", currentUser.uid), {
+                    uid: currentUser.uid,
+                    email: currentUser.email || "",
+                    lastLicenseCode: rawCode,
+                    durationDays: daysVal,
+                    expiresAt: expiryDateStr,
+                    redeemedAt: new Date().toISOString(),
+                    status: "active",
+                    updatedAt: new Date().toISOString()
+                  }, { merge: true }),
+                  setDoc(doc(db, "licenses", rawCode), {
+                    status: "used",
+                    redeemedByUid: currentUser.uid,
+                    redeemedByEmail: currentUser.email || "",
+                    redeemedAt: new Date().toISOString(),
+                    expiresAt: expiryDateStr
+                  }, { merge: true }),
+                  setDoc(doc(db, "users", currentUser.uid), {
+                    activeLicense: {
+                      code: rawCode,
+                      durationDays: daysVal,
+                      expiresAt: expiryDateStr,
+                      status: "active"
+                    },
+                    updatedAt: new Date().toISOString()
+                  }, { merge: true })
+                ]);
+                console.log("Directly persisted license redemption to Firestore for UID:", currentUser.uid);
+              } catch (fsErr) {
+                console.debug("Client Firestore direct redemption save notice:", fsErr.message);
+              }
+            }
+
             if (licenseMsg) {
               licenseMsg.className = "license-msg success";
               licenseMsg.textContent = data.message || "License successfully activated!";
@@ -1515,6 +1558,16 @@
               throw new Error(data.error || "License generation failed.");
             }
 
+            // Directly write to Firestore from authenticated admin client as permanent source of truth
+            if (db && data.license && data.license.code) {
+              try {
+                await setDoc(doc(db, "licenses", data.license.code), data.license, { merge: true });
+                console.log("Directly persisted license to Firestore collection licenses:", data.license.code);
+              } catch (fsErr) {
+                console.debug("Client Firestore direct save notice:", fsErr.message);
+              }
+            }
+
             if (adminGenerateMsg) {
               adminGenerateMsg.className = "license-msg success";
               adminGenerateMsg.innerHTML = `Created code: <strong style="user-select:all; color:var(--teal);">${data.license.code}</strong> (${data.license.durationDays} Days)`;
@@ -1544,22 +1597,9 @@
 
       async function loadAdminLicenses() {
         if (!currentUser || !adminLicensesTbody) return;
-        try {
-          let authHeader = await getAuthHeader();
-          if (!authHeader) return;
 
-          let res = await fetch(getApiUrl("/admin/licenses"), {
-            headers: {
-              "Accept": "application/json",
-              "Authorization": authHeader,
-            },
-          });
-
-          const data = await safeFetchJson(res);
-          if (!res.ok) return;
-          const licenses = data.licenses || [];
-
-          if (licenses.length === 0) {
+        function renderTable(licenses) {
+          if (!licenses || licenses.length === 0) {
             adminLicensesTbody.innerHTML = `
               <tr>
                 <td colspan="6" style="text-align: center; color: var(--muted); padding: 18px;">No licenses generated yet.</td>
@@ -1585,6 +1625,42 @@
               </tr>
             `;
           }).join("");
+        }
+
+        // 1. Direct Firestore collection read as permanent source of truth
+        if (db) {
+          try {
+            const snap = await getDocs(collection(db, "licenses"));
+            const firestoreList = [];
+            snap.forEach((d) => {
+              if (d.data() && d.data().code) firestoreList.push(d.data());
+            });
+            if (firestoreList.length > 0) {
+              firestoreList.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+              renderTable(firestoreList);
+              return;
+            }
+          } catch (fsErr) {
+            console.debug("Firestore direct getDocs note, falling back to API:", fsErr.message);
+          }
+        }
+
+        // 2. Fallback to API route
+        try {
+          let authHeader = await getAuthHeader();
+          if (!authHeader) return;
+
+          let res = await fetch(getApiUrl("/admin/licenses"), {
+            headers: {
+              "Accept": "application/json",
+              "Authorization": authHeader,
+            },
+          });
+
+          const data = await safeFetchJson(res);
+          if (!res.ok) return;
+          const licenses = data.licenses || [];
+          renderTable(licenses);
         } catch (err) {
           console.debug("Failed to load admin licenses table:", err.message);
         }
