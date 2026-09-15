@@ -11,16 +11,38 @@ function formatDuration(ms) {
   if (days > 0) parts.push(`${days} day${days === 1 ? "" : "s"}`);
   if (hours > 0) parts.push(`${hours} hour${hours === 1 ? "" : "s"}`);
   if (minutes > 0) parts.push(`${minutes} minute${minutes === 1 ? "" : "s"}`);
-  if (parts.length === 0) {
+  if (parts.length === 0 || (days === 0 && hours === 0)) {
     parts.push(`${seconds} second${seconds === 1 ? "" : "s"}`);
   }
   return parts.join(" ");
 }
 
-export default async function expire({ reply, userId = "default" }) {
+export default async function expire({
+  reply,
+  userId = "default",
+  verifiedUid = "",
+  userEmail = "",
+  botNumber = "",
+  sender = "",
+  sock,
+}) {
   try {
-    // Read permanent license status directly from Firebase / authoritative license manager
-    const licenseStatus = await getUserLicenseStatus(userId);
+    // Resolve real user identifier from all available sources: phone number, verifiedUid, email, or userId
+    const phone =
+      botNumber ||
+      (typeof sender === "string" ? sender.split("@")[0].replace(/\D/g, "") : "") ||
+      sock?.user?.id?.split(":")[0]?.split("@")[0] ||
+      (typeof userId === "string" && /^\d+$/.test(userId) ? userId : "");
+
+    const effectiveUid =
+      verifiedUid && verifiedUid !== "default"
+        ? verifiedUid
+        : userId && userId !== "default"
+        ? userId
+        : "";
+
+    // Read authoritative license status for this specific real user
+    const licenseStatus = await getUserLicenseStatus(effectiveUid, userEmail, phone);
 
     if (licenseStatus.isAdmin) {
       return reply([
@@ -49,18 +71,19 @@ export default async function expire({ reply, userId = "default" }) {
     const expiryMs = expiryDate.getTime();
     const diffMs = expiryMs - now;
 
-    const expiryFormattedDate = expiryDate.toLocaleDateString("en-US", {
+    const expiryFormattedDate = expiryDate.toLocaleString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+      second: "2-digit",
       timeZoneName: "short",
     });
 
     if (diffMs > 0) {
       // Active license
-      const remainingStr = `${formatDuration(diffMs)} remaining`;
+      const remainingStr = formatDuration(diffMs);
       return reply([
         "🔑 *SOLVATECH BOT LICENSE STATUS*",
         "────────────────────────────",
@@ -68,16 +91,17 @@ export default async function expire({ reply, userId = "default" }) {
         `┃ ⏳ *Time Left:* ${remainingStr}`,
         `┃ 📅 *Expires At:* ${expiryFormattedDate}`,
         ...(licenseStatus.code ? [`┃ 🏷️ *Last Key:* ${licenseStatus.code}`] : []),
+        ...(licenseStatus.userEmail ? [`┃ 👤 *Account:* ${licenseStatus.userEmail}`] : []),
         "╰────────────────────────────",
       ].join("\n"));
     } else {
       // Expired license
-      const agoStr = `${formatDuration(Math.abs(diffMs))} ago`;
+      const agoStr = formatDuration(Math.abs(diffMs));
       return reply([
         "🔑 *SOLVATECH BOT LICENSE STATUS*",
         "────────────────────────────",
         "┃ 🔴 *Status:* EXPIRED",
-        `┃ ⚠️ *Expired:* ${agoStr}`,
+        `┃ ⚠️ *Expired:* ${agoStr} ago`,
         `┃ 📅 *Expired On:* ${expiryFormattedDate}`,
         "┃ 💡 *Renew:* Redeem a new license key on the web dashboard to restore unlimited bot commands.",
         "╰────────────────────────────",
