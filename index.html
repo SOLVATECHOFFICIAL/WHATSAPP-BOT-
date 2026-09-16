@@ -243,6 +243,11 @@
             <span class="dash-tab-text">License</span>
             <span id="tab-license-indicator" class="tab-chip">ACTIVE</span>
           </button>
+          <button type="button" class="dash-tab-btn" data-tab="reconnect" id="tab-btn-reconnect">
+            <span class="dash-tab-icon">🔄</span>
+            <span class="dash-tab-text">Reconnection Logs</span>
+            <span id="tab-reconnect-indicator" class="tab-chip">LIVE</span>
+          </button>
           <button type="button" class="dash-tab-btn" data-tab="referrals" id="tab-btn-referrals">
             <span class="dash-tab-icon">🎁</span>
             <span class="dash-tab-text">Referrals</span>
@@ -311,6 +316,32 @@
             <span class="muted-label">CONNECTED NUMBER</span>
             <strong id="connected-number">—</strong>
             <button id="disconnect" class="disconnect" disabled>Disconnect Session</button>
+
+            <!-- Live Battery & Reconnect Health Widget in Status Card -->
+            <div id="status-battery-wrap" class="status-battery-wrap">
+              <div class="status-battery-header">
+                <span class="muted-label">DEVICE BATTERY</span>
+                <span id="battery-status-tag" class="battery-status-tag">100% • GOOD</span>
+              </div>
+              <div class="battery-meter-bar">
+                <div id="battery-level-fill" class="battery-level-fill" style="width: 100%;"></div>
+              </div>
+              <div class="battery-meta-row">
+                <span id="battery-charging-indicator" class="battery-charging-indicator">🔋 Battery Power</span>
+                <span id="battery-updated-indicator" class="battery-updated-indicator">Telemetry Active</span>
+              </div>
+            </div>
+
+            <div class="reconnect-quick-summary">
+              <div class="reconnect-summary-row">
+                <span class="muted-label">AUTO-RECONNECTS</span>
+                <span id="reconnect-stat-badge" class="reconnect-stat-badge">0 Retries (Stable)</span>
+              </div>
+              <button id="view-reconnect-logs-btn" type="button" class="view-reconnect-logs-link">
+                <span>View Reconnection Logs</span>
+                <span>→</span>
+              </button>
+            </div>
           </aside>
         </section>
 
@@ -353,6 +384,120 @@
               </div>
               <p id="license-msg" class="license-msg hidden"></p>
             </form>
+          </article>
+        </section>
+
+        <!-- DEDICATED RECONNECTION LOGS & BATTERY TELEMETRY SECTION -->
+        <section id="section-reconnect" class="grid dashboard-tab-content hidden" style="margin-top: 24px;">
+          <article class="surface reconnect-dashboard-card">
+            <div class="reconnect-section-topbar">
+              <div class="reconnect-header-titles">
+                <div class="card-top" style="margin-bottom: 4px;">
+                  <span>04 / BOT TELEMETRY & STABILITY</span>
+                  <span id="reconnect-live-badge" class="license-badge active">AUTO-RECOVERY ACTIVE</span>
+                </div>
+                <h2>Automatic Bot Reconnection & Battery Logs</h2>
+                <p class="lede" style="font-size: 13px; margin-top: 4px;">Real-time timestamps for automated socket handshakes, 515 restart recoveries, backoff schedules, and phone battery telemetry.</p>
+              </div>
+              <div class="reconnect-header-actions">
+                <button type="button" id="trigger-reconnect-btn" class="reconnect-action-btn primary" title="Trigger instant socket reconnect">
+                  <span>⚡</span>
+                  <span>Instant Reconnect</span>
+                </button>
+                <button type="button" id="refresh-reconnect-logs-btn" class="reconnect-action-btn" title="Refresh logs from server">
+                  <span>🔄</span>
+                  <span>Refresh Now</span>
+                </button>
+                <button type="button" id="clear-reconnect-filter-btn" class="reconnect-action-btn" title="Reset filters">
+                  <span>Show All</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Bento Stats Grid -->
+            <div class="reconnect-stats-bento">
+              <!-- Stat Card 1: Battery Telemetry -->
+              <div class="reconnect-stat-card">
+                <span class="card-label">DEVICE BATTERY TELEMETRY</span>
+                <div class="stat-hero-value">
+                  <span id="dash-battery-level-text">100%</span>
+                  <span id="dash-battery-icon" style="font-size: 18px;">🔋</span>
+                </div>
+                <div class="battery-meter-bar" style="margin: 4px 0;">
+                  <div id="dash-battery-bar" class="battery-level-fill" style="width: 100%;"></div>
+                </div>
+                <div class="stat-subtitle" id="dash-battery-meta">Power state: Battery power • Telemetry active</div>
+              </div>
+
+              <!-- Stat Card 2: Auto-Reconnect Engine -->
+              <div class="reconnect-stat-card">
+                <span class="card-label">AUTO-RECONNECT ENGINE</span>
+                <div class="stat-hero-value" id="dash-reconnect-status-hero" style="font-size: 18px; color: var(--teal);">
+                  <span>🟢</span>
+                  <span id="dash-reconnect-engine-state">Active & Stable</span>
+                </div>
+                <div class="stat-subtitle" id="dash-reconnect-policy-text">
+                  Policy: Exponential backoff (1.5s - 60s) with Baileys 515 handshake auto-recovery
+                </div>
+                <div style="font-size: 11px; font-family: 'DM Mono', monospace; color: var(--orange);" id="dash-next-retry-text"></div>
+              </div>
+
+              <!-- Stat Card 3: Reliability & Success Metrics -->
+              <div class="reconnect-stat-card">
+                <span class="card-label">RECONNECTION RELIABILITY</span>
+                <div class="stat-hero-value">
+                  <span id="dash-successful-reconnects-count">0</span>
+                  <span style="font-size: 13px; font-weight: 500; color: var(--muted);">Auto Recoveries</span>
+                </div>
+                <div class="stat-subtitle">
+                  Failed: <strong id="dash-failed-reconnects-count" style="color: var(--ink);">0</strong> •
+                  Total Events: <strong id="dash-total-events-count" style="color: var(--ink);">0</strong>
+                </div>
+                <div class="stat-subtitle" id="dash-last-reconnect-time" style="font-family: 'DM Mono', monospace; font-size: 10px;">
+                  Last Sync: Just now
+                </div>
+              </div>
+            </div>
+
+            <!-- Filters Bar -->
+            <div class="reconnect-filters-bar">
+              <div class="reconnect-filter-pills">
+                <button type="button" class="filter-pill-btn active" data-filter="all">All Events (<span id="count-all">0</span>)</button>
+                <button type="button" class="filter-pill-btn" data-filter="success">Successful (<span id="count-success">0</span>)</button>
+                <button type="button" class="filter-pill-btn" data-filter="scheduled">Scheduled / Backoff (<span id="count-scheduled">0</span>)</button>
+                <button type="button" class="filter-pill-btn" data-filter="failed">Failed / Closed (<span id="count-failed">0</span>)</button>
+              </div>
+              <div style="font-size: 11px; font-family: 'DM Mono', monospace; color: var(--muted);">
+                <span id="reconnect-auto-poll-indicator">● Live Poll (3s)</span>
+              </div>
+            </div>
+
+            <!-- Reconnection Logs Table -->
+            <div class="reconnect-logs-table-wrap">
+              <table class="reconnect-table">
+                <thead>
+                  <tr>
+                    <th>Exact Timestamp</th>
+                    <th>Event Type</th>
+                    <th>Status</th>
+                    <th>Battery</th>
+                    <th>Bot Number</th>
+                    <th>Diagnostics & Resolution Message</th>
+                  </tr>
+                </thead>
+                <tbody id="reconnect-logs-tbody">
+                  <tr>
+                    <td colspan="6">
+                      <div class="reconnect-empty-state">
+                        <span class="reconnect-empty-icon">📡</span>
+                        <strong>No Reconnection Events Recorded Yet</strong>
+                        <p>Your WhatsApp bot connection is stable. Any automatic reconnect attempts, socket closures, or 515 handshake events will appear here with precise timestamps.</p>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </article>
         </section>
 
@@ -1646,6 +1791,265 @@
         } catch (_err) {}
       }
 
+      // =========================================================================
+      // BOT RECONNECTION TELEMETRY & BATTERY STATE CONTROLLER
+      // =========================================================================
+      let cachedReconnectLogs = [];
+      let cachedReconnectStats = null;
+      let cachedBatteryData = null;
+      let activeReconnectFilter = "all";
+
+      function formatTimestampForLog(isoString) {
+        if (!isoString) return { primary: "—", secondary: "Unknown time", diff: "" };
+        try {
+          const d = new Date(isoString);
+          if (isNaN(d.getTime())) return { primary: isoString, secondary: "", diff: "" };
+          
+          const primary = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+          const secondary = d.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
+          
+          const diffMs = Date.now() - d.getTime();
+          let diff = "Just now";
+          if (diffMs > 60000) {
+            const mins = Math.floor(diffMs / 60000);
+            diff = mins === 1 ? "1 min ago" : `${mins} mins ago`;
+          } else if (diffMs > 10000) {
+            const secs = Math.floor(diffMs / 1000);
+            diff = `${secs}s ago`;
+          }
+          return { primary, secondary, diff };
+        } catch {
+          return { primary: isoString, secondary: "", diff: "" };
+        }
+      }
+
+      function renderReconnectLogsTable() {
+        const tbody = $("reconnect-logs-tbody");
+        if (!tbody) return;
+
+        let logs = Array.isArray(cachedReconnectLogs) ? cachedReconnectLogs : [];
+        
+        // Update filter counters
+        const countAll = $("count-all");
+        const countSuccess = $("count-success");
+        const countScheduled = $("count-scheduled");
+        const countFailed = $("count-failed");
+
+        const successCount = logs.filter(l => l.status === "SUCCESS" || l.type === "RECONNECT_SUCCESS" || l.type === "CONNECTED").length;
+        const scheduledCount = logs.filter(l => l.status === "SCHEDULED" || l.type === "RECONNECT_SCHEDULED" || l.type === "RESTART_REQUIRED").length;
+        const failedCount = logs.filter(l => l.status === "FAILED" || l.type === "LOGGED_OUT" || l.type === "PAIRING_FAILED" || l.type === "RECONNECT_FAILED").length;
+
+        if (countAll) countAll.textContent = logs.length;
+        if (countSuccess) countSuccess.textContent = successCount;
+        if (countScheduled) countScheduled.textContent = scheduledCount;
+        if (countFailed) countFailed.textContent = failedCount;
+
+        // Apply active filter
+        if (activeReconnectFilter === "success") {
+          logs = logs.filter(l => l.status === "SUCCESS" || l.type === "RECONNECT_SUCCESS" || l.type === "CONNECTED");
+        } else if (activeReconnectFilter === "scheduled") {
+          logs = logs.filter(l => l.status === "SCHEDULED" || l.type === "RECONNECT_SCHEDULED" || l.type === "RESTART_REQUIRED");
+        } else if (activeReconnectFilter === "failed") {
+          logs = logs.filter(l => l.status === "FAILED" || l.type === "LOGGED_OUT" || l.type === "PAIRING_FAILED" || l.type === "RECONNECT_FAILED");
+        }
+
+        if (logs.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="6">
+                <div class="reconnect-empty-state">
+                  <span class="reconnect-empty-icon">📡</span>
+                  <strong>${activeReconnectFilter === "all" ? "No Reconnection Events Recorded Yet" : "No Events Matching Filter"}</strong>
+                  <p>${activeReconnectFilter === "all" ? "Your WhatsApp bot connection is stable. Automated socket handshakes, backoff attempts, and 515 restart recoveries will be logged here in real time." : "Try switching to 'All Events' to view full telemetry history."}</p>
+                </div>
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        tbody.innerHTML = logs.map(log => {
+          const time = formatTimestampForLog(log.timestamp);
+          const statusLower = (log.status || "SUCCESS").toLowerCase();
+          const badgeClass = statusLower === "success" ? "success" : statusLower === "scheduled" ? "scheduled" : statusLower === "in_progress" ? "progress" : statusLower === "failed" ? "failed" : "disconnected";
+          const badgeIcon = statusLower === "success" ? "🟢" : statusLower === "scheduled" ? "⏱️" : statusLower === "in_progress" ? "🟡" : statusLower === "failed" ? "🔴" : "⚪";
+          const batteryVal = typeof log.batteryLevel === "number" ? `${log.batteryLevel}%` : (cachedBatteryData?.level ? `${cachedBatteryData.level}%` : "—");
+          const targetNum = log.botNumber || (cachedReconnectStats?.botNumber) || "Current";
+
+          return `
+            <tr>
+              <td>
+                <div class="reconnect-timestamp-cell">
+                  <span class="reconnect-time-primary">${time.primary}</span>
+                  <span class="reconnect-time-secondary">${time.secondary} (${time.diff})</span>
+                </div>
+              </td>
+              <td>
+                <strong style="font-family: 'DM Mono', monospace; font-size: 11px; color: var(--ink);">${log.type || "EVENT"}</strong>
+              </td>
+              <td>
+                <span class="reconnect-badge ${badgeClass}">${badgeIcon} ${log.status || "LOGGED"}</span>
+              </td>
+              <td>
+                <span class="reconnect-battery-badge">🔋 ${batteryVal}</span>
+              </td>
+              <td>
+                <span style="font-family: 'DM Mono', monospace; font-size: 11px; color: var(--teal);">+${targetNum}</span>
+              </td>
+              <td>
+                <div style="font-size: 12px; color: var(--ink); font-weight: 500;">${log.message || log.reason || "Automatic reconnect event processed."}</div>
+                ${log.statusCode ? `<div style="font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); margin-top: 2px;">Code: ${log.statusCode}${log.delayMs ? ` • Backoff: ${(log.delayMs/1000).toFixed(1)}s` : ""}</div>` : ""}
+              </td>
+            </tr>
+          `;
+        }).join("");
+      }
+
+      function updateBatteryUI(battery) {
+        if (!battery || typeof battery !== "object") return;
+        cachedBatteryData = battery;
+        const level = typeof battery.level === "number" ? Math.max(0, Math.min(100, battery.level)) : 100;
+        const isCharging = Boolean(battery.charging);
+
+        // 1. Status Card Widget
+        const tag = $("battery-status-tag");
+        const fill = $("battery-level-fill");
+        const chargingIndicator = $("battery-charging-indicator");
+        const updatedIndicator = $("battery-updated-indicator");
+
+        if (tag) {
+          tag.textContent = `${level}% • ${isCharging ? "CHARGING" : level <= 15 ? "CRITICAL" : level <= 25 ? "LOW" : "GOOD"}`;
+          tag.classList.toggle("critical", level <= 15);
+          tag.classList.toggle("low", level > 15 && level <= 25);
+        }
+        if (fill) {
+          fill.style.width = `${level}%`;
+          fill.classList.toggle("critical", level <= 15);
+          fill.classList.toggle("low", level > 15 && level <= 25);
+        }
+        if (chargingIndicator) {
+          chargingIndicator.innerHTML = isCharging ? "⚡ Charging via AC/USB" : "🔋 Battery Power";
+        }
+        if (updatedIndicator) {
+          updatedIndicator.textContent = battery.updatedAt ? `Updated ${new Date(battery.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : "Telemetry Active";
+        }
+
+        // 2. Reconnect Dedicated Tab Bento Card
+        const dashLevel = $("dash-battery-level-text");
+        const dashIcon = $("dash-battery-icon");
+        const dashBar = $("dash-battery-bar");
+        const dashMeta = $("dash-battery-meta");
+
+        if (dashLevel) dashLevel.textContent = `${level}%`;
+        if (dashIcon) dashIcon.textContent = isCharging ? "⚡" : level <= 20 ? "🪫" : "🔋";
+        if (dashBar) {
+          dashBar.style.width = `${level}%`;
+          dashBar.classList.toggle("critical", level <= 15);
+          dashBar.classList.toggle("low", level > 15 && level <= 25);
+        }
+        if (dashMeta) {
+          dashMeta.textContent = `Power state: ${isCharging ? "Charging (AC/USB)" : "Battery power"} • ${battery.powersave ? "Power Saver ON • " : ""}Telemetry active`;
+        }
+      }
+
+      function updateReconnectTelemetryUI(data) {
+        if (!data) return;
+        const stats = data.reconnectStats || {};
+        cachedReconnectStats = stats;
+        if (Array.isArray(data.logs) || Array.isArray(data.reconnectLogs)) {
+          cachedReconnectLogs = data.logs || data.reconnectLogs || [];
+        }
+
+        if (data.battery) {
+          updateBatteryUI(data.battery);
+        }
+
+        // Status Card Quick Badge
+        const reconnectStatBadge = $("reconnect-stat-badge");
+        if (reconnectStatBadge) {
+          if (stats.attempt > 0) {
+            reconnectStatBadge.textContent = `Retrying #${stats.attempt}...`;
+            reconnectStatBadge.style.color = "var(--orange)";
+          } else {
+            const successCount = stats.successfulReconnects || 0;
+            reconnectStatBadge.textContent = `${successCount} Auto Retries (Stable)`;
+            reconnectStatBadge.style.color = "var(--teal)";
+          }
+        }
+
+        // Bento Stats
+        const engineState = $("dash-reconnect-engine-state");
+        const heroWrap = $("dash-reconnect-status-hero");
+        const nextRetryText = $("dash-next-retry-text");
+        const successCountEl = $("dash-successful-reconnects-count");
+        const failedCountEl = $("dash-failed-reconnects-count");
+        const totalCountEl = $("dash-total-events-count");
+        const lastTimeEl = $("dash-last-reconnect-time");
+
+        const isConnected = data.status === "connected" || data.state === "connected" || data.connected === true;
+        const isConnecting = data.status === "connecting" || data.state === "connecting";
+
+        if (engineState && heroWrap) {
+          if (isConnected) {
+            heroWrap.innerHTML = `<span>🟢</span> <span>Active & Connected</span>`;
+            heroWrap.style.color = "var(--teal)";
+          } else if (stats.attempt > 0) {
+            heroWrap.innerHTML = `<span>🟡</span> <span>Retrying (Attempt #${stats.attempt})</span>`;
+            heroWrap.style.color = "var(--orange)";
+          } else if (isConnecting) {
+            heroWrap.innerHTML = `<span>🟡</span> <span>Connecting...</span>`;
+            heroWrap.style.color = "var(--orange)";
+          } else {
+            heroWrap.innerHTML = `<span>⚪</span> <span>Idle / Standby</span>`;
+            heroWrap.style.color = "var(--muted)";
+          }
+        }
+
+        if (nextRetryText) {
+          if (stats.nextRetryTime) {
+            const nextDate = new Date(stats.nextRetryTime);
+            nextRetryText.textContent = `Next auto-attempt: ${nextDate.toLocaleTimeString()} (${((stats.nextRetryInMs || 0)/1000).toFixed(1)}s)`;
+          } else {
+            nextRetryText.textContent = "";
+          }
+        }
+
+        if (successCountEl) successCountEl.textContent = stats.successfulReconnects || 0;
+        if (failedCountEl) failedCountEl.textContent = stats.failedReconnects || 0;
+        if (totalCountEl) totalCountEl.textContent = cachedReconnectLogs.length;
+
+        if (lastTimeEl) {
+          if (stats.lastSuccessTime) {
+            lastTimeEl.textContent = `Last Connected: ${new Date(stats.lastSuccessTime).toLocaleTimeString()}`;
+          } else {
+            lastTimeEl.textContent = `Last Polled: ${new Date().toLocaleTimeString()}`;
+          }
+        }
+
+        renderReconnectLogsTable();
+      }
+
+      async function fetchReconnectLogs() {
+        try {
+          const authHeader = await getAuthHeader();
+          if (!authHeader) return;
+
+          const res = await fetch(getApiUrl("/reconnect-logs"), {
+            headers: {
+              "Accept": "application/json",
+              "Authorization": authHeader,
+            }
+          });
+
+          if (res.ok) {
+            const data = await safeFetchJson(res);
+            updateReconnectTelemetryUI(data);
+          }
+        } catch (err) {
+          console.debug("Reconnect logs fetch:", err.message);
+        }
+      }
+
       function updateStatusUI(data) {
         const connected = data.status === "connected" || data.connected === true;
         const failed = data.status === "disconnected" || data.failed === true;
@@ -1666,8 +2070,16 @@
             ? "Socket is open and waiting for WhatsApp mobile confirmation." 
             : "Enter your phone number above to generate your pairing code.";
         }
-        if (number) number.textContent = data.phoneNumber || "—";
+        if (number) number.textContent = data.phoneNumber || data.botNumber || "—";
         if (disconnect) disconnect.disabled = !connected && !pending;
+
+        // Pass battery and reconnect telemetry to dedicated handlers
+        if (data.battery) {
+          updateBatteryUI(data.battery);
+        }
+        if (data.reconnectStats || data.reconnectLogs) {
+          updateReconnectTelemetryUI(data);
+        }
 
         if (connected && pairingActive) {
           pairingActive = false;
@@ -1706,6 +2118,7 @@
 
         const sectionPair = $("section-pair");
         const sectionLicense = $("section-license");
+        const sectionReconnect = $("section-reconnect");
         const sectionReferral = $("referral-section");
         const sectionAdmin = $("admin-panel");
         const sectionInstructions = $("section-instructions");
@@ -1716,6 +2129,7 @@
         if (tabName === "all") {
           if (sectionPair) sectionPair.classList.remove("hidden");
           if (sectionLicense) sectionLicense.classList.remove("hidden");
+          if (sectionReconnect) sectionReconnect.classList.remove("hidden");
           if (sectionReferral) sectionReferral.classList.remove("hidden");
           if (sectionAdmin) {
             if (isUserAdmin) sectionAdmin.classList.remove("hidden");
@@ -1723,10 +2137,12 @@
           }
           if (sectionInstructions) sectionInstructions.classList.remove("hidden");
           if (sectionCommands) sectionCommands.classList.remove("hidden");
+          fetchReconnectLogs();
         } else if (tabName === "pair") {
           if (sectionPair) sectionPair.classList.remove("hidden");
           if (sectionInstructions) sectionInstructions.classList.remove("hidden");
           if (sectionLicense) sectionLicense.classList.add("hidden");
+          if (sectionReconnect) sectionReconnect.classList.add("hidden");
           if (sectionReferral) sectionReferral.classList.add("hidden");
           if (sectionAdmin) sectionAdmin.classList.add("hidden");
           if (sectionCommands) sectionCommands.classList.add("hidden");
@@ -1734,13 +2150,24 @@
           if (sectionPair) sectionPair.classList.add("hidden");
           if (sectionInstructions) sectionInstructions.classList.add("hidden");
           if (sectionLicense) sectionLicense.classList.remove("hidden");
+          if (sectionReconnect) sectionReconnect.classList.add("hidden");
           if (sectionReferral) sectionReferral.classList.add("hidden");
           if (sectionAdmin) sectionAdmin.classList.add("hidden");
           if (sectionCommands) sectionCommands.classList.add("hidden");
+        } else if (tabName === "reconnect") {
+          if (sectionPair) sectionPair.classList.add("hidden");
+          if (sectionInstructions) sectionInstructions.classList.add("hidden");
+          if (sectionLicense) sectionLicense.classList.add("hidden");
+          if (sectionReconnect) sectionReconnect.classList.remove("hidden");
+          if (sectionReferral) sectionReferral.classList.add("hidden");
+          if (sectionAdmin) sectionAdmin.classList.add("hidden");
+          if (sectionCommands) sectionCommands.classList.add("hidden");
+          fetchReconnectLogs();
         } else if (tabName === "referrals") {
           if (sectionPair) sectionPair.classList.add("hidden");
           if (sectionInstructions) sectionInstructions.classList.add("hidden");
           if (sectionLicense) sectionLicense.classList.add("hidden");
+          if (sectionReconnect) sectionReconnect.classList.add("hidden");
           if (sectionReferral) sectionReferral.classList.remove("hidden");
           if (sectionAdmin) sectionAdmin.classList.add("hidden");
           if (sectionCommands) sectionCommands.classList.add("hidden");
@@ -1748,6 +2175,7 @@
           if (sectionPair) sectionPair.classList.add("hidden");
           if (sectionInstructions) sectionInstructions.classList.add("hidden");
           if (sectionLicense) sectionLicense.classList.add("hidden");
+          if (sectionReconnect) sectionReconnect.classList.add("hidden");
           if (sectionReferral) sectionReferral.classList.add("hidden");
           if (sectionAdmin) sectionAdmin.classList.add("hidden");
           if (sectionCommands) sectionCommands.classList.remove("hidden");
@@ -1755,6 +2183,7 @@
           if (sectionPair) sectionPair.classList.add("hidden");
           if (sectionInstructions) sectionInstructions.classList.add("hidden");
           if (sectionLicense) sectionLicense.classList.add("hidden");
+          if (sectionReconnect) sectionReconnect.classList.add("hidden");
           if (sectionReferral) sectionReferral.classList.add("hidden");
           if (sectionAdmin) {
             if (isUserAdmin) sectionAdmin.classList.remove("hidden");
@@ -2261,6 +2690,84 @@
           }
         });
       }
+
+      // ======================================================================
+      // RECONNECTION & BATTERY TELEMETRY EVENT HANDLERS
+      // ======================================================================
+      const viewReconnectLogsBtn = $("view-reconnect-logs-btn");
+      if (viewReconnectLogsBtn) {
+        viewReconnectLogsBtn.addEventListener("click", () => {
+          switchDashboardTab("reconnect");
+          const section = $("section-reconnect");
+          if (section) {
+            section.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        });
+      }
+
+      const triggerReconnectBtn = $("trigger-reconnect-btn");
+      if (triggerReconnectBtn) {
+        triggerReconnectBtn.addEventListener("click", async () => {
+          triggerReconnectBtn.disabled = true;
+          const origHTML = triggerReconnectBtn.innerHTML;
+          triggerReconnectBtn.innerHTML = `<span>⏳</span> <span>Reconnecting...</span>`;
+
+          try {
+            const authHeader = await getAuthHeader();
+            if (!authHeader) throw new Error("Please sign in first.");
+
+            const res = await fetch(getApiUrl("/reconnect"), {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": authHeader,
+              }
+            });
+
+            const data = await safeFetchJson(res);
+            if (data.status) {
+              updateStatusUI(data.status);
+            }
+            await fetchReconnectLogs();
+          } catch (err) {
+            console.error("Manual reconnect failed:", err);
+          } finally {
+            triggerReconnectBtn.disabled = false;
+            triggerReconnectBtn.innerHTML = origHTML;
+          }
+        });
+      }
+
+      const refreshReconnectLogsBtn = $("refresh-reconnect-logs-btn");
+      if (refreshReconnectLogsBtn) {
+        refreshReconnectLogsBtn.addEventListener("click", async () => {
+          refreshReconnectLogsBtn.disabled = true;
+          await fetchReconnectLogs();
+          setTimeout(() => { refreshReconnectLogsBtn.disabled = false; }, 600);
+        });
+      }
+
+      const clearReconnectFilterBtn = $("clear-reconnect-filter-btn");
+      if (clearReconnectFilterBtn) {
+        clearReconnectFilterBtn.addEventListener("click", () => {
+          activeReconnectFilter = "all";
+          document.querySelectorAll(".filter-pill-btn").forEach(btn => {
+            btn.classList.toggle("active", btn.getAttribute("data-filter") === "all");
+          });
+          renderReconnectLogsTable();
+        });
+      }
+
+      // Filter Pill buttons for Reconnection Logs
+      document.querySelectorAll(".filter-pill-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const filter = btn.getAttribute("data-filter") || "all";
+          activeReconnectFilter = filter;
+          document.querySelectorAll(".filter-pill-btn").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          renderReconnectLogsTable();
+        });
+      });
 
       // ======================================================================
       // SOLVATECH LICENSE & ADMIN SYSTEM JAVASCRIPT

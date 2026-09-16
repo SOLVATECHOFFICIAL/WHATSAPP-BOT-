@@ -1,98 +1,75 @@
 # SOLVATECH BOT
 
-SOLVATECH BOT is a WhatsApp Multi-Device bot for SOLVATECHOFFICIAL. It uses Baileys pairing codes, file-backed authentication, a sequential message queue, and JSON group settings.
+SOLVATECH BOT is an enterprise-grade WhatsApp Multi-Device automation platform and bot management suite. It features automated pairing code handshakes, isolated multi-tenant session storage, resilient automatic socket reconnection with live timestamp logging, real-time device battery telemetry, permanent WhatsApp number locking, Google Firebase Authentication, and a Super Admin Command Center.
 
-## Message behavior
+---
 
-- The linked WhatsApp account is the account that sends bot responses.
-- Only messages sent by that linked WhatsApp account can run dot commands. Other people are ignored for commands.
-- Commands from the linked account are answered in the same private chat or group where they were sent. Group responses are therefore visible to all group members.
-- Text command responses are sent without quoting the incoming command, so `.menu`, `.vv`, `.anti`, and similar command text is not echoed inside the bot's response.
-- Every command gets an immediate same-chat typing presence and temporary `⏳ Processing…` message that is deleted immediately after the response is sent. Processing is queued per chat, so a slow video/audio download cannot hold up other groups.
-- `.sticker` converts replied images or videos into stickers, and `.vv` recovers supported view-once media.
-- `.vv` recovers quoted view-once images, videos, voice notes/audio, documents, and stickers when WhatsApp still provides the encrypted media.
-- Group admins can enable two protections: anti-link and anti-bot. Each one deletes the trigger where possible and removes the offending non-admin member when the bot is a group admin.
+## 🌟 Key Features
 
-## Run on Replit
+### 1. Automatic Bot Reconnection & Stability Engine
+- **Resilient Connection Recovery**: Automatically recovers from intermittent network drops, server restarts, and WhatsApp socket resets.
+- **Handshake Auto-Recovery (Status 515)**: Handles Baileys `restartRequired` / 515 status codes instantly after initial pairing without dropping user state.
+- **Exponential Backoff**: Schedules reconnection attempts intelligently (1.5s up to 60s) to prevent socket thrashing and WhatsApp rate limits.
+- **Real-Time Timestamped Telemetry**: Records exact timestamps (ISO & localized), status badges, disconnect codes, and resolution messages in a dedicated dashboard log.
+- **Instant Manual Reconnect**: Users and admins can trigger immediate re-synchronization with a single click.
 
-1. Open the pairing console at the app URL.
-2. Enter the WhatsApp number with country code, without a leading `+` or spaces.
-3. Select **Get Pairing Code**.
-4. On WhatsApp, open **Linked Devices → Link a device → Link with phone number**, then enter the displayed code.
-5. Keep the app running while WhatsApp completes the link. The server automatically handles WhatsApp's expected `515 restartRequired` reconnect after a successful pairing.
+### 2. Device Battery Telemetry
+- **Live Battery Monitoring**: Captures device battery percentage, charging state (AC/USB vs. Battery Power), and power-saving modes directly from active WhatsApp Web socket stanzas.
+- **Status Widget & Dashboard Bento**: Visual battery health bar with dynamic warnings for low (<25%) and critical (<15%) levels.
 
-The service listens on `PORT` (default `8000`) and exposes:
+### 3. Multi-Tenant Session Isolation & Permanent Number Lock
+- **One User per WhatsApp Number**: Enforces 1-to-1 account binding. Once a phone number is linked to a Google UID, other accounts cannot bind or steal that number unless wiped/released by the Super Admin.
+- **Firestore Session Persistence**: Encrypted session credentials (`creds.json`) are synchronized to Google Cloud Firestore, surviving container redeployments and ephemeral volume wipes.
 
-- `GET /bot-api/status`
-- `POST /bot-api/pair` with `{ "number": "234712345678" }`
-- `POST /bot-api/disconnect`
+### 4. Super Admin Command Center
+- **Account & Number Management**: Full search, filtering, and inspection of all linked WhatsApp phone numbers and user accounts.
+- **Wiping & Overwriting Permissions**: Allows the Super Admin to unlink numbers, overwrite corrupted sessions, or release locks.
+- **Auditing**: Every administrative action is recorded in immutable Firestore audit logs.
 
-## Local run
+### 5. Automated Protection & Command Suite
+- **Group Protection**: `.antilink on/off`, `.antibot on/off`, `.anti`. Automatically deletes prohibited triggers and removes non-admin offenders when the bot is admin.
+- **Media & OCR Tools**: `.read` (image OCR), `.sticker` (convert photo/video to WhatsApp sticker), `.antisticker` (sticker to media), `.vv` (view-once media retrieval).
+- **Administration & Moderation**: `.tagall`, `.tagadmin`, `.kick`, `.add`, `.promote`, `.demote`, `.lock`, `.unlock`, `.ping`, `.alive`, `.menu`.
+- **Sequential Message Queue**: Ensures atomic, non-blocking message processing per chat so intensive tasks never delay incoming commands.
 
+---
+
+## 🚀 API Endpoints
+
+The backend exposes authenticated REST endpoints:
+
+- `GET /bot-api/status`: Returns current WhatsApp connection state, bot number, battery status, and reconnection statistics.
+- `GET /bot-api/reconnect-logs`: Returns dedicated circular buffer logs (up to 50 recent events) with timestamps, event types, and diagnostics.
+- `POST /bot-api/reconnect`: Triggers an immediate manual reconnection attempt.
+- `POST /bot-api/pair`: Requests a new 8-digit pairing code for an international phone number (e.g. `2349012345678`).
+- `POST /bot-api/disconnect`: Disconnects the active socket and safely flushes local session files.
+- `GET /bot-api/license/status`: Retrieves subscription status and expiry countdown.
+- `POST /bot-api/license/redeem`: Redeems a 30-day/annual activation license key.
+
+---
+
+## 💻 Local Development & Deployment
+
+### Local Setup
 ```bash
 cp .env.example .env
 npm install
 npm run dev
 ```
 
-Open `http://localhost:8000`.
+Open `http://localhost:3000`.
 
-## Deploy to Railway
+### Deploy to Railway / Render / Cloud Run
+1. Set the following environment variables:
+   - `PORT`: `3000` (or host assigned port)
+   - `BOT_DATA_DIR`: `/app/runtime` (mount a persistent volume here)
+2. Build command: `npm install`
+3. Start command: `npm run serve` (or `node index.js`)
+4. Health check path: `/bot-api/status`
 
-Upload this folder to a Railway project or deploy the included ZIP. Railway
-will detect `railway.json`, install the dependencies, start `npm run serve`,
-and check `/bot-api/status`.
+---
 
-Attach a persistent Railway volume mounted at `/app/runtime` and set
-`BOT_DATA_DIR=/app/runtime` so the linked WhatsApp account, group settings,
-and logs survive restarts.
-
-## Deploy to Render
-
-Use Node.js 20+ and the following commands:
-
-- Build: `npm install`
-- Start: `npm run serve`
-
-The included `render.yaml` configures Node 20, `npm start`, a health check, and
-a 1 GB persistent disk mounted at `/opt/render/project/src/runtime`. Without
-persistent storage, the WhatsApp link will be lost when the service restarts.
-
-## Deploy with Docker or another Node host
-
-This repository includes a `Dockerfile` and `Procfile`:
-
-```bash
-docker build -t solvatech-bot .
-docker run -p 8000:8000 -v solvatech-runtime:/app/runtime solvatech-bot
-```
-
-For any Node.js host, use Node 20+, run `npm install` during the build, and run
-`npm start` as the service command. Set `PORT` from the host and point
-`BOT_DATA_DIR` at a persistent volume. The health endpoint is
-`GET /bot-api/status`.
-
-On Replit, run `npm run dev` and open the generated web URL. On Railway or Render,
-set `PORT` from the platform environment. Keep `BOT_DATA_DIR` pointed at the
-persistent disk. Do not commit the contents of the runtime directory; the
-included `.gitignore` keeps authentication files out of GitHub.
-
-If WhatsApp says it could not link the device, request a fresh code and enter it immediately.
-Use the full international number with digits only (for Nigeria, `234` followed by the
-number without its leading `0`). The pairing connection waits for WhatsApp's ready signal
-and uses the canonical Chrome companion label required by the pairing protocol.
-
-## Commands
-
-The bot exposes these commands:
-
-`.alive` `.ping` `.menu` `.groupinfo` `.add` `.kick` `.promote` `.demote` `.tagall` `.tagadmin` `.lock` `.unlock` `.anti` `.antilink` `.antibot` `.sticker` `.vv`
-
-Use `.anti` without arguments to see protection status. The dedicated switches are:
-
-- `.antilink on/off`
-- `.antibot on/off`
-
-`.anti <link|bot> on/off` is also supported. `.admins` and `.tagadmins` are not registered; `.tagadmin` is the single admin-mention command.
-
-`.vv` tries Baileys media download, a direct media URL, and a media-key download path in that order.
+## 🔒 Security & Privacy
+- All session credentials and key-pairs are isolated per user directory.
+- The repository `.gitignore` ensures that runtime sessions, keys, and tokens are never committed to version control.
+- Admin routes are locked strictly to authorized Super Admin Google accounts.

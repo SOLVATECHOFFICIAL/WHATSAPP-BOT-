@@ -257,6 +257,47 @@ for (const p of prefixes) {
     }
   });
 
+  // Dedicated Auto-Reconnection Logs and Battery Telemetry API
+  app.get(`${p}/reconnect-logs`, requireAuth, async (request, response) => {
+    try {
+      const safeUserId = request.safeUserId;
+      const verifiedUid = request.verifiedUid;
+      const controller = getWhatsAppController(safeUserId, { verifiedUid, userEmail: request.auth.email });
+      const statusData = controller.getStatus();
+
+      response.json({
+        ok: true,
+        userId: verifiedUid,
+        botNumber: statusData.botNumber || "",
+        state: statusData.state || statusData.status,
+        battery: statusData.battery,
+        reconnectStats: statusData.reconnectStats,
+        logs: statusData.reconnectLogs || [],
+      });
+    } catch (error) {
+      logger.error("Failed to retrieve reconnect logs", error.stack || error.message);
+      response.status(500).json({ error: "Could not retrieve reconnection telemetry logs." });
+    }
+  });
+
+  // Trigger Instant Manual Reconnect
+  app.post(`${p}/reconnect`, requireAuth, async (request, response) => {
+    try {
+      const safeUserId = request.safeUserId;
+      const verifiedUid = request.verifiedUid;
+      const controller = getWhatsAppController(safeUserId, { verifiedUid, userEmail: request.auth.email });
+      const result = await controller.triggerManualReconnect();
+      response.json({
+        ok: true,
+        ...result,
+        status: controller.getStatus(),
+      });
+    } catch (error) {
+      logger.error("Failed to initiate manual reconnect", error.stack || error.message);
+      response.status(500).json({ error: error.message || "Could not trigger reconnect." });
+    }
+  });
+
   // --------------------------------------------------------------------------
   // USER LICENSE ROUTES (Authenticated)
   // --------------------------------------------------------------------------
