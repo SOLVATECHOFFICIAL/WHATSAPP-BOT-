@@ -344,24 +344,30 @@ export default async function reshare({ sock, message, reply, userId = "default"
     const sendOptions = {
       broadcast: true,
       statusJidList,
+      additionalAttributes: { addressing_mode: "pn" },
       mediaUploadTimeoutMs: PUBLISH_TIMEOUT_MS,
     };
 
-    logger.info("[RESHARE] Publishing to WhatsApp Status...", {
-      destination: STATUS_BROADCAST_JID,
-      statusType,
-      recipientCount: statusJidList.length,
-      timeoutMs: PUBLISH_TIMEOUT_MS,
+    const requestingUserJid = message.key?.participant || message.key?.remoteJid || sock.user?.id;
+
+    logger.info("[RESHARE] source status key", {
+      stanzaId: quotedStanzaId,
+      participant: contextInfo?.participant,
+      remoteJid: contextInfo?.remoteJid,
     });
+    logger.info("[RESHARE] requesting user JID", { requestingUserJid });
+    logger.info("[RESHARE] publication destination", { destination: STATUS_BROADCAST_JID });
+    logger.info("[RESHARE] publication method", { method: "sock.sendMessage", sendOptions });
 
     const sendPromise = sock.sendMessage(STATUS_BROADCAST_JID, messagePayload, sendOptions);
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("Status publication timed out after 45 seconds")), PUBLISH_TIMEOUT_MS)
+      setTimeout(() => reject(new Error("Status publication initial send timed out after 45 seconds")), PUBLISH_TIMEOUT_MS)
     );
 
     const publishResult = await Promise.race([sendPromise, timeoutPromise]);
+    logger.info("[RESHARE] returned result", { publishResult });
 
-    // Verify publication response
+    // Verify publication response structure
     const publishedId = publishResult?.key?.id;
     const publishedRemoteJid = publishResult?.key?.remoteJid;
 
@@ -373,6 +379,11 @@ export default async function reshare({ sock, message, reply, userId = "default"
       });
       throw new Error(`Invalid publication confirmation from WhatsApp (id: ${publishedId}, remoteJid: ${publishedRemoteJid})`);
     }
+
+    // DO NOT TRUST THE IMMEDIATE sendMessage RETURN VALUE.
+    // Wait for actual WhatsApp server ACK / confirmation event via sock.ev.
+    logger.info("[RESHARE] Awaiting server publication ACK confirmation from WhatsApp...", { publishedId });
+    await waitForStatusPublicationAck(sock, publishedId, 15000);
 
     const durationMs = Date.now() - startTime;
     logger.info("[RESHARE] Publication succeeded!", {
@@ -390,6 +401,69 @@ export default async function reshare({ sock, message, reply, userId = "default"
       stack: err.stack,
       durationMs,
     });
-    return reply("❌ I couldn't publish that Status. Please try again.");
+    return reply("❌ I couldn't publish that Status.");
   }
+}
+
+/**
+ * Listens for WhatsApp server ACK/update events for the published status message ID.
+ * Resolves ONLY if WhatsApp server returns a positive SERVER_ACK (status >= 2).
+ * Rejects if WhatsApp server returns an error ACK or if no ACK is received within timeout.
+ */
+async function waitForStatusPublicationAck(sock, publishedId, timeoutMs = 15000) {
+  return new Promise((resolve, reject) => {
+    let resolved = false;
+
+    const cleanup = () => {
+      resolved = true;
+      clearTimeout(timer);
+      if (sock?.ev?.off) {
+        sock.ev.off("messages.update", onMessageUpdate);
+        sock.ev.off("connection.update", onConnectionUpdate);
+      }
+    };
+
+    const onMessageUpdate = (updates) => {
+      if (resolved || !Array.isArray(updates)) return;
+      for (const item of updates) {
+        if (item?.key?.id === publishedId) {
+          const status = item?.update?.status;
+          const error = item?.update?.error || item?.error;
+          logger.info("[RESHARE] Received WhatsApp message update event for published status", {
+            publishedId,
+            status,
+            error,
+          });
+
+          // WAMessageStatus: ERROR = 0, PENDING = 1, SERVER_ACK = 2, DELIVERY_ACK = 3, READ = 4
+          if (status === 2 || status === 3 || status === 4) {
+            cleanup();
+            resolve({ success: true, status });
+            return;
+          } else if (status === 0 || status === "ERROR" || error) {
+            cleanup();
+            reject(new Error(`WhatsApp server rejected Status publication (ACK status: ${status}, error: ${error || "server rejection 479/smax-invalid"})`));
+            return;
+          }
+        }
+      }
+    };
+
+    const onConnectionUpdate = (update) => {
+      if (update?.connection === "close") {
+        cleanup();
+        reject(new Error("WhatsApp connection closed during Status publication"));
+      }
+    };
+
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error(`Status publication timed out waiting for server ACK (${timeoutMs}ms)`));
+    }, timeoutMs);
+
+    if (sock?.ev?.on) {
+      sock.ev.on("messages.update", onMessageUpdate);
+      sock.ev.on("connection.update", onConnectionUpdate);
+    }
+  });
 }
