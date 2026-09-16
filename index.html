@@ -271,6 +271,21 @@
           <article class="surface pair-card">
             <div class="card-top"><span>01 / PAIRING CONSOLE</span><small>MD 2.0</small></div>
             <h2>Get your pairing code</h2>
+
+            <!-- Active Number Lock Notice & Wipe Button -->
+            <div id="locked-number-notice" class="locked-number-notice hidden">
+              <div class="locked-number-info">
+                <span class="locked-icon">🔒</span>
+                <div>
+                  <strong>Account Locked to WhatsApp Number:</strong>
+                  <span id="locked-number-display" class="locked-number-display">+234...</span>
+                </div>
+              </div>
+              <button type="button" id="wipe-number-btn" class="wipe-number-btn" title="Unlock and wipe this number from your account so you can pair a different phone number">
+                <span>🗑️ Wipe & Change Number</span>
+              </button>
+            </div>
+
             <form id="pair-form">
               <div class="country-select-wrap">
                 <label id="country-select-label">Select Your Country</label>
@@ -296,7 +311,13 @@
                 <input id="number" type="tel" inputmode="numeric" placeholder="0901 234 5678" autocomplete="tel" required />
               </div>
               <p id="phone-hint" class="hint">Enter your mobile number. Leading 0s and formatting are normalized automatically.</p>
-              <button id="pair-button" type="submit">Get Pairing Code <span>→</span></button>
+              
+              <div class="pairing-actions-row">
+                <button id="pair-button" type="submit">Get Pairing Code <span>→</span></button>
+                <button id="quick-reconnect-btn" type="button" class="quick-reconnect-btn" title="Instantly reconnect your active saved WhatsApp session from Firebase without needing to enter a pairing code">
+                  <span>⚡ Reconnect Active Session</span>
+                </button>
+              </div>
             </form>
             <div id="code-panel" class="code-panel hidden">
               <div class="code-heading"><span>YOUR PAIRING CODE</span><span id="code-timer" class="code-timer">EXPIRES IN 5:00</span></div>
@@ -315,7 +336,17 @@
             <hr />
             <span class="muted-label">CONNECTED NUMBER</span>
             <strong id="connected-number">—</strong>
-            <button id="disconnect" class="disconnect" disabled>Disconnect Session</button>
+
+            <!-- Locked Number & Wipe Option in Status Card -->
+            <div id="status-locked-number-wrap" class="status-locked-number-wrap hidden" style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(0,0,0,0.1);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                <span class="muted-label" style="margin: 0;">LOCKED NUMBER</span>
+                <button id="status-wipe-number-btn" type="button" class="mini-wipe-btn" title="Unlock and wipe this number from your account">Wipe Lock</button>
+              </div>
+              <strong id="status-locked-number-text" style="font-size: 13px; color: #15803d; font-family: 'DM Mono', monospace;">—</strong>
+            </div>
+
+            <button id="disconnect" class="disconnect" disabled style="margin-top: 12px;">Disconnect Session</button>
 
             <!-- Live Battery & Reconnect Health Widget in Status Card -->
             <div id="status-battery-wrap" class="status-battery-wrap">
@@ -1506,6 +1537,9 @@
       const form = $("pair-form"), button = $("pair-button"), codePanel = $("code-panel"), code = $("pair-code");
       const error = $("error"), state = $("state"), badge = $("badge"), detail = $("detail"), number = $("connected-number"), disconnect = $("disconnect");
       const copyButton = $("copy-code"), copyFeedback = $("copy-feedback"), timer = $("code-timer"), pairingFor = $("pairing-for");
+      const lockedNumberNotice = $("locked-number-notice"), lockedNumberDisplay = $("locked-number-display"), wipeNumberBtn = $("wipe-number-btn");
+      const quickReconnectBtn = $("quick-reconnect-btn");
+      const statusLockedNumberWrap = $("status-locked-number-wrap"), statusLockedNumberText = $("status-locked-number-text"), statusWipeNumberBtn = $("status-wipe-number-btn");
 
       // Country Selector Elements
       const countryDropdownBtn = $("country-dropdown-btn"), countryMenu = $("country-menu"), countrySearch = $("country-search"), countryOptionsList = $("country-options-list");
@@ -2072,6 +2106,30 @@
         }
         if (number) number.textContent = data.phoneNumber || data.botNumber || "—";
         if (disconnect) disconnect.disabled = !connected && !pending;
+
+        // Handle Real Number Lock Display & Controls
+        const lockedNum = data.lockedNumber || data.numberLock || (data.phoneNumber && data.phoneNumber !== "—" ? data.phoneNumber : null);
+        if (lockedNum) {
+          if (lockedNumberNotice) {
+            lockedNumberNotice.classList.remove("hidden");
+          }
+          if (lockedNumberDisplay) {
+            lockedNumberDisplay.textContent = `+${lockedNum.replace(/^\+/, "")}`;
+          }
+          if (statusLockedNumberWrap) {
+            statusLockedNumberWrap.classList.remove("hidden");
+          }
+          if (statusLockedNumberText) {
+            statusLockedNumberText.textContent = `+${lockedNum.replace(/^\+/, "")}`;
+          }
+        } else {
+          if (lockedNumberNotice) {
+            lockedNumberNotice.classList.add("hidden");
+          }
+          if (statusLockedNumberWrap) {
+            statusLockedNumberWrap.classList.add("hidden");
+          }
+        }
 
         // Pass battery and reconnect telemetry to dedicated handlers
         if (data.battery) {
@@ -2689,6 +2747,132 @@
             disconnect.textContent = "Disconnect Session";
           }
         });
+      }
+
+      // ======================================================================
+      // USER NUMBER LOCK WIPE & QUICK RECONNECT HANDLERS
+      // ======================================================================
+      async function handleUserWipeNumber() {
+        if (!confirm("Are you sure you want to unlock and wipe this WhatsApp number from your account? This will release the number lock in Firebase so you can pair a new phone number.")) {
+          return;
+        }
+
+        const buttons = [wipeNumberBtn, statusWipeNumberBtn].filter(Boolean);
+        buttons.forEach(b => { b.disabled = true; b.textContent = "Wiping..."; });
+
+        try {
+          let authHeader = await getAuthHeader();
+          if (!authHeader) throw new Error("Please sign in first.");
+
+          let res = await fetch(getApiUrl("/user/wipe-number"), {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": authHeader,
+            }
+          });
+
+          if (res.status === 401) {
+            const refreshedToken = await getValidIdToken(true);
+            if (refreshedToken) {
+              authHeader = `Bearer ${refreshedToken}`;
+              res = await fetch(getApiUrl("/user/wipe-number"), {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": authHeader,
+                }
+              });
+            }
+          }
+
+          const data = await safeFetchJson(res);
+          if (!res.ok) throw new Error(data.error || "Failed to wipe number lock");
+
+          // Clear UI notices
+          if (lockedNumberNotice) lockedNumberNotice.classList.add("hidden");
+          if (statusLockedNumberWrap) statusLockedNumberWrap.classList.add("hidden");
+          if (codePanel) codePanel.classList.add("hidden");
+          if (phoneInput) phoneInput.value = "";
+
+          showError("");
+          alert(data.message || "WhatsApp number lock successfully wiped and cleared from Firebase. You can now pair any phone number.");
+          refresh();
+        } catch (err) {
+          alert("Error wiping number lock: " + (err.message || "Unknown error"));
+        } finally {
+          if (wipeNumberBtn) {
+            wipeNumberBtn.disabled = false;
+            wipeNumberBtn.innerHTML = `<span>🗑️ Wipe & Change Number</span>`;
+          }
+          if (statusWipeNumberBtn) {
+            statusWipeNumberBtn.disabled = false;
+            statusWipeNumberBtn.textContent = "Wipe Lock";
+          }
+        }
+      }
+
+      if (wipeNumberBtn) {
+        wipeNumberBtn.addEventListener("click", handleUserWipeNumber);
+      }
+      if (statusWipeNumberBtn) {
+        statusWipeNumberBtn.addEventListener("click", handleUserWipeNumber);
+      }
+
+      async function handleQuickReconnect() {
+        if (quickReconnectBtn) {
+          quickReconnectBtn.disabled = true;
+          quickReconnectBtn.innerHTML = `<span>⏳</span> <span>Connecting to WhatsApp...</span>`;
+        }
+
+        try {
+          let authHeader = await getAuthHeader();
+          if (!authHeader) throw new Error("Please sign in with Google first.");
+
+          let res = await fetch(getApiUrl("/reconnect"), {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": authHeader,
+            }
+          });
+
+          if (res.status === 401) {
+            const refreshedToken = await getValidIdToken(true);
+            if (refreshedToken) {
+              authHeader = `Bearer ${refreshedToken}`;
+              res = await fetch(getApiUrl("/reconnect"), {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": authHeader,
+                }
+              });
+            }
+          }
+
+          const data = await safeFetchJson(res);
+          if (!res.ok) {
+            throw new Error(data.error || "Reconnection request failed. Ensure your license is active and number is paired.");
+          }
+
+          if (data.status) {
+            updateStatusUI(data.status);
+          }
+          await fetchReconnectLogs();
+          refresh();
+        } catch (err) {
+          showError(err.message || "Failed to start active WhatsApp session.");
+        } finally {
+          if (quickReconnectBtn) {
+            quickReconnectBtn.disabled = false;
+            quickReconnectBtn.innerHTML = `<span>⚡ Reconnect Active Session</span>`;
+          }
+        }
+      }
+
+      if (quickReconnectBtn) {
+        quickReconnectBtn.addEventListener("click", handleQuickReconnect);
       }
 
       // ======================================================================

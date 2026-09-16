@@ -257,6 +257,42 @@ for (const p of prefixes) {
     }
   });
 
+  // User-facing Wipe & Release Number Lock API (Permanently clears number lock in Firebase & resets session)
+  const handleUserWipeNumber = async (request, response) => {
+    try {
+      const verifiedUid = request.verifiedUid;
+      const userEmail = request.auth.email;
+      const reason = request.body?.reason || "Wiped by user from dashboard";
+
+      const result = await wipeNumberFromAccount(verifiedUid, userEmail, reason, true);
+
+      // Disconnect and flush active WhatsApp session
+      const controller = getWhatsAppController(request.safeUserId, { verifiedUid, userEmail });
+      try {
+        await controller.disconnect();
+      } catch (discErr) {
+        logger.debug("Controller disconnect during user wipe notice", discErr.message);
+      }
+
+      response.json({
+        ok: true,
+        success: true,
+        message: result.wipedNumber 
+          ? `WhatsApp number (+${result.wipedNumber}) lock has been removed from your account. You can now pair a fresh phone number.`
+          : "Number lock cleared successfully.",
+        wipedNumber: result.wipedNumber || null,
+        userId: verifiedUid,
+      });
+    } catch (error) {
+      logger.error("User wipe number error", error.stack || error.message);
+      response.status(500).json({ error: error.message || "Failed to wipe number lock." });
+    }
+  };
+
+  app.post(`${p}/user/wipe-number`, requireAuth, handleUserWipeNumber);
+  app.post(`${p}/number/wipe`, requireAuth, handleUserWipeNumber);
+  app.post(`${p}/wipe-number`, requireAuth, handleUserWipeNumber);
+
   // Dedicated Auto-Reconnection Logs and Battery Telemetry API
   app.get(`${p}/reconnect-logs`, requireAuth, async (request, response) => {
     try {
@@ -280,13 +316,34 @@ for (const p of prefixes) {
     }
   });
 
-  // Trigger Instant Manual Reconnect
+  // Trigger Instant Manual Reconnect (Restores from Firebase & activates socket if active license exists)
   app.post(`${p}/reconnect`, requireAuth, async (request, response) => {
     try {
       const safeUserId = request.safeUserId;
       const verifiedUid = request.verifiedUid;
-      const controller = getWhatsAppController(safeUserId, { verifiedUid, userEmail: request.auth.email });
-      const result = await controller.triggerManualReconnect();
+      const userEmail = request.auth.email;
+
+      // Check license
+      const licenseStatus = await getUserLicenseStatus(verifiedUid, userEmail);
+      if (!licenseStatus.hasActiveLicense) {
+        return response.status(403).json({
+          error: "Active license required to connect. Please redeem a license code first.",
+          code: "LICENSE_REQUIRED",
+          userId: verifiedUid,
+        });
+      }
+
+      const controller = getWhatsAppController(safeUserId, { verifiedUid, userEmail });
+      
+      // If idle, call start() to restore from Firestore and connect; otherwise triggerManualReconnect()
+      let result;
+      if (controller.getStatus().status === "idle" || !controller.isConnected()) {
+        const conn = await controller.start();
+        result = { success: Boolean(conn), message: "Reconnection process started.", status: controller.getStatus().status };
+      } else {
+        result = await controller.triggerManualReconnect();
+      }
+
       response.json({
         ok: true,
         ...result,

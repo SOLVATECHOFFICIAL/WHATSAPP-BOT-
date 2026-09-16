@@ -2726,5 +2726,136 @@ button, input, select, .get-key-btn, .logout-button, .license-btn, .copy-button 
   }
 }
 
+/* ==========================================================================
+   LOCKED NUMBER NOTICE & WIPE / RECONNECT UI CONTROLS
+   ========================================================================== */
+.locked-number-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.locked-number-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.locked-icon {
+  font-size: 18px;
+}
+
+.locked-number-info strong {
+  display: block;
+  font-size: 12px;
+  color: #14532d;
+  font-weight: 600;
+}
+
+.locked-number-display {
+  display: inline-block;
+  font-family: "DM Mono", monospace;
+  font-size: 13px;
+  color: #15803d;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.wipe-number-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.wipe-number-btn:hover {
+  background: #fecaca;
+  color: #7f1d1d;
+  border-color: #f87171;
+  transform: translateY(-1px);
+}
+
+.mini-wipe-btn {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.mini-wipe-btn:hover {
+  background: #fecaca;
+}
+
+.pairing-actions-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.quick-reconnect-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  background: #047857;
+  color: #ffffff;
+  border: 1px solid #059669;
+  border-radius: 8px;
+  padding: 12px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(4, 120, 87, 0.2);
+  transition: all 0.2s ease;
+}
+
+.quick-reconnect-btn:hover {
+  background: #065f46;
+  border-color: #047857;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(4, 120, 87, 0.3);
+}
+
+.quick-reconnect-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@media (max-width: 640px) {
+  .locked-number-notice {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .wipe-number-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+
 
 
