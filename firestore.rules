@@ -1,8 +1,137 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'awoyinfasolomon1@gmail.com' ||
+        request.auth.token.email == 'awoyinfataiwo20@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Default catch-all
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if isAdmin();
+    }
+
+    // Admins Collection
+    match /admins/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // User Profiles Collection
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) || isAdmin();
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+
+    // Licenses Collection
+    match /licenses/{code} {
+      allow read: if isSignedIn();
+      allow create: if isAdmin();
+      allow update: if isSignedIn(); // Allows redemption and admin status stopping
+      allow delete: if isAdmin(); // Allows wiping licenses
+    }
+
+    // User License Activations Collection
+    match /user_licenses/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) || isAdmin();
+      allow update: if isOwner(userId) || isAdmin(); // Allows overwriting upon renewal/stop
+      allow delete: if isOwner(userId) || isAdmin(); // Allows wiping user license
+    }
+
+    // WhatsApp Group Settings Collection
+    match /group_settings/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) || isAdmin();
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+
+    // WhatsApp Baileys Sessions Collection
+    match /whatsapp_sessions/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) || isAdmin();
+      allow update: if isOwner(userId) || isAdmin(); // Allows overwriting multi-device session state
+      allow delete: if isOwner(userId) || isAdmin(); // Allows wiping session files
+    }
+
+    // WhatsApp Number to UID Locks Collection
+    match /number_locks/{phoneNumber} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn(); // Allows updating or overwriting locks
+      allow delete: if isSignedIn(); // Allows wiping number locks
+    }
+
+    // UID to WhatsApp Number Locks Collection
+    match /user_number_locks/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) || isAdmin();
+      allow update: if isOwner(userId) || isAdmin(); // Allows overwriting number locks
+      allow delete: if isOwner(userId) || isAdmin(); // Allows wiping number locks
+    }
+
+    // Number History Association & Deletion Trail Collection
+    match /number_history/{historyId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
+    // Admin Audit Logs Collection
+    match /admin_audit_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Referral Purchases Collection
+    match /referral_purchases/{purchaseId} {
+      allow read: if isAdmin() || (isSignedIn() && (resource.data.buyerUid == request.auth.uid || resource.data.referrerUid == request.auth.uid));
+      allow create: if isSignedIn();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Referral Rewards Collection
+    match /referral_rewards/{rewardId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.referrerUid == request.auth.uid);
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
+    // Referral Claims Collection
+    match /referral_claims/{claimId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userUid == request.auth.uid);
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
+    // Deleted Messages (DDD Anti-Delete Recovery) Collection
+    match /deleted_messages/{recordId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
     }
   }
 }

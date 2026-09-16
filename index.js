@@ -5,15 +5,36 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { PORT } from "./lib/config.js";
 import { logger } from "./lib/logger.js";
-import { getWhatsAppController, restoreAllSessions, auditActiveSessions, getAllWhatsAppStatuses } from "./lib/whatsapp.js";
-import { getLockedNumberForUid, getAllNumberLocks } from "./lib/number-lock.js";
-import { requireAuth, requireAdmin, createPreviewToken, getFirebaseServerFirestore } from "./lib/auth.js";
+import {
+  getWhatsAppController,
+  restoreAllSessions,
+  auditActiveSessions,
+  getAllWhatsAppStatuses,
+  disconnectUserWhatsAppSession,
+} from "./lib/whatsapp.js";
+import {
+  getLockedNumberForUid,
+  getAllNumberLocks,
+  wipeNumberFromAccount,
+  getAllNumberHistory,
+} from "./lib/number-lock.js";
+import {
+  requireAuth,
+  requireAdmin,
+  createPreviewToken,
+  getFirebaseServerFirestore,
+  setUserAccountStatus,
+  isUserAccountDisabled,
+  recordAdminAuditLog,
+  getAdminAuditLogs,
+} from "./lib/auth.js";
 import {
   createLicenseRecord,
   listAllLicenses,
   redeemLicenseCode,
   getUserLicenseStatus,
   syncAllFromFirestore,
+  stopActiveLicense,
   ADMIN_EMAIL,
 } from "./lib/license.js";
 import {
@@ -726,6 +747,513 @@ for (const p of prefixes) {
       response.status(400).json({ error: error.message || "Failed to generate license." });
     }
   });
+
+  // ==========================================================================
+  // SUPER ADMIN — ACCOUNT & NUMBER MANAGEMENT ENDPOINTS
+  // ==========================================================================
+
+  app.get(`${p}/admin/accounts-and-numbers`, requireAuth, requireAdmin, async (_request, response) => {
+    try {
+      const db = getFirebaseServerFirestore();
+      const firestoreUsers = {};
+
+      if (db) {
+        try {
+          const { collection, getDocs } = await import("firebase/firestore");
+          const snap = await getDocs(collection(db, "users"));
+          snap.forEach((docSnap) => {
+            firestoreUsers[docSnap.id] = docSnap.data();
+          });
+        } catch (err) {
+          logger.debug("Firestore users fetch notice in accounts-and-numbers", err.message);
+        }
+      }
+
+      const [licenses, numberLocks, numberHistoryList, referralAudit, auditLogsList] = await Promise.all([
+        listAllLicenses(),
+        getAllNumberLocks(),
+        getAllNumberHistory(),
+        getAdminReferralAudit().catch(() => ({ summary: {}, referrers: [] })),
+        getAdminAuditLogs().catch(() => []),
+      ]);
+
+      const whatsappList = getAllWhatsAppStatuses();
+      const wsByUid = {};
+      for (const ws of whatsappList) {
+        if (ws.verifiedUid) wsByUid[ws.verifiedUid] = ws;
+        if (ws.userId) wsByUid[ws.userId] = ws;
+      }
+
+      const locksByUid = {};
+      const locksByPhone = {};
+      for (const [phone, lock] of Object.entries(numberLocks || {})) {
+        if (lock && lock.uid) {
+          locksByUid[lock.uid] = lock;
+          locksByPhone[phone] = lock;
+        }
+      }
+
+      const referrersByUid = {};
+      for (const ref of (referralAudit?.referrers || [])) {
+        if (ref && ref.uid) referrersByUid[ref.uid] = ref;
+      }
+
+      // Group history by UID, email, and phone
+      const historyByUid = {};
+      const historyByPhone = {};
+      for (const hist of numberHistoryList || []) {
+        if (hist.uid) {
+          historyByUid[hist.uid] = historyByUid[hist.uid] || [];
+          historyByUid[hist.uid].push(hist);
+        }
+        if (hist.phoneNumber) {
+          historyByPhone[hist.phoneNumber] = historyByPhone[hist.phoneNumber] || [];
+          historyByPhone[hist.phoneNumber].push(hist);
+        }
+      }
+
+      const accountsMap = {};
+
+      // 1. Seed from Firestore users
+      for (const [uid, uData] of Object.entries(firestoreUsers)) {
+        accountsMap[uid] = {
+          uid,
+          email: uData.email || "",
+          displayName: uData.displayName || "",
+          photoURL: uData.photoURL || "",
+          createdAt: uData.createdAt || uData.joinedAt || null,
+          disabled: uData.disabled === true,
+          disabledAt: uData.disabledAt || null,
+          disabledBy: uData.disabledBy || null,
+          disabledReason: uData.disabledReason || null,
+          status: uData.disabled === true ? "DISABLED" : "ACTIVE",
+          activeLicense: uData.activeLicense || null,
+        };
+      }
+
+      // 2. Seed from licenses
+      for (const lic of licenses) {
+        if (lic.redeemedByUid) {
+          const uid = lic.redeemedByUid;
+          if (!accountsMap[uid]) {
+            accountsMap[uid] = {
+              uid,
+              email: lic.redeemedByEmail || "",
+              displayName: "",
+              createdAt: lic.redeemedAt || lic.createdAt || null,
+              disabled: false,
+              status: "ACTIVE",
+            };
+          }
+          if (!accountsMap[uid].activeLicense || new Date(lic.expiresAt || 0) > new Date(accountsMap[uid].activeLicense.expiresAt || 0)) {
+            accountsMap[uid].activeLicense = {
+              code: lic.code,
+              durationDays: lic.durationDays,
+              expiresAt: lic.expiresAt,
+              redeemedAt: lic.redeemedAt,
+              status: lic.status === "stopped" || lic.adminStopped ? "stopped" : (new Date(lic.expiresAt).getTime() > Date.now() ? "active" : "expired"),
+              adminStopped: lic.adminStopped || lic.status === "stopped",
+            };
+          }
+        }
+      }
+
+      // 3. Seed from number locks
+      for (const [phone, lock] of Object.entries(numberLocks || {})) {
+        if (lock && lock.uid) {
+          const uid = lock.uid;
+          if (!accountsMap[uid]) {
+            accountsMap[uid] = {
+              uid,
+              email: lock.userEmail || "",
+              displayName: "",
+              createdAt: lock.lockedAt || null,
+              disabled: false,
+              status: "ACTIVE",
+            };
+          }
+        }
+      }
+
+      // 4. Seed from referrers
+      for (const ref of (referralAudit?.referrers || [])) {
+        if (ref && ref.uid && !accountsMap[ref.uid]) {
+          accountsMap[ref.uid] = {
+            uid: ref.uid,
+            email: ref.email || "",
+            displayName: "",
+            createdAt: null,
+            disabled: false,
+            status: "ACTIVE",
+          };
+        }
+      }
+
+      // 5. Ensure Super Admin account is represented
+      if (!Object.values(accountsMap).some((a) => a.email.toLowerCase() === ADMIN_EMAIL.toLowerCase())) {
+        accountsMap["admin_root"] = {
+          uid: "admin_root",
+          email: ADMIN_EMAIL,
+          displayName: "Super Administrator",
+          createdAt: new Date().toISOString(),
+          disabled: false,
+          status: "ACTIVE",
+        };
+      }
+
+      const now = Date.now();
+      const accountsList = Object.values(accountsMap).map((acc) => {
+        const lock = locksByUid[acc.uid] || null;
+        const currentPhone = lock?.phoneNumber || null;
+        const currentNumberLinkedAt = lock?.lockedAt || null;
+
+        const ws = wsByUid[acc.uid] || (currentPhone ? wsByUid[currentPhone] : null) || null;
+        const refInfo = referrersByUid[acc.uid] || null;
+
+        // Collect number history for this account
+        let numberHistory = historyByUid[acc.uid] || [];
+        if (currentPhone && historyByPhone[currentPhone]) {
+          const existingIds = new Set(numberHistory.map((h) => h.id));
+          for (const h of historyByPhone[currentPhone]) {
+            if (!existingIds.has(h.id)) {
+              numberHistory.push(h);
+              existingIds.add(h.id);
+            }
+          }
+        }
+
+        // If currently locked number is not in history list yet, add synthetic current record
+        if (currentPhone && !numberHistory.some((h) => h.phoneNumber === currentPhone && h.status === "Current")) {
+          numberHistory.unshift({
+            id: `current_${acc.uid}_${currentPhone}`,
+            phoneNumber: currentPhone,
+            uid: acc.uid,
+            userEmail: acc.email,
+            action: "LINKED",
+            status: "Current",
+            linkedAt: currentNumberLinkedAt,
+            unlinkedAt: null,
+            timestamp: currentNumberLinkedAt || acc.createdAt,
+          });
+        }
+
+        numberHistory.sort((a, b) => new Date(b.timestamp || b.linkedAt || 0).getTime() - new Date(a.timestamp || a.linkedAt || 0).getTime());
+
+        // License status determination
+        let licenseInfo = {
+          code: null,
+          durationDays: null,
+          activatedDate: null,
+          expirationDate: null,
+          remainingMs: 0,
+          remainingFormatted: "No License",
+          status: "NO LICENSE",
+          isLifetime: false,
+          adminStopped: false,
+        };
+
+        if (acc.uid === "admin_root" || acc.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+          licenseInfo = {
+            code: "ADMIN-UNLIMITED",
+            durationDays: "Unlimited",
+            activatedDate: acc.createdAt,
+            expirationDate: null,
+            remainingMs: 3153600000000,
+            remainingFormatted: "Unlimited (Admin Access)",
+            status: "ACTIVE",
+            isLifetime: true,
+            adminStopped: false,
+          };
+        } else if (acc.activeLicense) {
+          const lic = acc.activeLicense;
+          const expMs = lic.expiresAt ? new Date(lic.expiresAt).getTime() : 0;
+          const remMs = Math.max(0, expMs - now);
+
+          let statusStr = "ACTIVE";
+          if (lic.adminStopped || lic.status === "stopped") {
+            statusStr = "ADMIN STOPPED";
+          } else if (remMs <= 0) {
+            statusStr = "EXPIRED";
+          }
+
+          let remainingFormatted = "Expired";
+          if (statusStr === "ADMIN STOPPED") {
+            remainingFormatted = "Admin Stopped";
+          } else if (remMs > 0) {
+            const days = Math.floor(remMs / 86400000);
+            const hrs = Math.floor((remMs % 86400000) / 3600000);
+            const mins = Math.floor((remMs % 3600000) / 60000);
+            remainingFormatted = `${days}d ${hrs}h ${mins}m left`;
+          }
+
+          licenseInfo = {
+            code: lic.code || null,
+            durationDays: lic.durationDays || null,
+            activatedDate: lic.redeemedAt || null,
+            expirationDate: lic.expiresAt || null,
+            remainingMs: remMs,
+            remainingFormatted,
+            status: statusStr,
+            isLifetime: false,
+            adminStopped: Boolean(lic.adminStopped || lic.status === "stopped"),
+            stoppedAt: lic.stoppedAt || null,
+            stoppedReason: lic.stoppedReason || null,
+          };
+        }
+
+        const wsStatus = ws ? ws.status : currentPhone ? "disconnected" : "never_paired";
+
+        return {
+          uid: acc.uid,
+          email: acc.email,
+          displayName: acc.displayName,
+          createdAt: acc.createdAt,
+          status: acc.status || "ACTIVE",
+          disabled: Boolean(acc.disabled),
+          disabledAt: acc.disabledAt,
+          disabledBy: acc.disabledBy,
+          disabledReason: acc.disabledReason,
+          currentNumber: currentPhone,
+          currentNumberLinkedAt,
+          numberHistory,
+          license: licenseInfo,
+          whatsappStatus: wsStatus,
+          botNumber: ws?.botNumber || currentPhone || "",
+          connectedAt: ws?.connectedAt || null,
+          referrals: {
+            referralCode: refInfo?.referralCode || "",
+            referrerCode: refInfo?.referrerCode || "",
+            referredCount: refInfo?.referredCount || 0,
+            qualifyingSalesNgn: refInfo?.qualifyingSalesNgn || 0,
+            earnedDaysTotal: refInfo?.earnedDaysTotal || 0,
+            claimedDaysTotal: refInfo?.claimedDaysTotal || 0,
+            availableDays: refInfo?.availableDays || 0,
+          },
+        };
+      });
+
+      // Compute Dashboard Statistics (7 KPI Metrics)
+      const totalAccounts = accountsList.length;
+      const activeAccounts = accountsList.filter((a) => a.status === "ACTIVE").length;
+      const disabledAccounts = accountsList.filter((a) => a.status === "DISABLED").length;
+      const withCurrentNumber = accountsList.filter((a) => Boolean(a.currentNumber)).length;
+      const withoutCurrentNumber = accountsList.filter((a) => !a.currentNumber).length;
+      const totalCurrentNumberAssociations = Object.keys(numberLocks || {}).length;
+      const totalHistoricalAssociations = (numberHistoryList || []).length;
+
+      response.json({
+        success: true,
+        stats: {
+          totalAccounts,
+          activeAccounts,
+          disabledAccounts,
+          withCurrentNumber,
+          withoutCurrentNumber,
+          totalCurrentNumberAssociations,
+          totalHistoricalAssociations,
+        },
+        accounts: accountsList,
+        auditLogs: (auditLogsList || []).slice(0, 100),
+        adminEmail: ADMIN_EMAIL,
+        serverTime: new Date().toISOString(),
+      });
+    } catch (error) {
+      logger.error("Admin accounts and numbers aggregate error", error.stack || error.message);
+      response.status(500).json({ error: "Failed to retrieve accounts and numbers data." });
+    }
+  });
+
+  app.post(`${p}/admin/wipe-number`, requireAuth, requireAdmin, async (request, response) => {
+    try {
+      const { uid, reason } = request.body || {};
+      if (!uid) return response.status(400).json({ error: "Target account UID is required." });
+
+      const adminEmail = request.auth?.email || ADMIN_EMAIL;
+      const result = await wipeNumberFromAccount(uid, adminEmail, reason || "Wiped by Super Admin");
+
+      // Audit Log
+      await recordAdminAuditLog(
+        {
+          action: "NUMBER_WIPED",
+          targetUid: uid,
+          targetEmail: result.userEmail || "",
+          whatsappNumber: result.wipedNumber || "",
+          adminEmail,
+          previousState: `LOCKED (${result.wipedNumber || "None"})`,
+          newState: "UNLOCKED / NO NUMBER",
+          result: "SUCCESS",
+          note: reason || "Wiped by Super Admin via Danger Zone",
+        },
+        request.headers.authorization
+      );
+
+      response.json({
+        success: true,
+        message: `WhatsApp number (+${result.wipedNumber || "N/A"}) removed from account ${uid}.`,
+        wipedNumber: result.wipedNumber,
+        uid,
+      });
+    } catch (error) {
+      logger.error("Admin wipe number error", error.stack || error.message);
+      response.status(500).json({ error: error.message || "Failed to wipe WhatsApp number." });
+    }
+  });
+
+  app.post(`${p}/admin/stop-license`, requireAuth, requireAdmin, async (request, response) => {
+    try {
+      const { uid, licenseCode, reason } = request.body || {};
+      if (!uid && !licenseCode) {
+        return response.status(400).json({ error: "Account UID or License code is required." });
+      }
+
+      const adminEmail = request.auth?.email || ADMIN_EMAIL;
+      const result = await stopActiveLicense(uid, licenseCode, adminEmail, reason || "Stopped by Super Admin", request.headers.authorization);
+
+      // Audit Log
+      await recordAdminAuditLog(
+        {
+          action: "LICENSE_STOPPED",
+          targetUid: uid || "",
+          licenseKey: result.code || licenseCode || "",
+          adminEmail,
+          previousState: "ACTIVE",
+          newState: "ADMIN STOPPED",
+          result: "SUCCESS",
+          note: reason || "Stopped by Super Admin via Danger Zone",
+        },
+        request.headers.authorization
+      );
+
+      response.json({
+        success: true,
+        message: "License has been administratively stopped.",
+        code: result.code,
+        uid,
+      });
+    } catch (error) {
+      logger.error("Admin stop license error", error.stack || error.message);
+      response.status(500).json({ error: error.message || "Failed to stop license." });
+    }
+  });
+
+  app.post(`${p}/admin/disable-account`, requireAuth, requireAdmin, async (request, response) => {
+    try {
+      const { uid, reason } = request.body || {};
+      if (!uid) return response.status(400).json({ error: "Account UID is required." });
+
+      const adminEmail = request.auth?.email || ADMIN_EMAIL;
+      const result = await setUserAccountStatus(uid, { disabled: true, reason: reason || "Disabled by Super Admin", adminEmail }, request.headers.authorization);
+
+      // Automatically disconnect active WhatsApp session
+      await disconnectUserWhatsAppSession(uid).catch(() => {});
+
+      // Audit Log
+      await recordAdminAuditLog(
+        {
+          action: "ACCOUNT_DISABLED",
+          targetUid: uid,
+          adminEmail,
+          previousState: "ACTIVE",
+          newState: "DISABLED",
+          result: "SUCCESS",
+          note: reason || "Disabled by Super Admin via Danger Zone",
+        },
+        request.headers.authorization
+      );
+
+      response.json({
+        success: true,
+        message: `Account ${uid} has been administratively disabled.`,
+        status: result.status,
+        uid,
+      });
+    } catch (error) {
+      logger.error("Admin disable account error", error.stack || error.message);
+      response.status(500).json({ error: error.message || "Failed to disable account." });
+    }
+  });
+
+  app.post(`${p}/admin/enable-account`, requireAuth, requireAdmin, async (request, response) => {
+    try {
+      const { uid } = request.body || {};
+      if (!uid) return response.status(400).json({ error: "Account UID is required." });
+
+      const adminEmail = request.auth?.email || ADMIN_EMAIL;
+      const result = await setUserAccountStatus(uid, { disabled: false, adminEmail }, request.headers.authorization);
+
+      // Audit Log
+      await recordAdminAuditLog(
+        {
+          action: "ACCOUNT_RE_ENABLED",
+          targetUid: uid,
+          adminEmail,
+          previousState: "DISABLED",
+          newState: "ACTIVE",
+          result: "SUCCESS",
+          note: "Re-enabled by Super Admin via Danger Zone",
+        },
+        request.headers.authorization
+      );
+
+      response.json({
+        success: true,
+        message: `Account ${uid} has been re-enabled.`,
+        status: result.status,
+        uid,
+      });
+    } catch (error) {
+      logger.error("Admin enable account error", error.stack || error.message);
+      response.status(500).json({ error: error.message || "Failed to re-enable account." });
+    }
+  });
+
+  app.post(`${p}/admin/disconnect-session`, requireAuth, requireAdmin, async (request, response) => {
+    try {
+      const { uid } = request.body || {};
+      if (!uid) return response.status(400).json({ error: "Account UID is required." });
+
+      const adminEmail = request.auth?.email || ADMIN_EMAIL;
+      const result = await disconnectUserWhatsAppSession(uid);
+
+      // Audit Log
+      await recordAdminAuditLog(
+        {
+          action: "WHATSAPP_DISCONNECTED",
+          targetUid: uid,
+          adminEmail,
+          previousState: "CONNECTED / CONNECTING",
+          newState: "DISCONNECTED",
+          result: result.success ? "SUCCESS" : "FAILED",
+          note: "Disconnected by Super Admin via Danger Zone (Number lock preserved)",
+        },
+        request.headers.authorization
+      );
+
+      response.json({
+        success: true,
+        message: result.message || "WhatsApp session disconnected.",
+        uid,
+      });
+    } catch (error) {
+      logger.error("Admin disconnect session error", error.stack || error.message);
+      response.status(500).json({ error: error.message || "Failed to disconnect session." });
+    }
+  });
+
+  app.get(`${p}/admin/audit-logs`, requireAuth, requireAdmin, async (_request, response) => {
+    try {
+      const logs = await getAdminAuditLogs();
+      response.json({
+        success: true,
+        auditLogs: logs,
+        total: logs.length,
+      });
+    } catch (error) {
+      logger.error("Admin get audit logs error", error.stack || error.message);
+      response.status(500).json({ error: "Failed to list audit logs." });
+    }
+  });
+
 }
 
 app.use((request, response, next) => {

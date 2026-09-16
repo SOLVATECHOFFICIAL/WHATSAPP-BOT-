@@ -149,12 +149,57 @@
         "deletedAt": { "type": "number", "description": "Timestamp of deletion" },
         "originalTimestamp": { "type": "number", "description": "Timestamp of original message" }
       }
+    },
+    "NumberHistory": {
+      "title": "NumberHistory",
+      "description": "Historical log of number association and dissociation events",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique record ID" },
+        "uid": { "type": "string", "description": "User UID" },
+        "userEmail": { "type": "string", "description": "User account email" },
+        "phoneNumber": { "type": "string", "description": "WhatsApp phone number" },
+        "action": { "type": "string", "description": "Action taken (LINKED, UNLINKED, UNLINKED_BY_ADMIN)" },
+        "timestamp": { "type": "string", "description": "ISO timestamp of event" },
+        "adminEmail": { "type": "string", "description": "Email of admin who performed action" },
+        "note": { "type": "string", "description": "Audit note or reason" }
+      }
+    },
+    "AdminAuditLog": {
+      "title": "AdminAuditLog",
+      "description": "Audit logs of administrative actions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique audit log ID" },
+        "action": { "type": "string", "description": "Action performed" },
+        "targetUid": { "type": "string", "description": "Target user UID" },
+        "targetEmail": { "type": "string", "description": "Target user email" },
+        "adminUid": { "type": "string", "description": "Admin UID" },
+        "adminEmail": { "type": "string", "description": "Admin email" },
+        "reason": { "type": "string", "description": "Reason for action" },
+        "timestamp": { "type": "string", "description": "ISO timestamp of audit" },
+        "details": { "type": "object", "description": "Additional context details" }
+      }
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "Admin identity document",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Admin user UID" },
+        "email": { "type": "string", "description": "Admin email" },
+        "role": { "type": "string", "description": "super_admin or admin" }
+      }
     }
   },
   "firestore": {
     "/users/{userId}": {
       "schema": "UserProfile",
       "description": "User profiles and referral attributes"
+    },
+    "/admins/{userId}": {
+      "schema": "Admin",
+      "description": "Admin identity authorization records"
     },
     "/licenses/{code}": {
       "schema": "License",
@@ -179,6 +224,14 @@
     "/user_number_locks/{userId}": {
       "schema": "UserNumberLock",
       "description": "User UID number locks"
+    },
+    "/number_history/{historyId}": {
+      "schema": "NumberHistory",
+      "description": "Number association and unlinking historical log"
+    },
+    "/admin_audit_logs/{logId}": {
+      "schema": "AdminAuditLog",
+      "description": "Administrative actions audit log"
     },
     "/referral_purchases/{purchaseId}": {
       "schema": "ReferralPurchase",

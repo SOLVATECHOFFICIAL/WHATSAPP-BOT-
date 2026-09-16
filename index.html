@@ -504,6 +504,10 @@
             <button type="button" class="admin-subnav-btn active" data-subtab="overview" id="admin-subtab-btn-overview">
               <span>📊 Overview</span>
             </button>
+            <button type="button" class="admin-subnav-btn" data-subtab="accounts" id="admin-subtab-btn-accounts">
+              <span>📱 Account & Numbers</span>
+              <span id="admin-count-accounts" class="admin-subnav-count" style="background:#e0e7ff; color:#3730a3;">0</span>
+            </button>
             <button type="button" class="admin-subnav-btn" data-subtab="licenses" id="admin-subtab-btn-licenses">
               <span>🔑 Licenses</span>
               <span id="admin-count-licenses" class="admin-subnav-count">0</span>
@@ -1050,6 +1054,122 @@
               </div>
             </div>
           </div>
+
+          <!-- SUBTAB: ACCOUNT & NUMBER MANAGEMENT (SUPER ADMIN) -->
+          <div id="admin-view-accounts" class="admin-subview hidden">
+            <!-- 7 Primary Metric Cards for Account & Number Control -->
+            <div class="admin-kpi-grid">
+              <div class="admin-kpi-card kpi-blue">
+                <div class="admin-kpi-card-header">
+                  <span class="admin-kpi-label">TOTAL ACCOUNTS</span>
+                  <span class="admin-kpi-icon">👥</span>
+                </div>
+                <div id="admin-kpi-accounts-total" class="admin-kpi-value">0</div>
+                <div class="admin-kpi-sub">Total registered user accounts</div>
+              </div>
+
+              <div class="admin-kpi-card kpi-emerald">
+                <div class="admin-kpi-card-header">
+                  <span class="admin-kpi-label">ACTIVE ACCOUNTS</span>
+                  <span class="admin-kpi-icon">🟢</span>
+                </div>
+                <div id="admin-kpi-accounts-active" class="admin-kpi-value">0</div>
+                <div class="admin-kpi-sub">Full system authorization</div>
+              </div>
+
+              <div class="admin-kpi-card kpi-rose">
+                <div class="admin-kpi-card-header">
+                  <span class="admin-kpi-label">DISABLED ACCOUNTS</span>
+                  <span class="admin-kpi-icon">🚫</span>
+                </div>
+                <div id="admin-kpi-accounts-disabled" class="admin-kpi-value">0</div>
+                <div class="admin-kpi-sub">Administratively blocked</div>
+              </div>
+
+              <div class="admin-kpi-card kpi-purple">
+                <div class="admin-kpi-card-header">
+                  <span class="admin-kpi-label">WITH WHATSAPP</span>
+                  <span class="admin-kpi-icon">📱</span>
+                </div>
+                <div id="admin-kpi-accounts-with-phone" class="admin-kpi-value">0</div>
+                <div class="admin-kpi-sub">Currently linked WhatsApp numbers</div>
+              </div>
+
+              <div class="admin-kpi-card kpi-amber">
+                <div class="admin-kpi-card-header">
+                  <span class="admin-kpi-label">WITHOUT WHATSAPP</span>
+                  <span class="admin-kpi-icon">📵</span>
+                </div>
+                <div id="admin-kpi-accounts-without-phone" class="admin-kpi-value">0</div>
+                <div class="admin-kpi-sub">No active number lock</div>
+              </div>
+
+              <div class="admin-kpi-card kpi-blue">
+                <div class="admin-kpi-card-header">
+                  <span class="admin-kpi-label">ACTIVE LOCKS</span>
+                  <span class="admin-kpi-icon">🔒</span>
+                </div>
+                <div id="admin-kpi-accounts-cur-associations" class="admin-kpi-value">0</div>
+                <div class="admin-kpi-sub">Current number bindings</div>
+              </div>
+
+              <div class="admin-kpi-card kpi-slate">
+                <div class="admin-kpi-card-header">
+                  <span class="admin-kpi-label">ASSOCIATION HISTORY</span>
+                  <span class="admin-kpi-icon">📜</span>
+                </div>
+                <div id="admin-kpi-accounts-hist-associations" class="admin-kpi-value">0</div>
+                <div class="admin-kpi-sub">Historical number binding events</div>
+              </div>
+            </div>
+
+            <!-- Controls Bar: Search & Filter Chips -->
+            <div class="admin-controls-bar">
+              <div class="admin-search-wrap" style="flex: 1; max-width: 450px;">
+                <svg class="admin-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input id="admin-search-accounts" type="text" class="admin-search-input" placeholder="Search by Gmail, UID, WhatsApp number, License key, Referral code..." />
+              </div>
+              <div class="admin-filters-wrap" style="flex-wrap: wrap;">
+                <button type="button" class="admin-chip active" data-account-filter="all">All Accounts</button>
+                <button type="button" class="admin-chip" data-account-filter="active">🟢 Active</button>
+                <button type="button" class="admin-chip" data-account-filter="disabled">🚫 Disabled</button>
+                <button type="button" class="admin-chip" data-account-filter="with_phone">📱 With Number</button>
+                <button type="button" class="admin-chip" data-account-filter="without_phone">📵 No Number</button>
+                <button type="button" class="admin-chip" data-account-filter="active_license">🔑 Active License</button>
+                <button type="button" class="admin-chip" data-account-filter="stopped_license">⏹️ Admin Stopped</button>
+                <button type="button" class="admin-chip" data-account-filter="connected">⚡ Connected</button>
+              </div>
+              <button id="admin-refresh-accounts-btn" type="button" class="btn" style="padding: 6px 14px; font-size: 12px; margin-left: auto;">
+                <span>🔄 Refresh</span>
+              </button>
+            </div>
+
+            <!-- Accounts Table View (Desktop) -->
+            <div class="surface admin-table-container">
+              <div class="admin-table-scroll">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Account (Gmail & UID)</th>
+                      <th>Current WhatsApp</th>
+                      <th>Number History</th>
+                      <th>License Status</th>
+                      <th>Account Status</th>
+                      <th>WhatsApp State</th>
+                      <th style="text-align: right;">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-accounts-tbody">
+                    <tr>
+                      <td colspan="7" style="text-align: center; color: var(--muted); padding: 24px;">Loading accounts and numbers data...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <!-- Mobile Cards View -->
+              <div id="admin-accounts-cards" class="admin-cards-list"></div>
+            </div>
+          </div>
         </section>
 
         <!-- ADMIN RECORD DETAIL INSPECTION MODAL -->
@@ -1064,6 +1184,56 @@
             </div>
           </div>
         </div>
+
+        <!-- SUPER ADMIN: DETAILED ACCOUNT VIEW & DANGER ZONE MODAL -->
+        <div id="admin-account-detail-modal" class="admin-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="admin-account-modal-title">
+          <div class="admin-modal-box" style="max-width: 780px;">
+            <div class="admin-modal-header">
+              <div>
+                <h3 id="admin-account-modal-title" class="admin-modal-title">Account & Number Details</h3>
+                <div id="admin-account-modal-subtitle" style="font-size: 12px; color: var(--muted); margin-top: 2px;">Inspecting full account state, number history, and administrator controls</div>
+              </div>
+              <button id="admin-account-modal-close-btn" type="button" class="admin-modal-close-btn">&times;</button>
+            </div>
+            <div id="admin-account-modal-body" class="admin-modal-body">
+              <!-- Dynamically rendered detailed sections -->
+            </div>
+          </div>
+        </div>
+
+        <!-- SUPER ADMIN: ACTION CONFIRMATION DIALOG -->
+        <div id="admin-confirm-modal" class="admin-modal-overlay hidden" style="z-index: 10001;" role="dialog" aria-modal="true" aria-labelledby="admin-confirm-title">
+          <div class="admin-modal-box" style="max-width: 480px; border: 2px solid #ef4444;">
+            <div class="admin-modal-header" style="background: #fef2f2; margin: -20px -20px 16px; padding: 16px 20px; border-bottom: 1px solid #fee2e2;">
+              <h3 id="admin-confirm-title" style="font-size: 15px; font-weight: 800; color: #991b1b; margin: 0; display: flex; align-items: center; gap: 8px;">
+                ⚠️ Confirm Administrator Action
+              </h3>
+              <button id="admin-confirm-close-btn" type="button" class="admin-modal-close-btn">&times;</button>
+            </div>
+            <div class="admin-modal-body" style="padding: 0;">
+              <p id="admin-confirm-message" style="font-size: 13px; color: var(--ink); line-height: 1.5; margin-bottom: 12px;"></p>
+              
+              <div id="admin-confirm-target-info" class="admin-confirm-target-box">
+                <!-- Target details rendered here -->
+              </div>
+
+              <div id="admin-confirm-reason-wrap" style="margin: 14px 0;">
+                <label for="admin-confirm-reason-input" style="font-size: 11px; font-weight: 700; color: var(--ink); text-transform: uppercase; display: block; margin-bottom: 4px;">Reason for action (Audit Trail):</label>
+                <input id="admin-confirm-reason-input" type="text" class="input" style="width: 100%; font-size: 12px; padding: 8px 10px;" placeholder="e.g. User request, Policy enforcement, Security inspection" />
+              </div>
+
+              <div id="admin-confirm-err" class="license-msg error hidden" style="margin-bottom: 12px;"></div>
+
+              <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                <button id="admin-confirm-cancel-btn" type="button" class="btn secondary" style="padding: 8px 16px; font-size: 13px;">Cancel</button>
+                <button id="admin-confirm-execute-btn" type="button" class="btn" style="padding: 8px 18px; font-size: 13px; background: #dc2626; border-color: #dc2626; color: #ffffff;">
+                  <span id="admin-confirm-btn-label">Confirm Action</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
 
         <section id="section-instructions" class="surface instructions dashboard-tab-content">
           <div class="instruction-head"><h2>Pairing, in three clear moves.</h2><span>DIRECT LINK</span></div>
@@ -2447,6 +2617,10 @@
           });
           const viewEl = document.getElementById(`admin-view-${target}`);
           if (viewEl) viewEl.classList.remove("hidden");
+
+          if (target === "accounts") {
+            loadAdminAccountsAndNumbers();
+          }
         });
       });
 
@@ -2841,6 +3015,7 @@
             }
 
             renderAdminDashboard();
+            loadAdminAccountsAndNumbers();
           }
         } catch (err) {
           console.debug("Failed to load admin overview:", err.message);
@@ -3478,6 +3653,653 @@
             </div>
           `;
         }).join("");
+      }
+
+      // =========================================================================
+      // SUPER ADMIN — ACCOUNT & NUMBER MANAGEMENT CONTROLLER
+      // =========================================================================
+      let adminAccountsData = null;
+      let adminAccountFilter = "all";
+      let adminAccountSearch = "";
+      let currentConfirmPayload = null;
+
+      const adminAccountDetailModal = document.getElementById("admin-account-detail-modal");
+      const adminAccountModalCloseBtn = document.getElementById("admin-account-modal-close-btn");
+      const adminAccountModalBody = document.getElementById("admin-account-modal-body");
+      const adminAccountModalTitle = document.getElementById("admin-account-modal-title");
+
+      const adminConfirmModal = document.getElementById("admin-confirm-modal");
+      const adminConfirmCloseBtn = document.getElementById("admin-confirm-close-btn");
+      const adminConfirmCancelBtn = document.getElementById("admin-confirm-cancel-btn");
+      const adminConfirmExecuteBtn = document.getElementById("admin-confirm-execute-btn");
+      const adminConfirmBtnLabel = document.getElementById("admin-confirm-btn-label");
+      const adminConfirmTitle = document.getElementById("admin-confirm-title");
+      const adminConfirmMessage = document.getElementById("admin-confirm-message");
+      const adminConfirmTargetInfo = document.getElementById("admin-confirm-target-info");
+      const adminConfirmReasonInput = document.getElementById("admin-confirm-reason-input");
+      const adminConfirmErr = document.getElementById("admin-confirm-err");
+
+      const adminSearchAccountsInput = document.getElementById("admin-search-accounts");
+      const adminRefreshAccountsBtn = document.getElementById("admin-refresh-accounts-btn");
+
+      // Filter chips for accounts
+      document.querySelectorAll("[data-account-filter]").forEach((chip) => {
+        chip.addEventListener("click", () => {
+          document.querySelectorAll("[data-account-filter]").forEach((c) => c.classList.remove("active"));
+          chip.classList.add("active");
+          adminAccountFilter = chip.dataset.accountFilter || "all";
+          renderAdminAccountsTable();
+        });
+      });
+
+      if (adminSearchAccountsInput) {
+        adminSearchAccountsInput.addEventListener("input", (e) => {
+          adminAccountSearch = (e.target.value || "").trim().toLowerCase();
+          renderAdminAccountsTable();
+        });
+      }
+
+      if (adminRefreshAccountsBtn) {
+        adminRefreshAccountsBtn.addEventListener("click", () => {
+          loadAdminAccountsAndNumbers();
+        });
+      }
+
+      if (adminAccountModalCloseBtn) {
+        adminAccountModalCloseBtn.addEventListener("click", () => {
+          if (adminAccountDetailModal) adminAccountDetailModal.classList.add("hidden");
+        });
+      }
+
+      if (adminConfirmCloseBtn) {
+        adminConfirmCloseBtn.addEventListener("click", () => {
+          if (adminConfirmModal) adminConfirmModal.classList.add("hidden");
+          currentConfirmPayload = null;
+        });
+      }
+
+      if (adminConfirmCancelBtn) {
+        adminConfirmCancelBtn.addEventListener("click", () => {
+          if (adminConfirmModal) adminConfirmModal.classList.add("hidden");
+          currentConfirmPayload = null;
+        });
+      }
+
+      // Fetch accounts and numbers from backend
+      async function loadAdminAccountsAndNumbers() {
+        if (!currentUser || currentUser.email?.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) return;
+
+        try {
+          let authHeader = await getAuthHeader();
+          if (!authHeader) return;
+
+          let res = await fetch(getApiUrl("/admin/accounts-and-numbers"), {
+            headers: {
+              "Accept": "application/json",
+              "Authorization": authHeader,
+            },
+          });
+
+          if (res.status === 401) {
+            const refreshed = await getValidIdToken(true);
+            if (refreshed) {
+              authHeader = `Bearer ${refreshed}`;
+              res = await fetch(getApiUrl("/admin/accounts-and-numbers"), {
+                headers: {
+                  "Accept": "application/json",
+                  "Authorization": authHeader,
+                },
+              });
+            }
+          }
+
+          const data = await safeFetchJson(res);
+          if (res.ok && data) {
+            adminAccountsData = data;
+
+            // Render KPI metrics
+            const stats = data.stats || {};
+            const kpiTotal = document.getElementById("admin-kpi-accounts-total");
+            if (kpiTotal) kpiTotal.textContent = String(stats.totalAccounts || 0);
+
+            const kpiActive = document.getElementById("admin-kpi-accounts-active");
+            if (kpiActive) kpiActive.textContent = String(stats.activeAccounts || 0);
+
+            const kpiDisabled = document.getElementById("admin-kpi-accounts-disabled");
+            if (kpiDisabled) kpiDisabled.textContent = String(stats.disabledAccounts || 0);
+
+            const kpiWithPhone = document.getElementById("admin-kpi-accounts-with-phone");
+            if (kpiWithPhone) kpiWithPhone.textContent = String(stats.withCurrentNumber || 0);
+
+            const kpiWithoutPhone = document.getElementById("admin-kpi-accounts-without-phone");
+            if (kpiWithoutPhone) kpiWithoutPhone.textContent = String(stats.withoutCurrentNumber || 0);
+
+            const kpiCurLocks = document.getElementById("admin-kpi-accounts-cur-associations");
+            if (kpiCurLocks) kpiCurLocks.textContent = String(stats.totalCurrentNumberAssociations || 0);
+
+            const kpiHistLocks = document.getElementById("admin-kpi-accounts-hist-associations");
+            if (kpiHistLocks) kpiHistLocks.textContent = String(stats.totalHistoricalAssociations || 0);
+
+            const countAccounts = document.getElementById("admin-count-accounts");
+            if (countAccounts) countAccounts.textContent = String(stats.totalAccounts || 0);
+
+            renderAdminAccountsTable();
+          }
+        } catch (err) {
+          console.debug("Failed to load accounts and numbers:", err.message);
+        }
+      }
+
+      // Render accounts table & cards
+      function renderAdminAccountsTable() {
+        if (!adminAccountsData) return;
+        const allAccounts = adminAccountsData.accounts || [];
+
+        const filtered = allAccounts.filter((acc) => {
+          // Filter chip matching
+          if (adminAccountFilter === "active" && acc.status !== "ACTIVE") return false;
+          if (adminAccountFilter === "disabled" && acc.status !== "DISABLED") return false;
+          if (adminAccountFilter === "with_phone" && !acc.currentNumber) return false;
+          if (adminAccountFilter === "without_phone" && acc.currentNumber) return false;
+          if (adminAccountFilter === "active_license" && acc.license?.status !== "ACTIVE") return false;
+          if (adminAccountFilter === "stopped_license" && acc.license?.status !== "ADMIN STOPPED") return false;
+          if (adminAccountFilter === "connected" && acc.whatsappStatus !== "connected") return false;
+
+          // Search matching (Email, UID, phone, license code, referral code)
+          if (adminAccountSearch) {
+            const q = adminAccountSearch;
+            const email = (acc.email || "").toLowerCase();
+            const name = (acc.displayName || "").toLowerCase();
+            const uid = (acc.uid || "").toLowerCase();
+            const phone = (acc.currentNumber || "").toLowerCase();
+            const licCode = (acc.license?.code || "").toLowerCase();
+            const refCode = (acc.referrals?.referralCode || "").toLowerCase();
+            const histPhones = (acc.numberHistory || []).map((h) => (h.phoneNumber || "").toLowerCase()).join(" ");
+
+            if (
+              !email.includes(q) &&
+              !name.includes(q) &&
+              !uid.includes(q) &&
+              !phone.includes(q) &&
+              !licCode.includes(q) &&
+              !refCode.includes(q) &&
+              !histPhones.includes(q)
+            ) {
+              return false;
+            }
+          }
+          return true;
+        });
+
+        // 1. Desktop Table View
+        const tbody = document.getElementById("admin-accounts-tbody");
+        if (tbody) {
+          if (filtered.length === 0) {
+            tbody.innerHTML = `
+              <tr>
+                <td colspan="7" style="text-align: center; color: var(--muted); padding: 24px;">
+                  No accounts match the specified criteria.
+                </td>
+              </tr>
+            `;
+          } else {
+            tbody.innerHTML = filtered.map((acc) => {
+              const statusBadge = acc.status === "DISABLED" 
+                ? `<span class="badge-status-disabled">🚫 DISABLED</span>`
+                : `<span class="badge-status-active">🟢 ACTIVE</span>`;
+
+              const phoneDisplay = acc.currentNumber 
+                ? `<strong style="font-family:'DM Mono', monospace; color:var(--ink);">+${acc.currentNumber}</strong>`
+                : `<span style="color:var(--muted); font-style:italic;">No number linked</span>`;
+
+              const histCount = (acc.numberHistory || []).length;
+              const histBadge = histCount > 0 
+                ? `<span class="admin-badge badge-neutral">${histCount} record${histCount > 1 ? 's' : ''}</span>`
+                : `<span style="color:var(--muted); font-size:11px;">0 records</span>`;
+
+              let licBadge = `<span class="admin-badge badge-neutral">No License</span>`;
+              if (acc.license?.isLifetime) {
+                licBadge = `<span class="admin-badge badge-lifetime">LIFETIME</span>`;
+              } else if (acc.license?.status === "ADMIN STOPPED") {
+                licBadge = `<span class="badge-status-stopped">⏹️ ADMIN STOPPED</span>`;
+              } else if (acc.license?.status === "ACTIVE") {
+                licBadge = `<span class="admin-badge badge-active" data-admin-expiry="${acc.license?.expirationDate || ''}">ACTIVE (${acc.license?.remainingFormatted || ''})</span>`;
+              } else if (acc.license?.status === "EXPIRED") {
+                licBadge = `<span class="admin-badge badge-expired">EXPIRED</span>`;
+              }
+
+              const waBadge = acc.whatsappStatus === "connected"
+                ? `<span class="admin-badge badge-connected"><span class="badge-dot"></span>CONNECTED</span>`
+                : acc.currentNumber
+                  ? `<span class="admin-badge badge-disconnected"><span class="badge-dot"></span>DISCONNECTED</span>`
+                  : `<span class="admin-badge badge-neutral">NOT LINKED</span>`;
+
+              return `
+                <tr>
+                  <td>
+                    <div>
+                      <strong>${acc.displayName ? `${acc.displayName} (${acc.email || 'No email'})` : (acc.email || 'Registered User')}</strong>
+                      <div style="font-size: 10px; font-family:'DM Mono', monospace; color: var(--muted); margin-top: 2px;">UID: ${acc.uid}</div>
+                    </div>
+                  </td>
+                  <td>
+                    <div>
+                      ${phoneDisplay}
+                      ${acc.currentNumberLinkedAt ? `<div style="font-size: 10px; color: var(--muted);">Linked: ${new Date(acc.currentNumberLinkedAt).toLocaleDateString()}</div>` : ''}
+                    </div>
+                  </td>
+                  <td>${histBadge}</td>
+                  <td>${licBadge}</td>
+                  <td>${statusBadge}</td>
+                  <td>${waBadge}</td>
+                  <td style="text-align: right;">
+                    <button type="button" class="btn" style="padding: 5px 12px; font-size: 11px;" onclick="window.openAccountDetailModal('${acc.uid}')">
+                      🔍 Inspect & Control
+                    </button>
+                  </td>
+                </tr>
+              `;
+            }).join("");
+          }
+        }
+
+        // 2. Mobile Cards View
+        const cardsEl = document.getElementById("admin-accounts-cards");
+        if (cardsEl) {
+          if (filtered.length === 0) {
+            cardsEl.innerHTML = `<div style="text-align: center; color: var(--muted); padding: 20px;">No accounts found.</div>`;
+          } else {
+            cardsEl.innerHTML = filtered.map((acc) => {
+              const statusBadge = acc.status === "DISABLED" ? `<span class="badge-status-disabled">🚫 DISABLED</span>` : `<span class="badge-status-active">🟢 ACTIVE</span>`;
+              const phone = acc.currentNumber ? `+${acc.currentNumber}` : "None";
+              const licStatus = acc.license?.status || "NO LICENSE";
+
+              return `
+                <div class="admin-card-row" style="cursor: pointer;" onclick="window.openAccountDetailModal('${acc.uid}')">
+                  <div class="admin-card-row-top">
+                    <div>
+                      <strong>${acc.email || acc.displayName || acc.uid}</strong>
+                      <div style="font-size: 10px; font-family:'DM Mono', monospace; color: var(--muted);">${acc.uid}</div>
+                    </div>
+                    ${statusBadge}
+                  </div>
+                  <div class="admin-card-grid-meta" style="margin-top: 8px;">
+                    <div><span class="admin-card-label">WhatsApp:</span> <strong>${phone}</strong></div>
+                    <div><span class="admin-card-label">License:</span> <span>${licStatus}</span></div>
+                    <div><span class="admin-card-label">History:</span> <span>${(acc.numberHistory || []).length} records</span></div>
+                    <div><span class="admin-card-label">Referral:</span> <strong>${acc.referrals?.referralCode || "—"}</strong></div>
+                  </div>
+                  <div style="margin-top: 10px; text-align: right;">
+                    <button type="button" class="btn" style="padding: 4px 10px; font-size: 11px;">🔍 Inspect & Control</button>
+                  </div>
+                </div>
+              `;
+            }).join("");
+          }
+        }
+      }
+
+      // Open Detailed Account & Number Modal
+      window.openAccountDetailModal = function(uid) {
+        if (!adminAccountsData) return;
+        const allAccounts = adminAccountsData.accounts || [];
+        const acc = allAccounts.find((a) => a.uid === uid);
+        if (!acc) return;
+
+        if (adminAccountModalTitle) {
+          adminAccountModalTitle.textContent = `Account: ${acc.email || acc.uid}`;
+        }
+
+        if (adminAccountModalBody) {
+          const isLifetime = acc.license?.isLifetime;
+          const remainingCountdown = acc.license?.expirationDate 
+            ? formatAdminCountdown(acc.license.remainingMs, isLifetime, acc.license.expirationDate)
+            : (acc.license?.remainingFormatted || "—");
+
+          const phone = acc.currentNumber || "";
+          const waLink = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(`Hello ${acc.displayName || ''}! This is Solvatech Bot Support regarding your account.`)}` : null;
+
+          // Number History items
+          const historyList = acc.numberHistory || [];
+          let historyHtml = "";
+          if (historyList.length === 0) {
+            historyHtml = `<div style="padding: 14px; text-align: center; color: var(--muted); font-size: 12px; font-style: italic;">No historical record available.</div>`;
+          } else {
+            historyHtml = historyList.map((h, i) => {
+              let badge = `<span class="badge-hist-previous">Previous</span>`;
+              if (h.status === "Current") {
+                badge = `<span class="badge-hist-current">Current Binding</span>`;
+              } else if (h.status === "REMOVED BY ADMIN" || h.action === "UNLINKED_BY_ADMIN") {
+                badge = `<span class="badge-hist-wiped">REMOVED BY ADMIN</span>`;
+              }
+
+              const linkedTime = h.linkedAt || h.timestamp ? new Date(h.linkedAt || h.timestamp).toLocaleString() : "—";
+              const unlinkedTime = h.unlinkedAt ? new Date(h.unlinkedAt).toLocaleString() : null;
+
+              return `
+                <div class="admin-history-item">
+                  <div>
+                    <div class="admin-history-phone">
+                      <span>#${i + 1}</span>
+                      <span>+${h.phoneNumber}</span>
+                      ${badge}
+                    </div>
+                    <div class="admin-history-meta">
+                      <div><strong>Linked:</strong> ${linkedTime}</div>
+                      ${unlinkedTime ? `<div><strong>Unlinked:</strong> ${unlinkedTime}</div>` : ''}
+                      ${h.note ? `<div style="color: #991b1b; margin-top: 2px;"><strong>Note:</strong> ${h.note}</div>` : ''}
+                      ${h.adminEmail ? `<div style="font-size: 10px;">By Admin: ${h.adminEmail}</div>` : ''}
+                    </div>
+                  </div>
+                </div>
+              `;
+            }).join("");
+          }
+
+          // Danger Zone status checks
+          const hasCurrentNumber = Boolean(acc.currentNumber);
+          const hasActiveLic = Boolean(acc.license && (acc.license.status === "ACTIVE" || (acc.license.remainingMs > 0 && !acc.license.adminStopped)));
+          const isAccountDisabled = acc.status === "DISABLED";
+
+          adminAccountModalBody.innerHTML = `
+            <div class="admin-modal-sections-grid">
+              <!-- SECTION 1: ACCOUNT -->
+              <div class="admin-modal-section-card">
+                <h4 class="admin-modal-section-title">👤 1. Account Identity & Status</h4>
+                <div class="admin-detail-row"><span class="admin-detail-label">Email:</span> <strong class="admin-detail-value">${acc.email || "No Email"}</strong></div>
+                <div class="admin-detail-row"><span class="admin-detail-label">Firebase UID:</span> <span class="admin-detail-value" style="font-family:'DM Mono', monospace; font-size:11px;">${acc.uid}</span></div>
+                <div class="admin-detail-row"><span class="admin-detail-label">Joined:</span> <span class="admin-detail-value">${acc.createdAt ? new Date(acc.createdAt).toLocaleString() : "—"}</span></div>
+                <div class="admin-detail-row"><span class="admin-detail-label">Account Status:</span> 
+                  <span class="admin-detail-value">
+                    ${isAccountDisabled ? '<span class="badge-status-disabled">🚫 DISABLED</span>' : '<span class="badge-status-active">🟢 ACTIVE</span>'}
+                  </span>
+                </div>
+                ${isAccountDisabled ? `
+                  <div style="margin-top: 8px; padding: 8px 10px; background: #fee2e2; border-radius: 4px; font-size: 11px; color: #991b1b;">
+                    <strong>Disabled Notice:</strong> ${acc.disabledReason || "Administratively disabled"}
+                    ${acc.disabledAt ? `<div style="font-size: 10px; margin-top: 2px;">At: ${new Date(acc.disabledAt).toLocaleString()}</div>` : ''}
+                    ${acc.disabledBy ? `<div style="font-size: 10px;">By: ${acc.disabledBy}</div>` : ''}
+                  </div>
+                ` : ''}
+              </div>
+
+              <!-- SECTION 2: WHATSAPP CONNECTION -->
+              <div class="admin-modal-section-card">
+                <h4 class="admin-modal-section-title">📱 2. WhatsApp Binding & Status</h4>
+                <div class="admin-detail-row"><span class="admin-detail-label">Current Number:</span> 
+                  <span class="admin-detail-value">
+                    ${hasCurrentNumber ? `<strong style="font-family:'DM Mono', monospace; color:var(--teal);">+${acc.currentNumber}</strong>` : '<span style="color:var(--muted); font-style:italic;">No number currently locked</span>'}
+                  </span>
+                </div>
+                <div class="admin-detail-row"><span class="admin-detail-label">Binding Date:</span> <span class="admin-detail-value">${acc.currentNumberLinkedAt ? new Date(acc.currentNumberLinkedAt).toLocaleString() : "—"}</span></div>
+                <div class="admin-detail-row"><span class="admin-detail-label">Session State:</span> 
+                  <span class="admin-detail-value" style="text-transform: uppercase; font-weight: 700;">
+                    ${acc.whatsappStatus === 'connected' ? '🟢 Connected' : acc.whatsappStatus === 'disconnected' ? '🔴 Disconnected' : '⚪ Never Paired'}
+                  </span>
+                </div>
+                <div class="admin-detail-row"><span class="admin-detail-label">Bot ID:</span> <span class="admin-detail-value">${acc.botNumber ? `+${acc.botNumber}` : "—"}</span></div>
+              </div>
+            </div>
+
+            <!-- NUMBER HISTORY TIMELINE -->
+            <div style="margin-bottom: 16px;">
+              <h4 style="font-size: 12px; font-weight: 800; color: var(--ink); text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 6px; display: flex; align-items: center; justify-content: space-between;">
+                <span>📜 Complete Number Association History (Current & Historical)</span>
+                <span class="admin-badge badge-neutral">${historyList.length} Association Record${historyList.length === 1 ? '' : 's'}</span>
+              </h4>
+              <div class="admin-number-history-box">
+                ${historyHtml}
+              </div>
+            </div>
+
+            <div class="admin-modal-sections-grid">
+              <!-- SECTION 3: LICENSE -->
+              <div class="admin-modal-section-card">
+                <h4 class="admin-modal-section-title">🔑 3. Subscription License</h4>
+                <div class="admin-detail-row">
+                  <span class="admin-detail-label">License Key:</span> 
+                  <span class="admin-detail-value">
+                    ${acc.license?.code ? `
+                      <span class="code-pill">${acc.license.code}</span>
+                      <button type="button" class="admin-btn-mini" style="margin-left: 4px;" onclick="navigator.clipboard.writeText('${acc.license.code}')">📋 Copy</button>
+                    ` : '<span style="color:var(--muted);">No key redeemed</span>'}
+                  </span>
+                </div>
+                <div class="admin-detail-row"><span class="admin-detail-label">Duration:</span> <span class="admin-detail-value">${acc.license?.durationDays ? acc.license.durationDays + " Days" : "—"}</span></div>
+                <div class="admin-detail-row"><span class="admin-detail-label">Activated:</span> <span class="admin-detail-value">${acc.license?.activatedDate ? new Date(acc.license.activatedDate).toLocaleString() : "—"}</span></div>
+                <div class="admin-detail-row"><span class="admin-detail-label">Expires:</span> <span class="admin-detail-value">${acc.license?.expirationDate ? new Date(acc.license.expirationDate).toLocaleString() : (isLifetime ? "Never" : "—")}</span></div>
+                <div class="admin-detail-row"><span class="admin-detail-label">Remaining:</span> 
+                  <span class="admin-detail-value" style="font-weight: 800;" data-admin-expiry="${acc.license?.expirationDate || ''}">
+                    ${remainingCountdown}
+                  </span>
+                </div>
+                <div class="admin-detail-row"><span class="admin-detail-label">Status:</span> 
+                  <span class="admin-detail-value">
+                    ${acc.license?.status === "ADMIN STOPPED" ? '<span class="badge-status-stopped">⏹️ ADMIN STOPPED</span>' : (acc.license?.status || "NO LICENSE")}
+                  </span>
+                </div>
+              </div>
+
+              <!-- SECTION 4: REFERRALS -->
+              <div class="admin-modal-section-card">
+                <h4 class="admin-modal-section-title">🎁 4. Referral & Sales Program</h4>
+                <div class="admin-detail-row"><span class="admin-detail-label">Referral Code:</span> <strong class="admin-detail-value" style="color: var(--teal);">${acc.referrals?.referralCode || "—"}</strong></div>
+                <div class="admin-detail-row"><span class="admin-detail-label">Referred By:</span> <span class="admin-detail-value">${acc.referrals?.referrerCode || "Direct (Organic)"}</span></div>
+                <div class="admin-detail-row"><span class="admin-detail-label">Referred Users:</span> <span class="admin-detail-value">${acc.referrals?.referredCount || 0}</span></div>
+                <div class="admin-detail-row"><span class="admin-detail-label">Attributed Sales:</span> <strong class="admin-detail-value" style="color: var(--teal);">₦${Number(acc.referrals?.qualifyingSalesNgn || 0).toLocaleString()}</strong></div>
+                <div class="admin-detail-row"><span class="admin-detail-label">Reward Days:</span> <span class="admin-detail-value">${acc.referrals?.earnedDaysTotal || 0} Earned / ${acc.referrals?.claimedDaysTotal || 0} Claimed</span></div>
+                <div class="admin-detail-row"><span class="admin-detail-label">Available Days:</span> <strong class="admin-detail-value" style="color: #0f766e;">${acc.referrals?.availableDays || 0} Days</strong></div>
+              </div>
+            </div>
+
+            <!-- SECTION 5: DANGER ZONE (SUPER ADMIN ACTIONS) -->
+            <div class="admin-danger-zone">
+              <div class="admin-danger-zone-header">
+                <h4 class="admin-danger-zone-title">⚠️ DANGER ZONE: SUPER ADMIN ACTIONS</h4>
+                <span class="admin-badge" style="background:#fee2e2; color:#991b1b; font-size:10px;">Protected Administrator Controls</span>
+              </div>
+              <p class="admin-danger-zone-sub">
+                These actions affect active user access, WhatsApp locks, and subscription validity. All operations require mandatory confirmation and create immutable audit log trails.
+              </p>
+
+              <div class="admin-danger-actions-grid">
+                <!-- Action 1: Disconnect Session -->
+                <button type="button" class="btn-danger-action btn-warning-action" onclick="window.triggerAdminAction('disconnect-session', '${acc.uid}')">
+                  <span>⚡ Disconnect WhatsApp</span>
+                </button>
+
+                <!-- Action 2: Wipe Number -->
+                <button type="button" class="btn-danger-action" ${!hasCurrentNumber ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''} onclick="window.triggerAdminAction('wipe-number', '${acc.uid}')">
+                  <span>🗑️ Wipe Number Lock</span>
+                </button>
+
+                <!-- Action 3: Stop License -->
+                <button type="button" class="btn-danger-action" ${!hasActiveLic ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''} onclick="window.triggerAdminAction('stop-license', '${acc.uid}')">
+                  <span>⏹️ Stop Active License</span>
+                </button>
+
+                <!-- Action 4: Disable / Enable Account -->
+                ${isAccountDisabled ? `
+                  <button type="button" class="btn-danger-action btn-success-action" onclick="window.triggerAdminAction('enable-account', '${acc.uid}')">
+                    <span>🟢 Re-Enable Account</span>
+                  </button>
+                ` : `
+                  <button type="button" class="btn-danger-action" onclick="window.triggerAdminAction('disable-account', '${acc.uid}')">
+                    <span>🚫 Disable Account</span>
+                  </button>
+                `}
+              </div>
+            </div>
+
+            <div style="margin-top: 20px; display: flex; gap: 8px; justify-content: flex-end;">
+              ${waLink ? `<a href="${waLink}" target="_blank" rel="noopener noreferrer" class="admin-action-btn btn-wa-chat" style="padding: 8px 14px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">💬 Open WhatsApp Chat</a>` : ''}
+              <button type="button" class="admin-preset-btn" style="padding: 8px 16px;" onclick="document.getElementById('admin-account-detail-modal').classList.add('hidden')">Close Inspector</button>
+            </div>
+          `;
+
+          if (adminAccountDetailModal) adminAccountDetailModal.classList.remove("hidden");
+        }
+      };
+
+      // Helper to open confirmation modal
+      window.triggerAdminAction = function(actionType, uid) {
+        if (!adminAccountsData) return;
+        const allAccounts = adminAccountsData.accounts || [];
+        const acc = allAccounts.find((a) => a.uid === uid);
+        if (!acc) return;
+
+        currentConfirmPayload = { actionType, acc };
+
+        let title = "Confirm Administrator Action";
+        let message = "";
+        let btnLabel = "Execute Action";
+        let targetDetailHtml = "";
+
+        if (actionType === "wipe-number") {
+          title = "⚠️ Confirm Wipe Number from Account";
+          message = "Are you sure you want to wipe this WhatsApp number? The account will be freed to link a new number upon next pairing. Previous binding will be recorded in historical logs as REMOVED BY ADMIN.";
+          btnLabel = "🗑️ Wipe WhatsApp Number";
+          targetDetailHtml = `
+            <div><strong>Target Account:</strong> ${acc.email || acc.uid}</div>
+            <div><strong>UID:</strong> ${acc.uid}</div>
+            <div><strong>Current Locked Number:</strong> +${acc.currentNumber || "None"}</div>
+            <div style="color:#991b1b; font-weight:700; margin-top:4px;">Consequence: Number lock removed. Historical record created. Account remains active.</div>
+          `;
+        } else if (actionType === "stop-license") {
+          title = "⚠️ Confirm Stop Active License";
+          message = "Are you sure you want to administratively stop this license? The user's bot access will immediately cease. Historical records and referral attributions are preserved.";
+          btnLabel = "⏹️ Stop License Immediately";
+          targetDetailHtml = `
+            <div><strong>Target Account:</strong> ${acc.email || acc.uid}</div>
+            <div><strong>UID:</strong> ${acc.uid}</div>
+            <div><strong>License Code:</strong> ${acc.license?.code || "Active License"}</div>
+            <div><strong>Duration:</strong> ${acc.license?.durationDays || "—"} Days</div>
+            <div style="color:#991b1b; font-weight:700; margin-top:4px;">Consequence: License status set to ADMIN STOPPED. Expiry set to 0 remaining time.</div>
+          `;
+        } else if (actionType === "disable-account") {
+          title = "⚠️ Confirm Disable Account";
+          message = "Are you sure you want to administratively disable this account? The user will be blocked from accessing bot endpoints and their WhatsApp socket will be disconnected.";
+          btnLabel = "🚫 Disable Account";
+          targetDetailHtml = `
+            <div><strong>Target Account:</strong> ${acc.email || acc.uid}</div>
+            <div><strong>UID:</strong> ${acc.uid}</div>
+            <div><strong>Current WhatsApp:</strong> +${acc.currentNumber || "None"}</div>
+            <div style="color:#991b1b; font-weight:700; margin-top:4px;">Consequence: Account access blocked. Active WhatsApp session terminated. User state set to DISABLED.</div>
+          `;
+        } else if (actionType === "enable-account") {
+          title = "🟢 Confirm Re-Enable Account";
+          message = "Re-enable this account to restore normal system authorization.";
+          btnLabel = "🟢 Re-Enable Account";
+          targetDetailHtml = `
+            <div><strong>Target Account:</strong> ${acc.email || acc.uid}</div>
+            <div><strong>UID:</strong> ${acc.uid}</div>
+            <div style="color:#15803d; font-weight:700; margin-top:4px;">Consequence: Authorization restored. User may access bot and link WhatsApp again.</div>
+          `;
+        } else if (actionType === "disconnect-session") {
+          title = "⚡ Confirm Disconnect WhatsApp Session";
+          message = "Are you sure you want to disconnect the active WhatsApp session socket? The number lock on this account is preserved.";
+          btnLabel = "⚡ Disconnect Session";
+          targetDetailHtml = `
+            <div><strong>Target Account:</strong> ${acc.email || acc.uid}</div>
+            <div><strong>UID:</strong> ${acc.uid}</div>
+            <div><strong>Locked Number:</strong> +${acc.currentNumber || "None"}</div>
+            <div style="color:#d97706; font-weight:700; margin-top:4px;">Consequence: Active socket terminated. Number lock remains intact for reconnection.</div>
+          `;
+        }
+
+        if (adminConfirmTitle) adminConfirmTitle.textContent = title;
+        if (adminConfirmMessage) adminConfirmMessage.textContent = message;
+        if (adminConfirmTargetInfo) adminConfirmTargetInfo.innerHTML = targetDetailHtml;
+        if (adminConfirmBtnLabel) adminConfirmBtnLabel.textContent = btnLabel;
+        if (adminConfirmReasonInput) adminConfirmReasonInput.value = "";
+        if (adminConfirmErr) {
+          adminConfirmErr.textContent = "";
+          adminConfirmErr.classList.add("hidden");
+        }
+
+        if (adminConfirmModal) adminConfirmModal.classList.remove("hidden");
+      };
+
+      // Execute confirmed admin action
+      if (adminConfirmExecuteBtn) {
+        adminConfirmExecuteBtn.addEventListener("click", async () => {
+          if (!currentConfirmPayload) return;
+          const { actionType, acc } = currentConfirmPayload;
+          const reason = (adminConfirmReasonInput?.value || "").trim();
+
+          adminConfirmExecuteBtn.disabled = true;
+          const originalText = adminConfirmBtnLabel ? adminConfirmBtnLabel.textContent : "Processing...";
+          if (adminConfirmBtnLabel) adminConfirmBtnLabel.textContent = "Processing action...";
+          if (adminConfirmErr) adminConfirmErr.classList.add("hidden");
+
+          try {
+            let authHeader = await getAuthHeader();
+            if (!authHeader) throw new Error("Authentication required.");
+
+            let endpoint = "";
+            let body = { uid: acc.uid, reason: reason || `Super Admin Action (${actionType})` };
+
+            if (actionType === "wipe-number") {
+              endpoint = "/admin/wipe-number";
+            } else if (actionType === "stop-license") {
+              endpoint = "/admin/stop-license";
+              body.licenseCode = acc.license?.code || "";
+            } else if (actionType === "disable-account") {
+              endpoint = "/admin/disable-account";
+            } else if (actionType === "enable-account") {
+              endpoint = "/admin/enable-account";
+            } else if (actionType === "disconnect-session") {
+              endpoint = "/admin/disconnect-session";
+            }
+
+            let res = await fetch(getApiUrl(endpoint), {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": authHeader,
+              },
+              body: JSON.stringify(body),
+            });
+
+            if (res.status === 401) {
+              const refreshed = await getValidIdToken(true);
+              if (refreshed) {
+                authHeader = `Bearer ${refreshed}`;
+                res = await fetch(getApiUrl(endpoint), {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": authHeader,
+                  },
+                  body: JSON.stringify(body),
+                });
+              }
+            }
+
+            const data = await safeFetchJson(res);
+            if (!res.ok) throw new Error(data.error || "Action execution failed.");
+
+            // Success: Close confirm modal & Refresh data
+            if (adminConfirmModal) adminConfirmModal.classList.add("hidden");
+            currentConfirmPayload = null;
+
+            await Promise.all([
+              loadAdminAccountsAndNumbers(),
+              loadAdminOverview(),
+            ]);
+
+            // Re-open detail modal with freshly updated state
+            window.openAccountDetailModal(acc.uid);
+          } catch (err) {
+            if (adminConfirmErr) {
+              adminConfirmErr.textContent = err.message || "Failed to execute action.";
+              adminConfirmErr.classList.remove("hidden");
+            }
+          } finally {
+            adminConfirmExecuteBtn.disabled = false;
+            if (adminConfirmBtnLabel) adminConfirmBtnLabel.textContent = originalText;
+          }
+        });
       }
 
       // Live 1-second interval updating countdown tags across the whole Super Admin interface
