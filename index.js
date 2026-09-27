@@ -333,7 +333,29 @@ for (const p of prefixes) {
 
       const controller = getWhatsAppController(safeUserId, { verifiedUid, userEmail });
       
-      // If idle, call start() to restore from Firestore and connect; otherwise triggerManualReconnect()
+      // If already connected, respond cleanly without re-triggering
+      if (controller.isConnected()) {
+        return response.json({
+          ok: true,
+          success: true,
+          alreadyConnected: true,
+          message: "WhatsApp session is already connected.",
+          status: controller.getStatus(),
+        });
+      }
+
+      // If already in-flight connecting, inform client to prevent socket thrashing
+      if (controller.isConnecting()) {
+        return response.json({
+          ok: true,
+          success: true,
+          inProgress: true,
+          message: "A reconnection attempt is already in progress. Please wait...",
+          status: controller.getStatus(),
+        });
+      }
+
+      // If idle or not connected, restore from Firestore and connect; otherwise triggerManualReconnect()
       let result;
       if (controller.getStatus().status === "idle" || !controller.isConnected()) {
         const conn = await controller.start();

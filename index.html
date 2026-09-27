@@ -440,6 +440,84 @@
               </button>
             </div>
 
+            <!-- 1. WHATSAPP CONNECTED PANEL (Displayed when WhatsApp session is alive) -->
+            <div id="whatsapp-connected-panel" class="whatsapp-connected-panel hidden">
+              <div class="smart-conn-header">
+                <span class="smart-conn-title">WHATSAPP STATUS</span>
+                <span class="smart-conn-badge connected">🟢 Connected</span>
+              </div>
+              <div class="smart-conn-grid">
+                <div class="smart-conn-item">
+                  <span class="muted-label">CONNECTED NUMBER</span>
+                  <strong id="connected-panel-number">+234...</strong>
+                </div>
+                <div class="smart-conn-item">
+                  <span class="muted-label">LAST ACTIVE</span>
+                  <strong id="connected-panel-last-active">Just now</strong>
+                </div>
+              </div>
+              <div class="session-reassure-box">
+                <span style="font-size: 20px;">🛡️</span>
+                <div>
+                  <strong>Your WhatsApp session is still connected. No action is required.</strong>
+                  <p>Bot automation, command handlers, and anti-delete protection are actively listening on your device.</p>
+                </div>
+              </div>
+              <div class="smart-conn-actions">
+                <button type="button" id="panel-disconnect-btn" class="smart-btn-secondary" title="Disconnect active WhatsApp session">
+                  <span>Disconnect Session</span>
+                </button>
+                <button type="button" id="panel-view-logs-btn" class="smart-btn-secondary" title="View reconnection telemetry logs">
+                  <span>Reconnection Logs →</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- 2. WHATSAPP DISCONNECTED PANEL (Displayed when session requires reconnection) -->
+            <div id="whatsapp-disconnected-panel" class="whatsapp-disconnected-panel hidden">
+              <div class="smart-conn-header">
+                <span class="smart-conn-title">WHATSAPP STATUS</span>
+                <span class="smart-conn-badge disconnected">🔴 Disconnected</span>
+              </div>
+              <div class="smart-conn-grid">
+                <div class="smart-conn-item">
+                  <span class="muted-label">WHATSAPP NUMBER</span>
+                  <strong id="disconnected-panel-number">+234...</strong>
+                </div>
+                <div class="smart-conn-item">
+                  <span class="muted-label">LAST KNOWN ACTIVITY</span>
+                  <strong id="disconnected-panel-last-active">—</strong>
+                </div>
+              </div>
+              <div class="session-alert-box">
+                <span style="font-size: 20px;">⚠️</span>
+                <div>
+                  <strong>Your WhatsApp session needs to be reconnected.</strong>
+                  <p id="disconnected-panel-detail">Click Reconnect below to restore your existing session immediately without needing a new pairing code.</p>
+                </div>
+              </div>
+              <button type="button" id="reconnect-primary-btn" class="reconnect-primary-btn" title="Reconnect your saved WhatsApp session">
+                <span>⚡ RECONNECT</span>
+              </button>
+              <div style="margin-top: 10px; font-size: 11px; text-align: center; color: var(--muted);">
+                <span>Device unlinked from phone? </span>
+                <button type="button" id="force-new-pair-btn" style="background: none; border: none; color: var(--teal); font-weight: 700; text-decoration: underline; cursor: pointer; padding: 0;">Request fresh pairing code</button>
+              </div>
+            </div>
+
+            <!-- 3. WHATSAPP CHECKING / VERIFYING PANEL (Temporary state upon check/restore) -->
+            <div id="whatsapp-checking-panel" class="whatsapp-checking-panel hidden">
+              <div class="smart-conn-header" style="justify-content: center;">
+                <span class="smart-conn-badge checking">🟡 Checking Connection...</span>
+              </div>
+              <p style="font-size: 13px; color: var(--ink); font-weight: 600; margin: 8px 0 0;">
+                CHECKING WHATSAPP CONNECTION...
+              </p>
+              <p style="font-size: 11px; color: var(--muted); margin: 4px 0 0;">
+                Verifying live session state with WhatsApp servers. Please wait a moment...
+              </p>
+            </div>
+
             <form id="pair-form">
               <div class="country-select-wrap">
                 <label id="country-select-label">Select Your Country</label>
@@ -490,6 +568,17 @@
             <hr />
             <span class="muted-label">CONNECTED NUMBER</span>
             <strong id="connected-number">—</strong>
+
+            <!-- Last Active Telemetry in Status Card -->
+            <div id="status-last-active-wrap" style="margin-top: 10px; margin-bottom: 12px;">
+              <span class="muted-label">LAST ACTIVE</span>
+              <strong id="status-last-active" style="display: block; font: 500 13px 'DM Mono', monospace; color: var(--ink); margin-top: 2px;">—</strong>
+            </div>
+
+            <!-- In-Status Card Reconnect Action (visible when genuinely disconnected) -->
+            <button id="status-reconnect-btn" class="reconnect-primary-btn hidden" type="button" style="margin-top: 8px; margin-bottom: 12px; padding: 10px 14px; font-size: 12px;">
+              <span>⚡ RECONNECT</span>
+            </button>
 
             <!-- Locked Number & Wipe Option in Status Card -->
             <div id="status-locked-number-wrap" class="status-locked-number-wrap hidden" style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(0,0,0,0.1);">
@@ -1729,13 +1818,34 @@
       const domainNoticeBox = $("domain-notice-box"), domainHostLabel = $("domain-host-label"), previewSignInBtn = $("preview-signin-btn");
       const logoutBtn = $("logout-btn");
 
-      // Pairing Elements
+      // Pairing & Smart Connection Elements
       const form = $("pair-form"), button = $("pair-button"), codePanel = $("code-panel"), code = $("pair-code");
       const error = $("error"), state = $("state"), badge = $("badge"), detail = $("detail"), number = $("connected-number"), disconnect = $("disconnect");
       const copyButton = $("copy-code"), copyFeedback = $("copy-feedback"), timer = $("code-timer"), pairingFor = $("pairing-for");
       const lockedNumberNotice = $("locked-number-notice"), lockedNumberDisplay = $("locked-number-display"), wipeNumberBtn = $("wipe-number-btn");
       const quickReconnectBtn = $("quick-reconnect-btn");
       const statusLockedNumberWrap = $("status-locked-number-wrap"), statusLockedNumberText = $("status-locked-number-text"), statusWipeNumberBtn = $("status-wipe-number-btn");
+
+      // Smart Connection Elements
+      const whatsappConnectedPanel = $("whatsapp-connected-panel");
+      const connectedPanelNumber = $("connected-panel-number");
+      const connectedPanelLastActive = $("connected-panel-last-active");
+      const panelDisconnectBtn = $("panel-disconnect-btn");
+      const panelViewLogsBtn = $("panel-view-logs-btn");
+
+      const whatsappDisconnectedPanel = $("whatsapp-disconnected-panel");
+      const disconnectedPanelNumber = $("disconnected-panel-number");
+      const disconnectedPanelLastActive = $("disconnected-panel-last-active");
+      const disconnectedPanelDetail = $("disconnected-panel-detail");
+      const reconnectPrimaryBtn = $("reconnect-primary-btn");
+      const forceNewPairBtn = $("force-new-pair-btn");
+
+      const whatsappCheckingPanel = $("whatsapp-checking-panel");
+      const statusLastActive = $("status-last-active");
+      const statusReconnectBtn = $("status-reconnect-btn");
+      const triggerReconnectBtn = $("trigger-reconnect-btn");
+      const viewReconnectLogsBtn = $("view-reconnect-logs-btn");
+      const refreshReconnectLogsBtn = $("refresh-reconnect-logs-btn");
 
       // Country Selector Elements
       const countryDropdownBtn = $("country-dropdown-btn"), countryMenu = $("country-menu"), countrySearch = $("country-search"), countryOptionsList = $("country-options-list");
@@ -1892,6 +2002,8 @@
       let currentUser = null;
       let activeUserId = localStorage.getItem("solvatech_user_id") || null;
       let expiresAt = 0, timerId = null, pairingActive = false, statusIntervalId = null;
+      let licenseCountdownTimerId = null;
+      let referralReminderIntervalId = null;
 
       function showAuthError(msg) {
         if (!authError) return;
@@ -2280,51 +2392,176 @@
         }
       }
 
-      function updateStatusUI(data) {
-        const connected = data.status === "connected" || data.connected === true;
-        const failed = data.status === "disconnected" || data.failed === true;
-        const pending = data.status === "pairing" || data.status === "connecting";
+      function formatLastActive(timestamp) {
+        if (!timestamp) return "Just now";
+        const date = new Date(timestamp);
+        const diffMs = Date.now() - date.getTime();
+        if (isNaN(diffMs) || diffMs < 0) return "Just now";
+        const diffSec = Math.floor(diffMs / 1000);
+        if (diffSec < 45) return "Just now";
+        const diffMin = Math.floor(diffSec / 60);
+        if (diffMin < 60) return `${diffMin} minute${diffMin === 1 ? "" : "s"} ago`;
+        const diffHours = Math.floor(diffMin / 60);
+        if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
+        const diffDays = Math.floor(diffHours / 24);
+        return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
+      }
 
+      let userRequestedNewPair = false;
+
+      function updateStatusUI(data) {
+        if (!data) return;
+
+        const isChecking = data.status === "checking";
+        const connected = data.status === "connected" || data.connected === true;
+        const reconnecting = data.status === "connecting" || data.isReconnecting === true;
+        const failed = data.status === "disconnected" || data.failed === true || data.status === "error";
+        const pending = data.status === "pairing";
+
+        const lockedNum = data.lockedNumber || data.numberLock || 
+          (data.phoneNumber && data.phoneNumber !== "—" ? data.phoneNumber : null) || 
+          (data.botNumber && data.botNumber !== "—" ? data.botNumber : null);
+        
+        const hasSavedSession = Boolean(data.hasSavedSession || lockedNum);
+        const isLoggedOut = data.status === "logged_out" || data.lastErrorCode === "LOGGED_OUT" || data.lastErrorCode === 401;
+
+        const formattedActive = data.lastActive ? formatLastActive(data.lastActive) : (data.connectedAt ? formatLastActive(data.connectedAt) : "Just now");
+        const displayNum = (data.phoneNumber || data.botNumber || lockedNum || "");
+
+        // 1. Live Status Card Badge & Text
         if (badge) {
-          badge.textContent = connected ? "Live Connected" : failed ? "Disconnected" : pending ? "Pairing socket open" : "Ready to pair";
-          badge.classList.toggle("connected", connected);
-          badge.classList.toggle("failed", failed);
+          if (connected) {
+            badge.textContent = "🟢 Connected";
+            badge.className = "badge good";
+            badge.style.background = "#dcfce7";
+            badge.style.color = "#15803d";
+          } else if (reconnecting) {
+            badge.textContent = "🔄 Reconnecting...";
+            badge.className = "badge pending";
+            badge.style.background = "#fef3c7";
+            badge.style.color = "#92400e";
+          } else if (isChecking) {
+            badge.textContent = "🟡 Checking...";
+            badge.className = "badge pending";
+            badge.style.background = "#fef3c7";
+            badge.style.color = "#92400e";
+          } else if (failed || isLoggedOut) {
+            badge.textContent = "🔴 Disconnected";
+            badge.className = "badge";
+            badge.style.background = "#fee2e2";
+            badge.style.color = "#b91c1c";
+          } else if (pending) {
+            badge.textContent = "Pairing socket open";
+            badge.className = "badge pending";
+            badge.style.background = "#f5e6d7";
+            badge.style.color = "#9b592e";
+          } else {
+            badge.textContent = "Ready to pair";
+            badge.className = "badge";
+            badge.style.background = "";
+            badge.style.color = "";
+          }
         }
-        if (state) state.textContent = connected ? "Active" : failed ? "Socket error" : pending ? "Pairing..." : "Not connected";
+
+        if (state) {
+          state.textContent = connected 
+            ? "WhatsApp Connected" 
+            : reconnecting 
+            ? "Reconnecting..." 
+            : isChecking 
+            ? "Checking..." 
+            : (failed || isLoggedOut) 
+            ? "Disconnected" 
+            : pending 
+            ? "Pairing..." 
+            : "Not connected";
+        }
+
         if (detail) {
           detail.textContent = connected 
-            ? "Your dedicated WhatsApp socket is active and listening for owner commands." 
-            : failed 
-            ? (data.lastError || "WhatsApp closed the pairing socket. Ready to try again.") 
+            ? "Your WhatsApp session is still connected. No action is required." 
+            : reconnecting 
+            ? "Reconnecting your saved WhatsApp session. Please wait a moment..." 
+            : isChecking 
+            ? "Checking WhatsApp session state..." 
+            : (failed || isLoggedOut) 
+            ? (data.lastError || "Your WhatsApp session needs to be reconnected.") 
             : pending 
             ? "Socket is open and waiting for WhatsApp mobile confirmation." 
             : "Enter your phone number above to generate your pairing code.";
         }
-        if (number) number.textContent = data.phoneNumber || data.botNumber || "—";
+
+        if (number) number.textContent = displayNum ? `+${displayNum.replace(/^\+/, "")}` : "—";
+
+        if (statusLastActive) {
+          statusLastActive.textContent = connected ? formattedActive : (data.lastActive ? formatLastActive(data.lastActive) : "—");
+        }
+
         if (disconnect) disconnect.disabled = !connected && !pending;
 
-        // Handle Real Number Lock Display & Controls
-        const lockedNum = data.lockedNumber || data.numberLock || (data.phoneNumber && data.phoneNumber !== "—" ? data.phoneNumber : null);
+        // In-Status Card Reconnect button (visible when genuinely disconnected)
+        if (statusReconnectBtn) {
+          if (!connected && hasSavedSession && !pending && !isChecking) {
+            statusReconnectBtn.classList.remove("hidden");
+          } else {
+            statusReconnectBtn.classList.add("hidden");
+          }
+        }
+
+        // 2. Handle Real Number Lock Display & Controls
         if (lockedNum) {
-          if (lockedNumberNotice) {
-            lockedNumberNotice.classList.remove("hidden");
-          }
-          if (lockedNumberDisplay) {
-            lockedNumberDisplay.textContent = `+${lockedNum.replace(/^\+/, "")}`;
-          }
-          if (statusLockedNumberWrap) {
-            statusLockedNumberWrap.classList.remove("hidden");
-          }
-          if (statusLockedNumberText) {
-            statusLockedNumberText.textContent = `+${lockedNum.replace(/^\+/, "")}`;
-          }
+          if (lockedNumberNotice) lockedNumberNotice.classList.remove("hidden");
+          if (lockedNumberDisplay) lockedNumberDisplay.textContent = `+${lockedNum.replace(/^\+/, "")}`;
+          if (statusLockedNumberWrap) statusLockedNumberWrap.classList.remove("hidden");
+          if (statusLockedNumberText) statusLockedNumberText.textContent = `+${lockedNum.replace(/^\+/, "")}`;
         } else {
-          if (lockedNumberNotice) {
-            lockedNumberNotice.classList.add("hidden");
+          if (lockedNumberNotice) lockedNumberNotice.classList.add("hidden");
+          if (statusLockedNumberWrap) statusLockedNumberWrap.classList.add("hidden");
+        }
+
+        // 3. Smart Connection Panels in WhatsApp Section
+        if (connected) {
+          // WhatsApp is connected: show connected panel, preserve session, no pairing code prompt
+          userRequestedNewPair = false;
+          if (whatsappConnectedPanel) whatsappConnectedPanel.classList.remove("hidden");
+          if (connectedPanelNumber) connectedPanelNumber.textContent = displayNum ? `+${displayNum.replace(/^\+/, "")}` : "+WhatsApp";
+          if (connectedPanelLastActive) connectedPanelLastActive.textContent = formattedActive;
+
+          if (whatsappDisconnectedPanel) whatsappDisconnectedPanel.classList.add("hidden");
+          if (whatsappCheckingPanel) whatsappCheckingPanel.classList.add("hidden");
+          if (form) form.classList.add("hidden");
+          if (codePanel) codePanel.classList.add("hidden");
+          showError("");
+        } else if (isChecking) {
+          // Temporary checking state
+          if (whatsappCheckingPanel) whatsappCheckingPanel.classList.remove("hidden");
+          if (whatsappConnectedPanel) whatsappConnectedPanel.classList.add("hidden");
+          if (whatsappDisconnectedPanel) whatsappDisconnectedPanel.classList.add("hidden");
+          if (form) form.classList.add("hidden");
+          if (codePanel) codePanel.classList.add("hidden");
+        } else if (!userRequestedNewPair && hasSavedSession && (failed || reconnecting || data.status === "idle") && !pending) {
+          // Genuinely disconnected with saved session / locked number: provide clear Reconnect action
+          if (whatsappDisconnectedPanel) whatsappDisconnectedPanel.classList.remove("hidden");
+          if (disconnectedPanelNumber) disconnectedPanelNumber.textContent = displayNum ? `+${displayNum.replace(/^\+/, "")}` : "+WhatsApp";
+          if (disconnectedPanelLastActive) {
+            disconnectedPanelLastActive.textContent = data.lastActive ? formatLastActive(data.lastActive) : (data.disconnectedAt ? formatLastActive(data.disconnectedAt) : "—");
           }
-          if (statusLockedNumberWrap) {
-            statusLockedNumberWrap.classList.add("hidden");
+          if (disconnectedPanelDetail) {
+            disconnectedPanelDetail.textContent = reconnecting 
+              ? "Reconnecting to WhatsApp in background... You can also trigger an instant reconnect below."
+              : (data.lastError || "Your WhatsApp session needs to be reconnected.");
           }
+
+          if (whatsappConnectedPanel) whatsappConnectedPanel.classList.add("hidden");
+          if (whatsappCheckingPanel) whatsappCheckingPanel.classList.add("hidden");
+          if (form) form.classList.add("hidden");
+          if (codePanel) codePanel.classList.add("hidden");
+        } else {
+          // Pairing required (never paired, or user requested new pairing code)
+          if (whatsappConnectedPanel) whatsappConnectedPanel.classList.add("hidden");
+          if (whatsappDisconnectedPanel) whatsappDisconnectedPanel.classList.add("hidden");
+          if (whatsappCheckingPanel) whatsappCheckingPanel.classList.add("hidden");
+          if (form) form.classList.remove("hidden");
         }
 
         // Pass battery and reconnect telemetry to dedicated handlers
@@ -2518,6 +2755,7 @@
 
           syncUserProfile(user);
           initDashboardTabs();
+          updateStatusUI({ status: "checking" });
           refresh();
           refreshLicenseStatus();
           refreshReferralStatus();
@@ -3034,11 +3272,34 @@
         statusWipeNumberBtn.addEventListener("click", handleUserWipeNumber);
       }
 
-      async function handleQuickReconnect() {
-        if (quickReconnectBtn) {
-          quickReconnectBtn.disabled = true;
-          quickReconnectBtn.innerHTML = `<span>⏳</span> <span>Connecting to WhatsApp...</span>`;
+      let isReconnectingActive = false;
+
+      async function executeSmartReconnect() {
+        if (isReconnectingActive) return;
+        isReconnectingActive = true;
+
+        const allReconnectBtns = [
+          reconnectPrimaryBtn,
+          statusReconnectBtn,
+          quickReconnectBtn,
+          triggerReconnectBtn
+        ].filter(Boolean);
+
+        allReconnectBtns.forEach(btn => {
+          btn.disabled = true;
+          if (!btn.dataset.prevHtml) btn.dataset.prevHtml = btn.innerHTML;
+          btn.innerHTML = `<span>⏳</span> <span>Connecting to WhatsApp...</span>`;
+        });
+
+        // Set status state to reconnecting optimistically
+        if (state) state.textContent = "Reconnecting...";
+        if (badge) {
+          badge.textContent = "🔄 Reconnecting...";
+          badge.className = "badge pending";
+          badge.style.background = "#fef3c7";
+          badge.style.color = "#92400e";
         }
+        if (detail) detail.textContent = "Reconnecting your saved WhatsApp session. Please wait a moment...";
 
         try {
           let authHeader = await getAuthHeader();
@@ -3075,19 +3336,55 @@
             updateStatusUI(data.status);
           }
           await fetchReconnectLogs();
-          refresh();
+          await refresh();
         } catch (err) {
           showError(err.message || "Failed to start active WhatsApp session.");
-        } finally {
-          if (quickReconnectBtn) {
-            quickReconnectBtn.disabled = false;
-            quickReconnectBtn.innerHTML = `<span>⚡ Reconnect Active Session</span>`;
+          if (disconnectedPanelDetail) {
+            disconnectedPanelDetail.textContent = err.message || "Failed to reconnect. Please try again in a few moments or generate a new pairing code.";
           }
+        } finally {
+          isReconnectingActive = false;
+          allReconnectBtns.forEach(btn => {
+            btn.disabled = false;
+            if (btn.dataset.prevHtml) {
+              btn.innerHTML = btn.dataset.prevHtml;
+            }
+          });
         }
       }
 
       if (quickReconnectBtn) {
-        quickReconnectBtn.addEventListener("click", handleQuickReconnect);
+        quickReconnectBtn.addEventListener("click", executeSmartReconnect);
+      }
+      if (reconnectPrimaryBtn) {
+        reconnectPrimaryBtn.addEventListener("click", executeSmartReconnect);
+      }
+      if (statusReconnectBtn) {
+        statusReconnectBtn.addEventListener("click", executeSmartReconnect);
+      }
+      if (triggerReconnectBtn) {
+        triggerReconnectBtn.addEventListener("click", executeSmartReconnect);
+      }
+
+      if (panelDisconnectBtn && disconnect) {
+        panelDisconnectBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          disconnect.click();
+        });
+      }
+      if (panelViewLogsBtn && viewReconnectLogsBtn) {
+        panelViewLogsBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          viewReconnectLogsBtn.click();
+        });
+      }
+      if (forceNewPairBtn) {
+        forceNewPairBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          userRequestedNewPair = true;
+          if (whatsappDisconnectedPanel) whatsappDisconnectedPanel.classList.add("hidden");
+          if (form) form.classList.remove("hidden");
+        });
       }
 
       // ======================================================================
@@ -3100,39 +3397,6 @@
           const section = $("section-reconnect");
           if (section) {
             section.scrollIntoView({ behavior: "smooth", block: "start" });
-          }
-        });
-      }
-
-      const triggerReconnectBtn = $("trigger-reconnect-btn");
-      if (triggerReconnectBtn) {
-        triggerReconnectBtn.addEventListener("click", async () => {
-          triggerReconnectBtn.disabled = true;
-          const origHTML = triggerReconnectBtn.innerHTML;
-          triggerReconnectBtn.innerHTML = `<span>⏳</span> <span>Reconnecting...</span>`;
-
-          try {
-            const authHeader = await getAuthHeader();
-            if (!authHeader) throw new Error("Please sign in first.");
-
-            const res = await fetch(getApiUrl("/reconnect"), {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": authHeader,
-              }
-            });
-
-            const data = await safeFetchJson(res);
-            if (data.status) {
-              updateStatusUI(data.status);
-            }
-            await fetchReconnectLogs();
-          } catch (err) {
-            console.error("Manual reconnect failed:", err);
-          } finally {
-            triggerReconnectBtn.disabled = false;
-            triggerReconnectBtn.innerHTML = origHTML;
           }
         });
       }
@@ -3172,7 +3436,6 @@
       // SOLVATECH LICENSE & ADMIN SYSTEM JAVASCRIPT
       // ======================================================================
       const ADMIN_EMAIL = "awoyinfasolomon1@gmail.com";
-      let licenseCountdownTimerId = null;
       let cachedServerExpiryTime = null;
       let cachedServerOffset = 0; // ms offset between local client clock and server time
 
@@ -3776,7 +4039,6 @@
         });
       }
 
-      let referralReminderIntervalId = null;
       function initReferralModalTimers() {
         if (!currentUser) return;
         const welcomeDone = sessionStorage.getItem("solvatech_ref_welcome_shown");
