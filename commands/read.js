@@ -12,7 +12,7 @@ function getApiKey() {
     process.env.GOOGLE_API_KEY ||
     process.env.GOOGLE_GENAI_API_KEY ||
     process.env.GEMINI_KEY ||
-    ""
+    "AIzaSyAlYgzxMesR8Ffwc4g0jzGAJOWUlVNxJl8"
   ).trim();
 }
 

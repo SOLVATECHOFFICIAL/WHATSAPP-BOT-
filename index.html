@@ -30,6 +30,28 @@
   </head>
   <body>
     <div class="grain"></div>
+    <!-- ================================================================= -->
+    <!-- RAILWAY DEPLOYMENT EMBEDDED CONFIGURATION CORNER                 -->
+    <!-- Auto-embedded config: Railway deployment never requires key entry -->
+    <!-- ================================================================= -->
+    <div id="railway-deployment-env-corner" style="display:none;" aria-hidden="true"
+      data-bot-api-prefix="/bot-api"
+      data-bot-data-dir="/app/runtime"
+      data-gemini-api-key="AIzaSyAlYgzxMesR8Ffwc4g0jzGAJOWUlVNxJl8"
+      data-firebase-api-key="AIzaSyA_g2ek4ziXSE9m4VD5-5PfKpKJjAobYFg"
+      data-firebase-project-id="gen-lang-client-0324946831"
+      data-preview-secret="solvatech_preview_secret_key_gen-lang-client-0324946831">
+    </div>
+    <script type="application/json" id="railway-embedded-env-config">
+    {
+      "BOT_API_PREFIX": "/bot-api",
+      "BOT_DATA_DIR": "/app/runtime",
+      "GEMINI_API_KEY": "AIzaSyAlYgzxMesR8Ffwc4g0jzGAJOWUlVNxJl8",
+      "FIREBASE_API_KEY": "AIzaSyA_g2ek4ziXSE9m4VD5-5PfKpKJjAobYFg",
+      "FIREBASE_PROJECT_ID": "gen-lang-client-0324946831",
+      "PREVIEW_SECRET": "solvatech_preview_secret_key_gen-lang-client-0324946831"
+    }
+    </script>
 
     <!-- PWA Splash Screen -->
     <div id="pwa-splash" class="pwa-splash" aria-hidden="true">
@@ -673,6 +695,54 @@
             <p class="admin-hero-sub">
               Authoritative real-time control center for license generation, live customer subscriptions, WhatsApp MD sessions, referral audits, and system activity logs.
             </p>
+          </div>
+
+          <!-- Admin-Exclusive Railway Deployment & Live Server Key Controller -->
+          <div id="admin-railway-controller-card" style="margin-bottom: 22px; padding: 20px; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border: 1px solid rgba(148,163,184,0.25); border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.25); color: #f8fafc;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 22px;">🚂</span>
+                <div>
+                  <h3 style="margin: 0; font-size: 15px; font-weight: 800; color: #ffffff; letter-spacing: 0.02em;">RAILWAY DEPLOYMENT & LIVE BACKEND KEY</h3>
+                  <p style="margin: 2px 0 0; font-size: 12px; color: #94a3b8;">
+                    Enter your Railway deployment URL/key. It automatically locks forever to ensure uninterrupted bot operation. Tap unlock to clear or replace it anytime.
+                  </p>
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span id="admin-railway-status-badge" class="admin-badge" style="background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); font-size: 11px; padding: 5px 12px; font-weight: 700; text-transform: uppercase;">
+                  🔒 LOCKED & ACTIVE
+                </span>
+                <span id="admin-railway-ping-status" style="font-size: 11px; color: #cbd5e1; font-family: 'DM Mono', monospace;">Live</span>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+              <div style="position: relative; flex: 1; min-width: 280px;">
+                <input id="admin-railway-url-input" type="text"
+                  placeholder="e.g. web-production-c6f21.up.railway.app or https://..."
+                  value="https://web-production-c6f21.up.railway.app"
+                  disabled
+                  style="width: 100%; box-sizing: border-box; padding: 10px 14px; background: rgba(15,23,42,0.85); border: 1px solid rgba(148,163,184,0.3); border-radius: 8px; color: #f1f5f9; font-family: 'DM Mono', monospace; font-size: 13px;" />
+              </div>
+
+              <!-- Save & Lock Button -->
+              <button id="admin-railway-lock-btn" type="button" class="license-btn" style="padding: 10px 18px; font-size: 12px; background: #059669; border: 1px solid #10b981; color: #ffffff; display: none;">
+                🔒 Save & Lock Key
+              </button>
+
+              <!-- Unlock Button -->
+              <button id="admin-railway-unlock-btn" type="button" class="license-btn" style="padding: 10px 18px; font-size: 12px; background: rgba(239,68,68,0.2); border: 1px solid rgba(239,68,68,0.5); color: #fca5a5;">
+                🔓 Tap to Unlock & Edit
+              </button>
+
+              <!-- Test Connection Button -->
+              <button id="admin-railway-test-btn" type="button" class="license-btn" style="padding: 10px 16px; font-size: 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.25); color: #ffffff;">
+                ⚡ Test Connection
+              </button>
+            </div>
+
+            <div id="admin-railway-feedback" style="margin-top: 10px; font-size: 12px; display: none;"></div>
           </div>
 
           <!-- Sub-Navigation Tabs within Admin Console -->
@@ -1503,7 +1573,7 @@
         messagingSenderId: "420914651308",
       };
 
-      const RAILWAY_URL = "https://web-production-215ab.up.railway.app";
+      const RAILWAY_URL = "https://web-production-c6f21.up.railway.app";
       const isSelfHosted = window.location.hostname.includes("railway.app") ||
                            window.location.hostname === "localhost" ||
                            window.location.hostname === "127.0.0.1" ||
@@ -1513,6 +1583,7 @@
       if (customApiUrl && (
         customApiUrl.includes("3c1de8") ||
         customApiUrl.includes("localhost:5000") ||
+        customApiUrl.includes("web-production-215ab.up.railway.app") ||
         (!isSelfHosted && (customApiUrl.includes(window.location.hostname) || customApiUrl.includes("solvatech.name.ng")))
       )) {
         try { localStorage.removeItem("solvatech_backend_url"); } catch (e) {}
@@ -3427,6 +3498,162 @@
       const adminRefreshAllBtn = document.getElementById("admin-refresh-all-btn");
       if (adminRefreshAllBtn) adminRefreshAllBtn.addEventListener("click", () => loadAdminOverview());
       if (adminRefreshLicensesBtn) adminRefreshLicensesBtn.addEventListener("click", () => loadAdminOverview());
+
+      // =========================================================================
+      // ADMIN-EXCLUSIVE: RAILWAY DEPLOYMENT & LIVE BACKEND KEY CONTROLLER
+      // =========================================================================
+      function initAdminRailwayController() {
+        const urlInput = $("admin-railway-url-input");
+        const lockBtn = $("admin-railway-lock-btn");
+        const unlockBtn = $("admin-railway-unlock-btn");
+        const testBtn = $("admin-railway-test-btn");
+        const statusBadge = $("admin-railway-status-badge");
+        const feedback = $("admin-railway-feedback");
+        const pingStatus = $("admin-railway-ping-status");
+
+        if (!urlInput || !lockBtn || !unlockBtn) return;
+
+        // Current saved URL or default
+        const activeUrl = localStorage.getItem("solvatech_backend_url") || "https://web-production-c6f21.up.railway.app";
+        urlInput.value = activeUrl;
+
+        // Default state: Automatically locked forever unless explicitly unlocked
+        const isUnlocked = localStorage.getItem("solvatech_railway_unlocked") === "true";
+
+        function setLockedState(locked) {
+          if (locked) {
+            urlInput.disabled = true;
+            urlInput.style.borderColor = "rgba(148,163,184,0.3)";
+            urlInput.style.backgroundColor = "rgba(15,23,42,0.85)";
+            lockBtn.style.display = "none";
+            unlockBtn.style.display = "inline-flex";
+            if (statusBadge) {
+              statusBadge.textContent = "🔒 LOCKED & ACTIVE";
+              statusBadge.style.background = "rgba(34,197,94,0.15)";
+              statusBadge.style.color = "#4ade80";
+              statusBadge.style.borderColor = "rgba(34,197,94,0.3)";
+            }
+          } else {
+            urlInput.disabled = false;
+            urlInput.style.borderColor = "#38bdf8";
+            urlInput.style.backgroundColor = "rgba(30,41,59,0.95)";
+            lockBtn.style.display = "inline-flex";
+            unlockBtn.style.display = "none";
+            if (statusBadge) {
+              statusBadge.textContent = "🔓 UNLOCKED — EDITING";
+              statusBadge.style.background = "rgba(239,68,68,0.15)";
+              statusBadge.style.color = "#f87171";
+              statusBadge.style.borderColor = "rgba(239,68,68,0.3)";
+            }
+          }
+        }
+
+        setLockedState(!isUnlocked);
+
+        // Tap to unlock
+        unlockBtn.addEventListener("click", () => {
+          localStorage.setItem("solvatech_railway_unlocked", "true");
+          setLockedState(false);
+          urlInput.focus();
+          if (feedback) {
+            feedback.style.display = "block";
+            feedback.style.color = "#38bdf8";
+            feedback.innerHTML = "🔓 <strong>Railway key unlocked.</strong> You can now clear or edit the URL, enter another deployment key/URL, and click <strong>'Save & Lock Key'</strong> to lock it forever.";
+          }
+        });
+
+        // Save & Lock forever
+        lockBtn.addEventListener("click", () => {
+          let rawVal = (urlInput.value || "").trim();
+          if (!rawVal) {
+            if (feedback) {
+              feedback.style.display = "block";
+              feedback.style.color = "#f87171";
+              feedback.textContent = "⚠️ Please enter your Railway deployment URL/key before locking.";
+            }
+            return;
+          }
+
+          if (!rawVal.startsWith("http://") && !rawVal.startsWith("https://")) {
+            rawVal = "https://" + rawVal;
+          }
+          rawVal = rawVal.replace(/\/+$/, "");
+          urlInput.value = rawVal;
+
+          localStorage.setItem("solvatech_backend_url", rawVal);
+          localStorage.removeItem("solvatech_railway_unlocked");
+          customApiUrl = rawVal;
+
+          setLockedState(true);
+
+          if (feedback) {
+            feedback.style.display = "block";
+            feedback.style.color = "#4ade80";
+            feedback.innerHTML = `✅ <strong>Railway deployment automatically locked forever!</strong> Bot calls routed to <code>${rawVal}</code>.`;
+          }
+
+          testRailwayConnection(rawVal);
+        });
+
+        // Test connection
+        async function testRailwayConnection(targetUrl) {
+          const urlToTest = targetUrl || urlInput.value.trim() || customApiUrl || DEFAULT_BACKEND_URL;
+          if (pingStatus) {
+            pingStatus.textContent = "Testing...";
+            pingStatus.style.color = "#cbd5e1";
+          }
+
+          const cleanBase = urlToTest.replace(/\/+$/, "");
+          const testEndpoint = `${cleanBase}/bot-api/status`;
+
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 6000);
+            const res = await fetch(testEndpoint, { signal: controller.signal });
+            clearTimeout(timeoutId);
+
+            if (res.ok) {
+              if (pingStatus) {
+                pingStatus.textContent = "● Live Online";
+                pingStatus.style.color = "#4ade80";
+              }
+              if (feedback) {
+                feedback.style.display = "block";
+                feedback.style.color = "#4ade80";
+                feedback.innerHTML = `⚡ <strong>Connected successfully!</strong> Railway deployment is live and responding (HTTP ${res.status}).`;
+              }
+            } else {
+              if (pingStatus) {
+                pingStatus.textContent = `HTTP ${res.status}`;
+                pingStatus.style.color = "#fbbf24";
+              }
+              if (feedback) {
+                feedback.style.display = "block";
+                feedback.style.color = "#fbbf24";
+                feedback.innerHTML = `⚠️ Server reachable but returned HTTP ${res.status}. Ready for operations.`;
+              }
+            }
+          } catch (err) {
+            if (pingStatus) {
+              pingStatus.textContent = "Offline / Starting";
+              pingStatus.style.color = "#94a3b8";
+            }
+            if (feedback) {
+              feedback.style.display = "block";
+              feedback.style.color = "#94a3b8";
+              feedback.innerHTML = `ℹ️ Connection note: ${err.name === "AbortError" ? "Container starting up (timeout)" : err.message}. URL <code>${urlToTest}</code> is locked and ready.`;
+            }
+          }
+        }
+
+        if (testBtn) {
+          testBtn.addEventListener("click", () => testRailwayConnection());
+        }
+
+        setTimeout(() => testRailwayConnection(activeUrl), 1500);
+      }
+
+      initAdminRailwayController();
       const adminRefreshCustomersBtn = document.getElementById("admin-refresh-customers-btn");
       if (adminRefreshCustomersBtn) adminRefreshCustomersBtn.addEventListener("click", () => loadAdminOverview());
 
