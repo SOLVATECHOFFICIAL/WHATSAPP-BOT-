@@ -44,6 +44,10 @@ import {
   getAdminReferralAudit,
   getOfficialLicensePrice,
 } from "./lib/referral.js";
+import {
+  getUserPreferences,
+  setUserPreferences,
+} from "./lib/database.js";
 
 process.on("uncaughtException", (error) => {
   logger.error("Process uncaught exception handled gracefully", error?.stack || error?.message);
@@ -178,15 +182,17 @@ for (const p of prefixes) {
     const userEmail = request.auth.email;
     const controller = getWhatsAppController(safeUserId, { verifiedUid, userEmail });
     
-    const [lockedNumber, license] = await Promise.all([
+    const [lockedNumber, license, preferences] = await Promise.all([
       getLockedNumberForUid(verifiedUid),
       getUserLicenseStatus(verifiedUid, userEmail),
+      getUserPreferences(safeUserId, verifiedUid),
     ]);
 
     response.json({
       ...controller.getStatus(),
       lockedNumber,
       license,
+      preferences,
       userId: verifiedUid,
       user: {
         uid: request.auth.uid,
@@ -195,6 +201,33 @@ for (const p of prefixes) {
         photoURL: request.auth.photoURL,
       },
     });
+  });
+
+  app.get(`${p}/user/preferences`, requireAuth, async (request, response) => {
+    try {
+      const preferences = await getUserPreferences(request.safeUserId, request.verifiedUid);
+      response.json({ ok: true, preferences });
+    } catch (error) {
+      logger.error("Failed to fetch user preferences", error.message);
+      response.status(500).json({ error: "Could not load user preferences." });
+    }
+  });
+
+  app.post(`${p}/user/preferences`, requireAuth, async (request, response) => {
+    try {
+      const updates = {};
+      if (typeof request.body?.deletedMessageRecovery === "boolean") {
+        updates.deletedMessageRecovery = request.body.deletedMessageRecovery;
+      }
+      if (typeof request.body?.viewOnceRecovery === "boolean") {
+        updates.viewOnceRecovery = request.body.viewOnceRecovery;
+      }
+      const preferences = await setUserPreferences(request.safeUserId, request.verifiedUid, updates);
+      response.json({ ok: true, preferences });
+    } catch (error) {
+      logger.error("Failed to update user preferences", error.message);
+      response.status(500).json({ error: "Could not save user preferences." });
+    }
   });
 
   app.get(`${p}/user/profile`, requireAuth, (request, response) => {

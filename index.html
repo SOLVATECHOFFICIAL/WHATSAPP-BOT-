@@ -210,7 +210,7 @@
                 </li>
                 <li style="display: flex; gap: 10px; align-items: flex-start;">
                   <span style="color: var(--teal); font-weight: bold;">✓</span>
-                  <span><strong>Instant Delete Alert:</strong> Automatic <code>.</code> notification when any message is deleted + verbatim <code>.rd</code> or <code>.</code> recovery.</span>
+                  <span><strong>Private DM Recovery:</strong> Optional <code>Deleted Message Recovery (OFF / ON)</code> and <code>View-Once Recovery</code> sent exclusively to your personal WhatsApp DM.</span>
                 </li>
                 <li style="display: flex; gap: 10px; align-items: flex-start;">
                   <span style="color: var(--teal); font-weight: bold;">✓</span>
@@ -526,6 +526,47 @@
                 <span>View Reconnection Logs</span>
                 <span>→</span>
               </button>
+            </div>
+
+            <!-- PRIVACY & RECOVERY CONTROLS (Deleted Message Recovery & View-Once Recovery) -->
+            <div id="privacy-recovery-card" style="margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span class="muted-label" style="margin: 0; font-weight: 700; color: var(--ink);">PRIVACY & RECOVERY SETTINGS</span>
+                <span style="font-family: 'DM Mono', monospace; font-size: 10px; color: var(--teal); font-weight: 700;">PERSONAL DM ONLY</span>
+              </div>
+
+              <!-- Deleted Message Recovery Toggle (Default OFF) -->
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 12px; background: rgba(16,38,34,0.03); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 8px;">
+                <div style="flex: 1;">
+                  <div style="font-size: 13px; font-weight: 700; color: var(--ink); display: flex; align-items: center; gap: 6px;">
+                    <span>🗑️ Deleted Message Recovery</span>
+                    <span id="deleted-recovery-badge" class="badge" style="font-size: 10px; padding: 2px 7px;">OFF</span>
+                  </div>
+                  <p style="margin: 3px 0 0; font-size: 11px; color: var(--muted); line-height: 1.4;">
+                    When ON, deleted group/chat messages are sent privately to your own WhatsApp DM. When OFF, deleted messages are ignored completely.
+                  </p>
+                </div>
+                <button id="toggle-deleted-recovery-btn" type="button" class="license-btn" data-enabled="false" style="padding: 8px 14px; font-size: 11px; min-width: 78px; background: #475569; color: #fff;">
+                  OFF
+                </button>
+              </div>
+
+              <!-- View-Once Recovery Toggle (Default ON) -->
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 12px; background: rgba(16,38,34,0.03); border: 1px solid var(--line); border-radius: 8px;">
+                <div style="flex: 1;">
+                  <div style="font-size: 13px; font-weight: 700; color: var(--ink); display: flex; align-items: center; gap: 6px;">
+                    <span>🔓 View-Once Media Recovery</span>
+                    <span id="viewonce-recovery-badge" class="badge connected" style="font-size: 10px; padding: 2px 7px;">ON</span>
+                  </div>
+                  <p style="margin: 3px 0 0; font-size: 11px; color: var(--muted); line-height: 1.4;">
+                    Recovers View-Once photos, videos, and voice notes directly to your personal WhatsApp DM (never to the group).
+                  </p>
+                </div>
+                <button id="toggle-viewonce-recovery-btn" type="button" class="license-btn" data-enabled="true" style="padding: 8px 14px; font-size: 11px; min-width: 78px; background: var(--teal); color: #fff;">
+                  ON
+                </button>
+              </div>
+              <p id="privacy-pref-feedback" class="license-msg hidden" style="margin-top: 8px; font-size: 11px;"></p>
             </div>
           </aside>
         </section>
@@ -1599,7 +1640,9 @@
               <div style="font-family: 'DM Mono', monospace; font-size: 11px; line-height: 1.8; color: var(--ink);">
                 <div><code>.antilink on/off</code> — Remove link posters</div>
                 <div><code>.antibot on/off</code> — Kick auto-bots</div>
-                <div><code>.anti</code> — Check active protections</div>
+                <div><code>.antistatus on/off</code> — Status mention guard</div>
+                <div><code>.clearwarns @user</code> — Clear member warns</div>
+                <div><code>.resetwarns</code> — Reset all group warns</div>
               </div>
             </div>
             <div style="background: rgba(16,38,34,0.03); padding: 14px; border-radius: 4px; border: 1px solid var(--line);">
@@ -1608,15 +1651,15 @@
                 <div><code>.read</code> — Verbatim image OCR</div>
                 <div><code>.antisticker</code> — Sticker to Image/Video</div>
                 <div><code>.sticker</code> — Image/Video to Sticker</div>
-                <div><code>.vv / .open</code> — View-once reveal</div>
+                <div><code>.vv / .open</code> — View-once to Personal DM</div>
               </div>
             </div>
             <div style="background: rgba(16,38,34,0.03); padding: 14px; border-radius: 4px; border: 1px solid var(--line);">
-              <strong style="color: var(--teal); font-size: 13px; display: block; margin-bottom: 6px;">🔄 Message Recovery</strong>
+              <strong style="color: var(--teal); font-size: 13px; display: block; margin-bottom: 6px;">🔄 Private DM Recovery</strong>
               <div style="font-family: 'DM Mono', monospace; font-size: 11px; line-height: 1.8; color: var(--ink);">
-                <div><code>.</code> — Auto alert on delete / restore</div>
-                <div><code>.rd</code> — Restore deleted message</div>
-                <div><code>24-Hour Cache</code> — Media & text stored</div>
+                <div><code>Dashboard Toggle</code> — Deleted Recovery OFF/ON</div>
+                <div><code>.rd</code> — Restore deleted to Personal DM</div>
+                <div><code>Personal DM Only</code> — Never posts in group</div>
               </div>
             </div>
             <div style="background: rgba(16,38,34,0.03); padding: 14px; border-radius: 4px; border: 1px solid var(--line);">
@@ -2333,6 +2376,9 @@
         }
         if (data.reconnectStats || data.reconnectLogs) {
           updateReconnectTelemetryUI(data);
+        }
+        if (data.preferences) {
+          updatePreferencesUI(data.preferences);
         }
 
         if (connected && pairingActive) {
@@ -3088,6 +3134,120 @@
 
       if (quickReconnectBtn) {
         quickReconnectBtn.addEventListener("click", handleQuickReconnect);
+      }
+
+      // ======================================================================
+      // USER PRIVACY & RECOVERY PREFERENCES (Deleted Message & View-Once DM)
+      // ======================================================================
+      const toggleDeletedRecoveryBtn = $("toggle-deleted-recovery-btn");
+      const deletedRecoveryBadge = $("deleted-recovery-badge");
+      const toggleViewonceRecoveryBtn = $("toggle-viewonce-recovery-btn");
+      const viewonceRecoveryBadge = $("viewonce-recovery-badge");
+      const privacyPrefFeedback = $("privacy-pref-feedback");
+
+      function updatePreferencesUI(prefs) {
+        if (!prefs || typeof prefs !== "object") return;
+        const delOn = Boolean(prefs.deletedMessageRecovery === true);
+        const voOn = prefs.viewOnceRecovery === undefined ? true : Boolean(prefs.viewOnceRecovery);
+
+        if (toggleDeletedRecoveryBtn) {
+          toggleDeletedRecoveryBtn.setAttribute("data-enabled", String(delOn));
+          toggleDeletedRecoveryBtn.textContent = delOn ? "ON" : "OFF";
+          toggleDeletedRecoveryBtn.style.background = delOn ? "var(--teal)" : "#475569";
+        }
+        if (deletedRecoveryBadge) {
+          deletedRecoveryBadge.textContent = delOn ? "ON" : "OFF";
+          deletedRecoveryBadge.classList.toggle("connected", delOn);
+        }
+
+        if (toggleViewonceRecoveryBtn) {
+          toggleViewonceRecoveryBtn.setAttribute("data-enabled", String(voOn));
+          toggleViewonceRecoveryBtn.textContent = voOn ? "ON" : "OFF";
+          toggleViewonceRecoveryBtn.style.background = voOn ? "var(--teal)" : "#475569";
+        }
+        if (viewonceRecoveryBadge) {
+          viewonceRecoveryBadge.textContent = voOn ? "ON" : "OFF";
+          viewonceRecoveryBadge.classList.toggle("connected", voOn);
+        }
+      }
+
+      async function saveUserPreferenceUpdate(updates) {
+        if (!currentUser) return;
+        try {
+          let authHeader = await getAuthHeader();
+          if (!authHeader) return;
+
+          let res = await fetch(getApiUrl("/user/preferences"), {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": authHeader,
+            },
+            body: JSON.stringify(updates),
+          });
+
+          if (res.status === 401) {
+            const refreshedToken = await getValidIdToken(true);
+            if (refreshedToken) {
+              authHeader = `Bearer ${refreshedToken}`;
+              res = await fetch(getApiUrl("/user/preferences"), {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": authHeader,
+                },
+                body: JSON.stringify(updates),
+              });
+            }
+          }
+
+          const data = await safeFetchJson(res);
+          if (res.ok && data.preferences) {
+            updatePreferencesUI(data.preferences);
+            if (db && currentUser?.uid) {
+              try {
+                await setDoc(doc(db, "user_preferences", currentUser.uid), {
+                  userId: currentUser.uid,
+                  deletedMessageRecovery: Boolean(data.preferences.deletedMessageRecovery),
+                  viewOnceRecovery: Boolean(data.preferences.viewOnceRecovery),
+                  updatedAt: new Date().toISOString(),
+                }, { merge: true });
+              } catch {}
+            }
+            if (privacyPrefFeedback) {
+              privacyPrefFeedback.className = "license-msg success";
+              privacyPrefFeedback.textContent = `Saved: Deleted Message Recovery is ${data.preferences.deletedMessageRecovery ? "ON (Personal DM)" : "OFF"}.`;
+              privacyPrefFeedback.classList.remove("hidden");
+              setTimeout(() => privacyPrefFeedback.classList.add("hidden"), 3500);
+            }
+          }
+        } catch (err) {
+          if (privacyPrefFeedback) {
+            privacyPrefFeedback.className = "license-msg error";
+            privacyPrefFeedback.textContent = err.message || "Could not update preference.";
+            privacyPrefFeedback.classList.remove("hidden");
+          }
+        }
+      }
+
+      if (toggleDeletedRecoveryBtn) {
+        toggleDeletedRecoveryBtn.addEventListener("click", async () => {
+          const current = toggleDeletedRecoveryBtn.getAttribute("data-enabled") === "true";
+          const next = !current;
+          toggleDeletedRecoveryBtn.disabled = true;
+          await saveUserPreferenceUpdate({ deletedMessageRecovery: next });
+          toggleDeletedRecoveryBtn.disabled = false;
+        });
+      }
+
+      if (toggleViewonceRecoveryBtn) {
+        toggleViewonceRecoveryBtn.addEventListener("click", async () => {
+          const current = toggleViewonceRecoveryBtn.getAttribute("data-enabled") === "true";
+          const next = !current;
+          toggleViewonceRecoveryBtn.disabled = true;
+          await saveUserPreferenceUpdate({ viewOnceRecovery: next });
+          toggleViewonceRecoveryBtn.disabled = false;
+        });
       }
 
       // ======================================================================

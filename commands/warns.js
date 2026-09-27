@@ -1,6 +1,7 @@
 import { getGroupSettings, setWarningLimit } from "../lib/database.js";
 import { requireAdmin } from "../lib/command-tools.js";
-import { targetFromMessage } from "../lib/permissions.js";
+import { resolveGroupTargetJids } from "../lib/permissions.js";
+import { jidAliases } from "../lib/helpers.js";
 
 export default async function warns({
   sock,
@@ -13,7 +14,7 @@ export default async function warns({
   reply,
   userId = "default",
 }) {
-  await requireAdmin(sock, chatId, sender, false, senderJids, senderIsLinkedAccount);
+  const metadata = await requireAdmin(sock, chatId, sender, false, senderJids, senderIsLinkedAccount);
 
   const sub = String(args[0] || "").toLowerCase();
   const val = String(args[1] || "").toLowerCase();
@@ -29,14 +30,27 @@ export default async function warns({
   }
 
   const settings = await getGroupSettings(chatId, userId);
-  const target = targetFromMessage(message);
+  const resolved = resolveGroupTargetJids(metadata, message, args);
 
   // 2. Check specific user's warnings if mentioned or replied
-  if (target) {
-    const targetClean = target.split("@")[0].split(":")[0];
-    const count = settings.warnings?.[target] || settings.warnings?.[`${targetClean}@s.whatsapp.net`] || 0;
-    const last = settings.lastViolations?.[target] || settings.lastViolations?.[`${targetClean}@s.whatsapp.net`];
+  if (resolved && resolved.canonicalJid) {
+    const targetClean = resolved.canonicalJid.split("@")[0].split(":")[0];
+    const wantedAliases = new Set(resolved.allJids.flatMap(jidAliases));
 
+    let count = 0;
+    let last = null;
+    for (const [k, v] of Object.entries(settings.warnings || {})) {
+      if (wantedAliases.has(k) || jidAliases(k).some((a) => wantedAliases.has(a))) {
+        count = Math.max(count, Number(v || 0));
+      }
+    }
+    for (const [k, v] of Object.entries(settings.lastViolations || {})) {
+      if (wantedAliases.has(k) || jidAliases(k).some((a) => wantedAliases.has(a))) {
+        last = v;
+      }
+    }
+
+    const mentions = [...new Set([resolved.canonicalJid, resolved.mentionJid].filter(Boolean))];
     return reply([
       "⚠️ *SOLVATECH MEMBER WARNING STATUS*",
       "────────────────────────────",
@@ -44,7 +58,7 @@ export default async function warns({
       `┃ 🔢 *Active Warnings:* ${count} / ${settings.warningLimit || 3}`,
       ...(last ? [`┃ 🚫 *Last Violation:* ${last.reason || "Rule breach"}`] : []),
       "╰────────────────────────────",
-    ].join("\n"), { mentions: [target] });
+    ].join("\n"), { mentions });
   }
 
   // 3. List all active warnings in group
