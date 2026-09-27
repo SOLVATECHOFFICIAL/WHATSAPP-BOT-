@@ -3011,7 +3011,7 @@
           if (phoneInput) phoneInput.value = "";
 
           showError("");
-          alert(data.message || "WhatsApp number lock successfully wiped and cleared from Firebase. You can now pair any phone number.");
+          alert(data.message || "Your WhatsApp number has been released. You can now connect another number.");
           refresh();
         } catch (err) {
           alert("Error wiping number lock: " + (err.message || "Unknown error"));

@@ -277,9 +277,7 @@ for (const p of prefixes) {
       response.json({
         ok: true,
         success: true,
-        message: result.wipedNumber 
-          ? `WhatsApp number (+${result.wipedNumber}) lock has been removed from your account. You can now pair a fresh phone number.`
-          : "Number lock cleared successfully.",
+        message: "Your WhatsApp number has been released. You can now connect another number.",
         wipedNumber: result.wipedNumber || null,
         userId: verifiedUid,
       });
