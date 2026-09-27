@@ -2856,6 +2856,551 @@ button, input, select, .get-key-btn, .logout-button, .license-btn, .copy-button 
   }
 }
 
+/* ==========================================================================
+   SOLVATECH BOT - SIMPLIFIED CUSTOMER ONBOARDING & REFERRAL PROMOTION STYLES
+   ========================================================================== */
 
+/* 1. Tutorial Progress Stepper */
+.dashboard-tutorial-stepper {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin: 16px 0 20px 0;
+}
 
+@media (max-width: 768px) {
+  .dashboard-tutorial-stepper {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 
+.tutorial-step-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  color: var(--ink);
+}
+
+.tutorial-step-card:hover {
+  border-color: var(--teal);
+  background: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.tutorial-step-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(16, 38, 34, 0.08);
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.tutorial-step-card.completed .tutorial-step-num {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.tutorial-step-card.active-step .tutorial-step-num {
+  background: var(--teal);
+  color: #ffffff;
+}
+
+.tutorial-step-card.warning-step .tutorial-step-num {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.tutorial-step-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tutorial-step-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.tutorial-step-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tutorial-step-status {
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 1px;
+}
+
+/* 2. Referral Welcome Promotion Banner */
+.referral-welcome-banner {
+  background: linear-gradient(135deg, #0d3b36 0%, #102622 100%);
+  border: 1px solid rgba(25, 124, 112, 0.4);
+  border-radius: 12px;
+  padding: 20px 24px;
+  color: #ffffff;
+  margin: 16px 0 24px 0;
+  box-shadow: 0 4px 20px rgba(16, 38, 34, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.referral-welcome-banner::after {
+  content: '🎁';
+  position: absolute;
+  right: 18px;
+  bottom: 10px;
+  font-size: 80px;
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+.referral-banner-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  font-weight: 800;
+  background: rgba(230, 133, 81, 0.25);
+  color: #fdb88b;
+  border: 1px solid rgba(230, 133, 81, 0.4);
+  padding: 4px 10px;
+  border-radius: 99px;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+}
+
+.referral-banner-title {
+  margin: 0 0 6px 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.02em;
+}
+
+.referral-banner-sub {
+  margin: 0 0 16px 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.85);
+  max-width: 680px;
+}
+
+.referral-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ref-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 6px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  text-decoration: none;
+}
+
+.ref-action-btn.primary {
+  background: var(--teal);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.ref-action-btn.primary:hover {
+  background: #14665c;
+  transform: translateY(-1px);
+}
+
+.ref-action-btn.whatsapp {
+  background: #25d366;
+  color: #ffffff;
+}
+
+.ref-action-btn.whatsapp:hover {
+  background: #1eb855;
+  transform: translateY(-1px);
+}
+
+.ref-action-btn.link {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.ref-action-btn.link:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.ref-banner-feedback {
+  display: inline-block;
+  font-size: 12px;
+  color: #a7f3d0;
+  font-weight: 600;
+  margin-top: 10px;
+  transition: all 0.2s ease;
+}
+
+/* 3. License Onboarding Area */
+.license-onboarding-box {
+  background: #fefce8;
+  border: 2px solid #fef08a;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 20px;
+  transition: all 0.3s ease;
+}
+
+.license-onboarding-box.expired {
+  background: #fff1f2;
+  border-color: #fecdd3;
+}
+
+.license-onboarding-header {
+  margin-bottom: 16px;
+}
+
+.license-onboarding-tag {
+  display: inline-block;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  background: #ca8a04;
+  color: #ffffff;
+  padding: 3px 8px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.license-onboarding-box.expired .license-onboarding-tag {
+  background: #e11d48;
+}
+
+.license-onboarding-title {
+  margin: 0 0 6px 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #854d0e;
+}
+
+.license-onboarding-box.expired .license-onboarding-title {
+  color: #9f1239;
+}
+
+.license-onboarding-desc {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #713f12;
+}
+
+.license-onboarding-box.expired .license-onboarding-desc {
+  color: #881337;
+}
+
+.license-onboarding-choices {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-top: 16px;
+}
+
+@media (max-width: 640px) {
+  .license-onboarding-choices {
+    grid-template-columns: 1fr;
+  }
+}
+
+.license-choice-card {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.license-choice-card.highlight {
+  border: 2px solid var(--teal);
+  background: #f0fdfa;
+}
+
+.license-choice-card h4 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.license-choice-card p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.license-choice-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.license-choice-btn.primary {
+  background: var(--ink);
+  color: #ffffff;
+}
+
+.license-choice-btn.primary:hover {
+  background: var(--teal);
+}
+
+.license-choice-btn.whatsapp {
+  background: #25d366;
+  color: #ffffff;
+}
+
+.license-choice-btn.whatsapp:hover {
+  background: #1eb855;
+}
+
+/* 4. Referral Modal Popup */
+.referral-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(16, 38, 34, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 9999;
+  opacity: 1;
+  transition: opacity 0.25s ease;
+}
+
+.referral-modal-overlay.hidden {
+  display: none;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.referral-modal-card {
+  background: var(--surface);
+  border: 2px solid var(--teal);
+  border-radius: 14px;
+  padding: 28px 24px;
+  max-width: 480px;
+  width: 100%;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.3);
+  position: relative;
+  text-align: center;
+  animation: modalPopIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalPopIn {
+  from {
+    transform: scale(0.92) translateY(12px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+.ref-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--muted);
+  cursor: pointer;
+  line-height: 1;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.ref-modal-close:hover {
+  color: var(--ink);
+}
+
+.ref-modal-icon {
+  font-size: 42px;
+  line-height: 1;
+  margin-bottom: 12px;
+}
+
+.ref-modal-pill {
+  display: inline-block;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  font-weight: 800;
+  background: rgba(25, 124, 112, 0.12);
+  color: var(--teal);
+  padding: 4px 12px;
+  border-radius: 99px;
+  letter-spacing: 0.04em;
+  margin-bottom: 10px;
+}
+
+.referral-modal-card h3 {
+  margin: 0 0 10px 0;
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.3;
+}
+
+.ref-modal-desc {
+  margin: 0 0 18px 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.ref-modal-link-box {
+  background: rgba(16, 38, 34, 0.04);
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 18px;
+  text-align: left;
+}
+
+.ref-modal-link-label {
+  display: block;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.ref-modal-link-row {
+  display: flex;
+  gap: 8px;
+}
+
+.ref-modal-link-row input {
+  flex: 1;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.ref-modal-btn-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ref-modal-share-whatsapp {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  background: #25d366;
+  color: #ffffff;
+  border: none;
+  font-family: 'Manrope', sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ref-modal-share-whatsapp:hover {
+  background: #1eb855;
+  transform: translateY(-1px);
+}
+
+.ref-modal-dismiss {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  font-family: 'Manrope', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ref-modal-dismiss:hover {
+  background: rgba(16, 38, 34, 0.04);
+  color: var(--ink);
+}
+
+/* 5. Input Pulse Glow & Interactive Guidance */
+@keyframes inputPulseGlow {
+  0% { box-shadow: 0 0 0 0 rgba(25, 124, 112, 0.7); border-color: var(--teal); }
+  50% { box-shadow: 0 0 0 8px rgba(25, 124, 112, 0.25); border-color: var(--teal); }
+  100% { box-shadow: 0 0 0 0 rgba(25, 124, 112, 0); border-color: var(--line); }
+}
+
+.input-pulse-highlight {
+  animation: inputPulseGlow 1.8s ease-in-out !important;
+  border-color: var(--teal) !important;
+}
+
+/* Ensure smooth scrolling across entire page */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Ensure dashboard sections have clear vertical rhythm */
+.dashboard-tab-content {
+  scroll-margin-top: 80px;
+}

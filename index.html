@@ -142,9 +142,9 @@
       <div id="auth-view" class="auth-view">
         <section class="hero hero-with-image">
           <div class="hero-text-wrap">
-            <p class="eyebrow">AUTHENTICATION & ACCESS CONTROL • MD 2.0</p>
-            <h1>Sign in to your console.<br /><em>Start your WhatsApp session.</em></h1>
-            <p class="lede">Authenticate securely with your Google account to access your dedicated WhatsApp pairing console, generate pairing codes, and manage your bot.</p>
+            <p class="eyebrow">WELCOME TO SOLVATECH BOT</p>
+            <h1>Automate your WhatsApp.<br /><em>Start in 3 simple steps.</em></h1>
+            <p class="lede">Enter your dashboard with Google, activate your license key, and connect your WhatsApp number in seconds.</p>
           </div>
           <div class="hero-image-wrap">
             <img src="./solva.webp" alt="SOLVATECH BOT" class="hero-image" loading="eager" />
@@ -153,10 +153,10 @@
 
         <section class="grid auth-grid" style="margin-top: 24px;">
           <article class="surface pair-card">
-            <div class="card-top"><span>01 / USER SIGN IN</span><small>GOOGLE AUTH</small></div>
-            <h2>Account Access</h2>
+            <div class="card-top"><span>01 / GET STARTED</span><small>GOOGLE AUTH</small></div>
+            <h2>Enter Your Dashboard</h2>
             <p style="font-size: 13px; color: var(--muted); margin-bottom: 20px; line-height: 1.6;">
-              Sign in with your Google account to allocate an encrypted, single-owner session workspace. Your pairing keys, session credentials, and commands remain strictly protected.
+              Sign in or create your account using Google. All bot activation, license keys, WhatsApp pairing, and referral rewards happen securely inside your private dashboard.
             </p>
 
             <!-- Referral Code Detection Indicator (only displayed when ?ref=CODE query param is present) -->
@@ -175,7 +175,10 @@
                 <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.8s.2-2.1.4-2.8L1.9 6.3C.7 8.7 0 10.3 0 12s.7 3.3 1.9 5.7l3.7-2.9z"/>
                 <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.3-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z"/>
               </svg>
-              <span>Sign in with Google</span>
+              <div style="display: flex; flex-direction: column; align-items: flex-start; text-align: left; line-height: 1.2;">
+                <span style="font-size: 14px; font-weight: 800; letter-spacing: 0.02em;">ENTER DASHBOARD</span>
+                <span style="font-size: 11px; font-weight: 500; opacity: 0.85;">Sign in or create account with Google</span>
+              </div>
             </button>
 
             <!-- Studio Preview / Development Quick Access -->
@@ -188,14 +191,6 @@
               <button id="preview-signin-btn" class="preview-signin-button" type="button">
                 <span>⚡ Quick Preview Access (Admin)</span>
               </button>
-            </div>
-
-            <div class="auth-get-key-bar">
-              <span>Need a license activation key?</span>
-              <a href="https://wa.me/2349049979183?text=Hello%20SOLVATECH%20BOT%2C%20I%20want%20to%20get%20a%20license%20key." target="_blank" rel="noopener noreferrer" class="get-key-btn" title="Get license key on WhatsApp">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
-                <span>GET KEY</span>
-              </a>
             </div>
 
             <p id="auth-error" class="error hidden" role="alert" style="margin-top: 16px;"></p>
@@ -289,9 +284,146 @@
           </button>
         </nav>
 
+        <!-- 1. REFERRAL WELCOME PROMOTION BANNER -->
+        <div id="referral-welcome-banner" class="referral-welcome-banner">
+          <div class="referral-banner-left">
+            <span class="referral-banner-badge">🎁 SPECIAL PROMOTION</span>
+            <h2 class="referral-banner-title">REFER A FRIEND & GET 3 DAYS FREE</h2>
+            <p class="referral-banner-sub">
+              Copy your referral link and share it with friends. When qualifying purchases made through your referrals reach <strong>₦1,000</strong>, you can claim <strong>3 FREE DAYS</strong> of active bot runtime.
+            </p>
+            <div class="referral-banner-actions">
+              <button type="button" id="banner-copy-ref-btn" class="ref-action-btn primary">
+                📋 Copy My Referral Link
+              </button>
+              <button type="button" id="banner-share-ref-btn" class="ref-action-btn whatsapp">
+                💬 Refer a Friend on WhatsApp
+              </button>
+              <button type="button" id="banner-jump-ref-btn" class="ref-action-btn link">
+                View Referral Rewards ↓
+              </button>
+            </div>
+            <span id="banner-ref-feedback" class="ref-banner-feedback hidden"></span>
+          </div>
+        </div>
+
+        <!-- 2. 4-STEP GUIDED ONBOARDING & PROGRESS TUTORIAL STEPPER -->
+        <div class="dashboard-tutorial-stepper" aria-label="Setup Steps">
+          <div class="tutorial-step-card completed" id="step-card-1" title="Account Authenticated">
+            <div class="tutorial-step-num">✓</div>
+            <div class="tutorial-step-info">
+              <span class="tutorial-step-label">STEP 1</span>
+              <span class="tutorial-step-title">Enter Dashboard</span>
+              <span class="tutorial-step-status" style="color: #15803d;">Connected ✓</span>
+            </div>
+          </div>
+
+          <div class="tutorial-step-card" id="step-card-2" title="Click to view license status and activate key">
+            <div class="tutorial-step-num" id="step-2-num">2</div>
+            <div class="tutorial-step-info">
+              <span class="tutorial-step-label">STEP 2</span>
+              <span class="tutorial-step-title">Activate Bot</span>
+              <span class="tutorial-step-status" id="step-2-status">Checking Key...</span>
+            </div>
+          </div>
+
+          <div class="tutorial-step-card" id="step-card-3" title="Click to view WhatsApp pairing console">
+            <div class="tutorial-step-num" id="step-3-num">3</div>
+            <div class="tutorial-step-info">
+              <span class="tutorial-step-label">STEP 3</span>
+              <span class="tutorial-step-title">Connect Phone</span>
+              <span class="tutorial-step-status" id="step-3-status">Ready to Pair</span>
+            </div>
+          </div>
+
+          <div class="tutorial-step-card" id="step-card-4" title="Click to view commands reference">
+            <div class="tutorial-step-num" id="step-4-num">4</div>
+            <div class="tutorial-step-info">
+              <span class="tutorial-step-label">STEP 4</span>
+              <span class="tutorial-step-title">Use Commands</span>
+              <span class="tutorial-step-status" id="step-4-status">Bot Controls</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. STEP 2: BOT ACTIVATION & LICENSE SECTION -->
+        <section id="section-license" class="grid dashboard-tab-content" style="margin-top: 24px;">
+          <article class="surface license-card" style="grid-column: 1 / -1;">
+            <div class="card-top">
+              <span>STEP 02 / BOT ACTIVATION & LICENSE</span>
+              <span id="license-badge" class="license-badge none">Checking...</span>
+            </div>
+            <h2 id="license-section-heading">Bot License & Activation</h2>
+
+            <!-- Dynamic Customer Guidance Onboarding Banner (Shown when no active license or expired) -->
+            <div id="license-onboarding-banner" class="license-onboarding-box">
+              <div class="license-onboarding-header">
+                <span id="license-onboarding-tag" class="license-onboarding-tag">STEP 2 • ACTIVATION REQUIRED</span>
+                <h3 id="license-onboarding-title">YOUR BOT IS NOT ACTIVATED YET</h3>
+                <p id="license-onboarding-desc">
+                  To link your WhatsApp number and run SOLVATECH BOT commands, activate your bot using a license key.
+                </p>
+              </div>
+
+              <div class="license-onboarding-choices">
+                <div class="license-choice-card">
+                  <h4 id="license-choice-enter-title">Do you already have a SOLVATECH BOT license key?</h4>
+                  <p id="license-choice-enter-desc">If you already received an activation key, click below to enter your code.</p>
+                  <button type="button" id="btn-focus-enter-key" class="license-choice-btn primary">
+                    ENTER / ADD LICENSE KEY ↓
+                  </button>
+                </div>
+
+                <div class="license-choice-card highlight">
+                  <h4 id="license-choice-get-key-title">Don't have a license key yet?</h4>
+                  <p id="license-choice-get-key-desc">Request or purchase your official license key on WhatsApp in seconds.</p>
+                  <a href="https://wa.me/2349049979183?text=Hello%20SOLVATECH%20BOT%2C%20I%20want%20to%20get%20a%20license%20key." target="_blank" rel="noopener noreferrer" id="license-onboarding-get-key-btn" class="license-choice-btn whatsapp" title="Get license key on WhatsApp">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                    <span id="license-get-key-btn-text">GET KEY</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Active License Details (Status, Countdown, Expiry) -->
+            <div class="license-info-box">
+              <div class="license-stat-line">
+                <span class="muted-label">LICENSE STATUS</span>
+                <strong id="license-status-text">Checking status...</strong>
+              </div>
+              <div class="license-stat-line">
+                <span class="muted-label">REMAINING TIME</span>
+                <span id="license-countdown" class="license-countdown-display">—</span>
+              </div>
+              <div class="license-stat-line">
+                <span class="muted-label">EXPIRATION TIMESTAMP</span>
+                <span id="license-expiry" style="font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted);">—</span>
+              </div>
+              <div id="license-extend-toggle-wrap" style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--line); display: flex; justify-content: flex-end;">
+                <button type="button" id="btn-toggle-extend-license" class="mini-wipe-btn" style="color: var(--teal); border-color: var(--teal); cursor: pointer;" title="Enter another key to extend your runtime">
+                  + Add Another Key / Extend
+                </button>
+              </div>
+            </div>
+
+            <!-- License Code Entry / Extension Form -->
+            <form id="license-redeem-form">
+              <label for="license-code-input" id="license-form-label">Enter License Activation Code</label>
+              <div class="license-form-row">
+                <div class="license-input-wrap">
+                  <input id="license-code-input" type="text" placeholder="SOLVA-XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false" required />
+                </div>
+                <button id="license-redeem-btn" class="license-btn" type="submit">Activate Code</button>
+              </div>
+              <p id="license-msg" class="license-msg hidden"></p>
+            </form>
+          </article>
+        </section>
+
+        <!-- 4. STEP 3: WHATSAPP PAIRING CONSOLE & LIVE STATUS -->
         <section id="section-pair" class="grid dashboard-tab-content">
           <article class="surface pair-card">
-            <div class="card-top"><span>01 / PAIRING CONSOLE</span><small>MD 2.0</small></div>
+            <div class="card-top"><span>STEP 03 / WHATSAPP PAIRING CONSOLE</span><small>MD 2.0</small></div>
             <h2>Get your pairing code</h2>
 
             <!-- Active Number Lock Notice & Wipe Button -->
@@ -398,47 +530,7 @@
           </aside>
         </section>
 
-        <!-- LICENSE STATUS & ONE-TIME REDEMPTION SECTION -->
-        <section id="section-license" class="grid dashboard-tab-content" style="margin-top: 24px;">
-          <article class="surface license-card" style="grid-column: 1 / -1;">
-            <div class="card-top">
-              <span>03 / SOLVATECH LICENSE SYSTEM</span>
-              <span id="license-badge" class="license-badge none">Checking...</span>
-            </div>
-            <h2>Account License & Subscription</h2>
 
-            <div class="license-info-box">
-              <div class="license-stat-line">
-                <span class="muted-label">LICENSE STATUS</span>
-                <strong id="license-status-text">No active license</strong>
-              </div>
-              <div class="license-stat-line">
-                <span class="muted-label">REMAINING TIME</span>
-                <span id="license-countdown" class="license-countdown-display">—</span>
-              </div>
-              <div class="license-stat-line">
-                <span class="muted-label">EXPIRATION TIMESTAMP</span>
-                <span id="license-expiry" style="font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted);">—</span>
-              </div>
-            </div>
-
-            <!-- License Redemption Form -->
-            <form id="license-redeem-form">
-              <label for="license-code-input">Enter License Activation Code</label>
-              <div class="license-form-row">
-                <div class="license-input-wrap">
-                  <input id="license-code-input" type="text" placeholder="SOLVA-XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false" required />
-                </div>
-                <button id="license-redeem-btn" class="license-btn" type="submit">Activate Code</button>
-                <a href="https://wa.me/2349049979183?text=Hello%20SOLVATECH%20BOT%2C%20I%20want%20to%20get%20a%20license%20key." target="_blank" rel="noopener noreferrer" class="get-key-btn" title="Purchase or request a license key on WhatsApp">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
-                  <span>GET KEY</span>
-                </a>
-              </div>
-              <p id="license-msg" class="license-msg hidden"></p>
-            </form>
-          </article>
-        </section>
 
         <!-- DEDICATED RECONNECTION LOGS & BATTERY TELEMETRY SECTION -->
         <section id="section-reconnect" class="grid dashboard-tab-content hidden" style="margin-top: 24px;">
@@ -580,6 +672,10 @@
                 <button id="referral-copy-btn" class="license-btn" type="button" style="padding: 10px 18px; white-space: nowrap;">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px; vertical-align: -2px;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                   <span>Copy Link</span>
+                </button>
+                <button id="referral-share-whatsapp-btn" class="license-btn whatsapp" type="button" style="padding: 10px 18px; white-space: nowrap; background: #25d366; color: #ffffff;" title="Share link on WhatsApp">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: -2px;"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                  <span>Share</span>
                 </button>
               </div>
               <p id="referral-copy-msg" class="license-msg success hidden" style="margin-top: 8px;">Referral link copied to clipboard!</p>
@@ -1533,7 +1629,36 @@
               </div>
             </div>
           </div>
-        </section>
+        <!-- REFERRAL REMINDER & WELCOME PROMOTION MODAL -->
+        <div id="referral-reminder-modal" class="referral-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="ref-modal-title">
+          <div class="referral-modal-card">
+            <button type="button" id="ref-modal-close-btn" class="ref-modal-close" aria-label="Close dialog">&times;</button>
+            <div class="ref-modal-icon">🎁</div>
+            <span class="ref-modal-pill">EARN UNLIMITED FREE RUNTIME</span>
+            <h3 id="ref-modal-title">REFER A FRIEND & GET 3 DAYS FREE</h3>
+            <p class="ref-modal-desc">
+              Share your personal referral link with friends. When qualifying purchases made through your referrals reach <strong>₦1,000</strong>, you can claim <strong>3 FREE DAYS</strong> of active bot runtime.
+            </p>
+            
+            <div class="ref-modal-link-box">
+              <span class="ref-modal-link-label">YOUR EXCLUSIVE REFERRAL LINK</span>
+              <div class="ref-modal-link-row">
+                <input type="text" id="ref-modal-link-input" readonly value="https://solvatech.name.ng/?ref=..." spellcheck="false" />
+                <button type="button" id="ref-modal-copy-btn" class="license-btn" style="padding: 8px 16px; font-size: 12px; white-space: nowrap;">Copy</button>
+              </div>
+              <p id="ref-modal-copy-msg" class="license-msg success hidden" style="margin-top: 6px;">Copied to clipboard!</p>
+            </div>
+
+            <div class="ref-modal-btn-row">
+              <button type="button" id="ref-modal-share-btn" class="ref-modal-share-whatsapp">
+                💬 Refer a Friend on WhatsApp
+              </button>
+              <button type="button" id="ref-modal-dismiss-btn" class="ref-modal-dismiss">
+                Continue to Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </main>
 
@@ -2230,7 +2355,7 @@
         if (saved) activeDashTab = saved;
       } catch (e) {}
 
-      function switchDashboardTab(tabName) {
+      function switchDashboardTab(tabName, shouldScroll = true) {
         activeDashTab = tabName;
         try {
           sessionStorage.setItem("solvatech_active_dash_tab", tabName);
@@ -2255,88 +2380,94 @@
 
         const isUserAdmin = currentUser && currentUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
 
-        if (tabName === "all") {
-          if (sectionPair) sectionPair.classList.remove("hidden");
-          if (sectionLicense) sectionLicense.classList.remove("hidden");
-          if (sectionReconnect) sectionReconnect.classList.remove("hidden");
-          if (sectionReferral) sectionReferral.classList.remove("hidden");
-          if (sectionAdmin) {
-            if (isUserAdmin) sectionAdmin.classList.remove("hidden");
-            else sectionAdmin.classList.add("hidden");
+        // ACCORDING TO USER REQUIREMENT 13:
+        // Customer features are never hidden behind swiping tabs!
+        // All customer sections are discoverable through ordinary vertical scrolling on one complete page.
+        if (sectionPair) sectionPair.classList.remove("hidden");
+        if (sectionLicense) sectionLicense.classList.remove("hidden");
+        if (sectionReconnect) sectionReconnect.classList.remove("hidden");
+        if (sectionReferral) sectionReferral.classList.remove("hidden");
+        if (sectionInstructions) sectionInstructions.classList.remove("hidden");
+        if (sectionCommands) sectionCommands.classList.remove("hidden");
+
+        // Super Admin panel is strictly for admin
+        if (sectionAdmin) {
+          if (isUserAdmin && tabName === "admin") {
+            sectionAdmin.classList.remove("hidden");
+          } else if (!isUserAdmin) {
+            sectionAdmin.classList.add("hidden");
           }
-          if (sectionInstructions) sectionInstructions.classList.remove("hidden");
-          if (sectionCommands) sectionCommands.classList.remove("hidden");
-          fetchReconnectLogs();
-        } else if (tabName === "pair") {
-          if (sectionPair) sectionPair.classList.remove("hidden");
-          if (sectionInstructions) sectionInstructions.classList.remove("hidden");
-          if (sectionLicense) sectionLicense.classList.add("hidden");
-          if (sectionReconnect) sectionReconnect.classList.add("hidden");
-          if (sectionReferral) sectionReferral.classList.add("hidden");
-          if (sectionAdmin) sectionAdmin.classList.add("hidden");
-          if (sectionCommands) sectionCommands.classList.add("hidden");
-        } else if (tabName === "license") {
-          if (sectionPair) sectionPair.classList.add("hidden");
-          if (sectionInstructions) sectionInstructions.classList.add("hidden");
-          if (sectionLicense) sectionLicense.classList.remove("hidden");
-          if (sectionReconnect) sectionReconnect.classList.add("hidden");
-          if (sectionReferral) sectionReferral.classList.add("hidden");
-          if (sectionAdmin) sectionAdmin.classList.add("hidden");
-          if (sectionCommands) sectionCommands.classList.add("hidden");
-        } else if (tabName === "reconnect") {
-          if (sectionPair) sectionPair.classList.add("hidden");
-          if (sectionInstructions) sectionInstructions.classList.add("hidden");
-          if (sectionLicense) sectionLicense.classList.add("hidden");
-          if (sectionReconnect) sectionReconnect.classList.remove("hidden");
-          if (sectionReferral) sectionReferral.classList.add("hidden");
-          if (sectionAdmin) sectionAdmin.classList.add("hidden");
-          if (sectionCommands) sectionCommands.classList.add("hidden");
-          fetchReconnectLogs();
-        } else if (tabName === "referrals") {
-          if (sectionPair) sectionPair.classList.add("hidden");
-          if (sectionInstructions) sectionInstructions.classList.add("hidden");
-          if (sectionLicense) sectionLicense.classList.add("hidden");
-          if (sectionReconnect) sectionReconnect.classList.add("hidden");
-          if (sectionReferral) sectionReferral.classList.remove("hidden");
-          if (sectionAdmin) sectionAdmin.classList.add("hidden");
-          if (sectionCommands) sectionCommands.classList.add("hidden");
-        } else if (tabName === "commands") {
-          if (sectionPair) sectionPair.classList.add("hidden");
-          if (sectionInstructions) sectionInstructions.classList.add("hidden");
-          if (sectionLicense) sectionLicense.classList.add("hidden");
-          if (sectionReconnect) sectionReconnect.classList.add("hidden");
-          if (sectionReferral) sectionReferral.classList.add("hidden");
-          if (sectionAdmin) sectionAdmin.classList.add("hidden");
-          if (sectionCommands) sectionCommands.classList.remove("hidden");
-        } else if (tabName === "admin") {
-          if (sectionPair) sectionPair.classList.add("hidden");
-          if (sectionInstructions) sectionInstructions.classList.add("hidden");
-          if (sectionLicense) sectionLicense.classList.add("hidden");
-          if (sectionReconnect) sectionReconnect.classList.add("hidden");
-          if (sectionReferral) sectionReferral.classList.add("hidden");
-          if (sectionAdmin) {
-            if (isUserAdmin) sectionAdmin.classList.remove("hidden");
-            else sectionAdmin.classList.add("hidden");
-          }
-          if (sectionCommands) sectionCommands.classList.add("hidden");
         }
+
+        if (tabName === "reconnect") {
+          fetchReconnectLogs();
+        }
+
+        // Smooth scroll to the target section when user taps a navigation button
+        if (shouldScroll) {
+          let targetEl = null;
+          if (tabName === "license") targetEl = sectionLicense;
+          else if (tabName === "pair") targetEl = sectionPair;
+          else if (tabName === "referrals") targetEl = sectionReferral;
+          else if (tabName === "commands") targetEl = sectionCommands;
+          else if (tabName === "reconnect") targetEl = sectionReconnect;
+          else if (tabName === "admin" && isUserAdmin) targetEl = sectionAdmin;
+
+          if (targetEl) {
+            targetEl.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }
+      }
+
+      let dashboardScrollObserver = null;
+      function setupDashboardScrollObserver() {
+        if (dashboardScrollObserver) return;
+        const trackedSections = [
+          { id: "section-license", tab: "license" },
+          { id: "section-pair", tab: "pair" },
+          { id: "referral-section", tab: "referrals" },
+          { id: "section-commands", tab: "commands" },
+          { id: "section-reconnect", tab: "reconnect" }
+        ];
+
+        const observerOptions = {
+          root: null,
+          rootMargin: "-25% 0px -60% 0px",
+          threshold: 0.05
+        };
+
+        dashboardScrollObserver = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting && activeDashTab !== "admin") {
+              const matched = trackedSections.find(s => s.id === entry.target.id);
+              if (matched) {
+                const tabBtns = document.querySelectorAll(".dash-tab-btn");
+                tabBtns.forEach(btn => {
+                  if (btn.getAttribute("data-tab") === matched.tab) {
+                    btn.classList.add("active");
+                  } else if (btn.getAttribute("data-tab") !== "admin") {
+                    btn.classList.remove("active");
+                  }
+                });
+              }
+            }
+          });
+        }, observerOptions);
+
+        trackedSections.forEach(s => {
+          const el = $(s.id);
+          if (el) dashboardScrollObserver.observe(el);
+        });
       }
 
       function initDashboardTabs() {
         const tabBtns = document.querySelectorAll(".dash-tab-btn");
         tabBtns.forEach(btn => {
-          btn.onclick = () => {
+          btn.onclick = (e) => {
+            e.preventDefault();
             const target = btn.getAttribute("data-tab");
             if (target) {
-              switchDashboardTab(target);
-              // Smooth scroll to top of tabs on mobile devices
-              const nav = $("dashboard-nav");
-              if (nav && window.innerWidth <= 768) {
-                const navRect = nav.getBoundingClientRect();
-                if (navRect.top < 0 || navRect.top > 120) {
-                  nav.scrollIntoView({ behavior: "smooth", block: "start" });
-                }
-              }
+              switchDashboardTab(target, true);
             }
           };
         });
@@ -2346,7 +2477,8 @@
         if (activeDashTab === "admin" && !isUserAdmin) {
           activeDashTab = "pair";
         }
-        switchDashboardTab(activeDashTab);
+        switchDashboardTab(activeDashTab, false);
+        setupDashboardScrollObserver();
       }
 
       function renderAuthState(user) {
@@ -2389,6 +2521,9 @@
           refresh();
           refreshLicenseStatus();
           refreshReferralStatus();
+          if (typeof initReferralModalTimers === "function") {
+            initReferralModalTimers();
+          }
           if (!statusIntervalId) {
             statusIntervalId = setInterval(() => {
               refresh();
@@ -2407,6 +2542,15 @@
           if (licenseCountdownTimerId) {
             clearInterval(licenseCountdownTimerId);
             licenseCountdownTimerId = null;
+          }
+
+          if (referralReminderIntervalId) {
+            clearInterval(referralReminderIntervalId);
+            referralReminderIntervalId = null;
+          }
+
+          if (refModalOverlay) {
+            refModalOverlay.classList.add("hidden");
           }
 
           if (authView) authView.classList.remove("hidden");
@@ -3231,6 +3375,91 @@
           if (licenseCountdown) licenseCountdown.textContent = "—";
           if (licenseExpiry) licenseExpiry.textContent = "—";
         }
+
+        // =====================================================================
+        // GUIDED STEPPER & ONBOARDING CONTROLLER (Requirements 4, 6, 7, 14)
+        // =====================================================================
+        const hasActive = Boolean(isUserAdmin || data.hasActiveLicense || data.durationDays === "Unlimited");
+        const isExp = data.status === "expired";
+
+        // 1. Update 4-Step Tutorial Stepper
+        const stepCard2 = $("step-card-2");
+        const step2Status = $("step-2-status");
+        const step2Num = $("step-2-num");
+        if (stepCard2 && step2Status) {
+          if (hasActive) {
+            stepCard2.classList.add("completed");
+            stepCard2.classList.remove("warning-step", "expired");
+            if (step2Num) step2Num.textContent = "✓";
+            step2Status.textContent = isUserAdmin ? "Unlimited ✓" : `Active (${data.durationDays || ""}D) ✓`;
+            step2Status.style.color = "#15803d";
+          } else if (isExp) {
+            stepCard2.classList.remove("completed");
+            stepCard2.classList.add("expired");
+            if (step2Num) step2Num.textContent = "!";
+            step2Status.textContent = "License Expired";
+            step2Status.style.color = "#e11d48";
+          } else {
+            stepCard2.classList.remove("completed");
+            stepCard2.classList.add("warning-step");
+            if (step2Num) step2Num.textContent = "2";
+            step2Status.textContent = "Key Required";
+            step2Status.style.color = "#ca8a04";
+          }
+        }
+
+        // 2. Dynamic License Onboarding Banner State
+        const licenseOnboardingBanner = $("license-onboarding-banner");
+        const licenseOnboardingTag = $("license-onboarding-tag");
+        const licenseOnboardingTitle = $("license-onboarding-title");
+        const licenseOnboardingDesc = $("license-onboarding-desc");
+        const licenseChoiceEnterTitle = $("license-choice-enter-title");
+        const licenseChoiceEnterDesc = $("license-choice-enter-desc");
+        const licenseChoiceGetKeyTitle = $("license-choice-get-key-title");
+        const licenseChoiceGetKeyDesc = $("license-choice-get-key-desc");
+        const licenseGetKeyBtnText = $("license-get-key-btn-text");
+
+        if (licenseOnboardingBanner) {
+          if (hasActive) {
+            // Requirement 4: If customer already has an active license, do NOT repeatedly show Get Key onboarding!
+            licenseOnboardingBanner.classList.add("hidden");
+          } else if (isExp) {
+            // Requirement 7: YOUR LICENSE HAS EXPIRED -> [ GET KEY / RENEW ]
+            licenseOnboardingBanner.classList.remove("hidden");
+            licenseOnboardingBanner.classList.add("expired");
+            if (licenseOnboardingTag) licenseOnboardingTag.textContent = "EXPIRED LICENSE • RENEWAL REQUIRED";
+            if (licenseOnboardingTitle) licenseOnboardingTitle.textContent = "YOUR LICENSE HAS EXPIRED";
+            if (licenseOnboardingDesc) licenseOnboardingDesc.textContent = "Your bot runtime has ended. To resume WhatsApp automation and keep your bot active, renew your license or enter a new activation key below.";
+            if (licenseChoiceEnterTitle) licenseChoiceEnterTitle.textContent = "Already received a renewal key?";
+            if (licenseChoiceEnterDesc) licenseChoiceEnterDesc.textContent = "Click below to enter your activation code and start your bot instantly.";
+            if (licenseChoiceGetKeyTitle) licenseChoiceGetKeyTitle.textContent = "Need to renew your license?";
+            if (licenseChoiceGetKeyDesc) licenseChoiceGetKeyDesc.textContent = "Chat with us on WhatsApp to renew your official license key in seconds.";
+            if (licenseGetKeyBtnText) licenseGetKeyBtnText.textContent = "GET KEY / RENEW";
+          } else {
+            // Requirement 6: YOUR BOT IS NOT ACTIVATED YET -> [ ENTER / ADD KEY ] & [ GET KEY ]
+            licenseOnboardingBanner.classList.remove("hidden");
+            licenseOnboardingBanner.classList.remove("expired");
+            if (licenseOnboardingTag) licenseOnboardingTag.textContent = "GET STARTED • STEP 2";
+            if (licenseOnboardingTitle) licenseOnboardingTitle.textContent = "YOUR BOT IS NOT ACTIVATED YET";
+            if (licenseOnboardingDesc) licenseOnboardingDesc.textContent = "To connect your WhatsApp number and run SOLVATECH BOT commands, activate your bot using a license key.";
+            if (licenseChoiceEnterTitle) licenseChoiceEnterTitle.textContent = "Do you already have a SOLVATECH BOT license key?";
+            if (licenseChoiceEnterDesc) licenseChoiceEnterDesc.textContent = "If you already received an activation key, click below to enter your code.";
+            if (licenseChoiceGetKeyTitle) licenseChoiceGetKeyTitle.textContent = "Don't have a license key yet?";
+            if (licenseChoiceGetKeyDesc) licenseChoiceGetKeyDesc.textContent = "Request or purchase your official license key on WhatsApp in seconds.";
+            if (licenseGetKeyBtnText) licenseGetKeyBtnText.textContent = "GET KEY";
+          }
+        }
+
+        // 3. Automatic Initial Attention Guidance (Requirement 4 & 6)
+        if (!hasActive && !sessionStorage.getItem("solvatech_guided_attention")) {
+          sessionStorage.setItem("solvatech_guided_attention", "true");
+          setTimeout(() => {
+            const secLic = $("section-license");
+            if (secLic) {
+              secLic.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+          }, 600);
+        }
       }
 
       // Handle license redemption form submission
@@ -3352,6 +3581,233 @@
             }
           }
         });
+      }
+
+      // =========================================================================
+      // SOLVATECH BOT — SIMPLIFIED CUSTOMER ONBOARDING & GUIDED CONTROLS
+      // =========================================================================
+
+      // 1. Focus Code Input Button in License Onboarding Banner
+      const btnFocusEnterKey = $("btn-focus-enter-key");
+      if (btnFocusEnterKey) {
+        btnFocusEnterKey.addEventListener("click", () => {
+          const codeInput = $("license-code-input");
+          const formEl = $("license-redeem-form");
+          if (formEl) formEl.scrollIntoView({ behavior: "smooth", block: "center" });
+          if (codeInput) {
+            setTimeout(() => {
+              codeInput.focus();
+              codeInput.classList.add("input-pulse-highlight");
+              setTimeout(() => codeInput.classList.remove("input-pulse-highlight"), 1800);
+            }, 300);
+          }
+        });
+      }
+
+      // 2. Extend License Toggle Button (in active license details box)
+      const btnToggleExtendLicense = $("btn-toggle-extend-license");
+      if (btnToggleExtendLicense) {
+        btnToggleExtendLicense.addEventListener("click", () => {
+          const codeInput = $("license-code-input");
+          const formEl = $("license-redeem-form");
+          if (formEl) formEl.scrollIntoView({ behavior: "smooth", block: "center" });
+          if (codeInput) {
+            setTimeout(() => {
+              codeInput.focus();
+              codeInput.classList.add("input-pulse-highlight");
+              setTimeout(() => codeInput.classList.remove("input-pulse-highlight"), 1800);
+            }, 300);
+          }
+        });
+      }
+
+      // 3. Guided Stepper Step Card Click Listeners (Tutorial navigation)
+      const stepCard2 = $("step-card-2");
+      if (stepCard2) {
+        stepCard2.addEventListener("click", () => {
+          switchDashboardTab("license");
+          const codeInput = $("license-code-input");
+          if (codeInput) setTimeout(() => codeInput.focus(), 400);
+        });
+      }
+      const stepCard3 = $("step-card-3");
+      if (stepCard3) {
+        stepCard3.addEventListener("click", () => {
+          switchDashboardTab("pair");
+          const numInput = $("number");
+          if (numInput) setTimeout(() => numInput.focus(), 400);
+        });
+      }
+      const stepCard4 = $("step-card-4");
+      if (stepCard4) {
+        stepCard4.addEventListener("click", () => {
+          switchDashboardTab("commands");
+        });
+      }
+
+      // 4. Referral Helper
+      function getUserReferralLink() {
+        const input = $("referral-link-input");
+        if (input && input.value && input.value.includes("?ref=")) {
+          return input.value;
+        }
+        const code = sessionStorage.getItem("solvatech_my_ref_code") || "";
+        return code ? `https://solvatech.name.ng/?ref=${code}` : "https://solvatech.name.ng/";
+      }
+
+      // 5. Referral Welcome Banner Buttons (Requirement 9 & 10)
+      const bannerCopyRefBtn = $("banner-copy-ref-btn");
+      const bannerShareRefBtn = $("banner-share-ref-btn");
+      const bannerJumpRefBtn = $("banner-jump-ref-btn");
+      const bannerRefFeedback = $("banner-ref-feedback");
+
+      if (bannerCopyRefBtn) {
+        bannerCopyRefBtn.addEventListener("click", async () => {
+          const link = getUserReferralLink();
+          try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              await navigator.clipboard.writeText(link);
+            } else {
+              const input = $("referral-link-input");
+              if (input) { input.select(); document.execCommand("copy"); }
+            }
+            bannerCopyRefBtn.textContent = "✓ Copied Link!";
+            if (bannerRefFeedback) {
+              bannerRefFeedback.textContent = "Referral link copied! Share with friends to earn 3 free days for every ₦1,000 in qualifying purchases.";
+              bannerRefFeedback.classList.remove("hidden");
+            }
+            setTimeout(() => {
+              bannerCopyRefBtn.textContent = "📋 Copy My Referral Link";
+            }, 3000);
+          } catch (err) {
+            console.debug("Copy error:", err);
+          }
+        });
+      }
+
+      if (bannerShareRefBtn) {
+        bannerShareRefBtn.addEventListener("click", () => {
+          const link = getUserReferralLink();
+          const text = encodeURIComponent(`Hey! I'm automating my WhatsApp with SOLVATECH BOT. Sign up with my referral link to get started: ${link}`);
+          window.open(`https://wa.me/?text=${text}`, "_blank", "noopener,noreferrer");
+        });
+      }
+
+      if (bannerJumpRefBtn) {
+        bannerJumpRefBtn.addEventListener("click", () => {
+          switchDashboardTab("referrals");
+        });
+      }
+
+      // Referral Share Button in Referral Program section
+      const referralShareWhatsappBtn = $("referral-share-whatsapp-btn");
+      if (referralShareWhatsappBtn) {
+        referralShareWhatsappBtn.addEventListener("click", () => {
+          const link = getUserReferralLink();
+          const text = encodeURIComponent(`Hey! I'm automating my WhatsApp with SOLVATECH BOT. Sign up with my referral link to get started: ${link}`);
+          window.open(`https://wa.me/?text=${text}`, "_blank", "noopener,noreferrer");
+        });
+      }
+
+      // 6. Referral Reminder & Welcome Modal (Requirement 11)
+      const refModalOverlay = $("referral-reminder-modal");
+      const refModalCloseBtn = $("ref-modal-close-btn");
+      const refModalDismissBtn = $("ref-modal-dismiss-btn");
+      const refModalCopyBtn = $("ref-modal-copy-btn");
+      const refModalShareBtn = $("ref-modal-share-btn");
+      const refModalLinkInput = $("ref-modal-link-input");
+      const refModalCopyMsg = $("ref-modal-copy-msg");
+
+      function openReferralModal() {
+        if (!refModalOverlay) return;
+        const link = getUserReferralLink();
+        if (refModalLinkInput) refModalLinkInput.value = link;
+        refModalOverlay.classList.remove("hidden");
+        if (refModalCopyMsg) refModalCopyMsg.classList.add("hidden");
+      }
+
+      function closeReferralModal() {
+        if (!refModalOverlay) return;
+        refModalOverlay.classList.add("hidden");
+        sessionStorage.setItem("solvatech_ref_modal_dismissed_at", String(Date.now()));
+      }
+
+      if (refModalCloseBtn) refModalCloseBtn.addEventListener("click", closeReferralModal);
+      if (refModalDismissBtn) refModalDismissBtn.addEventListener("click", closeReferralModal);
+      if (refModalOverlay) {
+        refModalOverlay.addEventListener("click", (e) => {
+          if (e.target === refModalOverlay) closeReferralModal();
+        });
+      }
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && refModalOverlay && !refModalOverlay.classList.contains("hidden")) {
+          closeReferralModal();
+        }
+      });
+
+      if (refModalCopyBtn) {
+        refModalCopyBtn.addEventListener("click", async () => {
+          const link = getUserReferralLink();
+          try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              await navigator.clipboard.writeText(link);
+            } else if (refModalLinkInput) {
+              refModalLinkInput.select();
+              document.execCommand("copy");
+            }
+            refModalCopyBtn.textContent = "✓ Copied";
+            if (refModalCopyMsg) refModalCopyMsg.classList.remove("hidden");
+            setTimeout(() => {
+              refModalCopyBtn.textContent = "Copy";
+              closeReferralModal();
+            }, 1500);
+          } catch (err) {
+            console.debug("Modal copy error:", err);
+          }
+        });
+      }
+
+      if (refModalShareBtn) {
+        refModalShareBtn.addEventListener("click", () => {
+          const link = getUserReferralLink();
+          const text = encodeURIComponent(`Hey! I'm automating my WhatsApp with SOLVATECH BOT. Sign up with my referral link to get started: ${link}`);
+          window.open(`https://wa.me/?text=${text}`, "_blank", "noopener,noreferrer");
+          setTimeout(() => closeReferralModal(), 1200);
+        });
+      }
+
+      let referralReminderIntervalId = null;
+      function initReferralModalTimers() {
+        if (!currentUser) return;
+        const welcomeDone = sessionStorage.getItem("solvatech_ref_welcome_shown");
+        if (!welcomeDone) {
+          setTimeout(() => {
+            if (currentUser && (!authView || authView.classList.contains("hidden"))) {
+              openReferralModal();
+              sessionStorage.setItem("solvatech_ref_welcome_shown", "true");
+            }
+          }, 2500);
+        }
+
+        if (referralReminderIntervalId) {
+          clearInterval(referralReminderIntervalId);
+        }
+
+        // Interval to check for tasteful 1-3 minute activity reminder
+        referralReminderIntervalId = setInterval(() => {
+          if (!currentUser) return;
+          if (!refModalOverlay || !refModalOverlay.classList.contains("hidden")) return;
+          if (activeDashTab === "admin") return; // Never interrupt admin work
+
+          const dismissedAt = parseInt(sessionStorage.getItem("solvatech_ref_modal_dismissed_at") || "0", 10);
+          const reminderCount = parseInt(sessionStorage.getItem("solvatech_ref_reminder_count") || "0", 10);
+
+          // Require at least 2.5 minutes (150,000ms) cooldown and maximum 2 reminders per session
+          if (Date.now() - dismissedAt > 150000 && reminderCount < 2) {
+            sessionStorage.setItem("solvatech_ref_reminder_count", String(reminderCount + 1));
+            openReferralModal();
+          }
+        }, 30000);
       }
 
       // =========================================================================
@@ -5368,7 +5824,11 @@
         if (referralLinkInput) {
           const code = data.referralCode || "";
           const cleanCode = code ? String(code).trim().toUpperCase().replace(/^REF-/, "") : "";
-          referralLinkInput.value = cleanCode ? `https://solvatech.name.ng/?ref=${cleanCode}` : "https://solvatech.name.ng/";
+          const linkVal = cleanCode ? `https://solvatech.name.ng/?ref=${cleanCode}` : "https://solvatech.name.ng/";
+          referralLinkInput.value = linkVal;
+          if (cleanCode) sessionStorage.setItem("solvatech_my_ref_code", cleanCode);
+          const refModalInput = $("ref-modal-link-input");
+          if (refModalInput) refModalInput.value = linkVal;
         }
 
         const referredByPill = document.getElementById("referral-referred-by-pill");
