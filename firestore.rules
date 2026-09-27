@@ -55,11 +55,19 @@ service cloud.firestore {
     }
 
     // WhatsApp Group Settings Collection
-    match /group_settings/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
-      allow create: if isOwner(userId) || isAdmin();
-      allow update: if isOwner(userId) || isAdmin();
-      allow delete: if isOwner(userId) || isAdmin();
+    match /group_settings/{docId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isAdmin() || isSignedIn();
+    }
+
+    // Group Event Idempotency & Distributed Claim Collection (Auto Welcome / Auto Goodbye coordination)
+    match /group_events/{eventId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isAdmin() || isSignedIn();
     }
 
     // WhatsApp Baileys Sessions Collection
