@@ -46,6 +46,15 @@ export default async function open({ sock, message, chatId, reply, userId = "def
     }
 
     await sock.sendMessage(selfJid, payload);
+
+    // React ✅ and immediately delete the .open / .vv command message in the chat or group
+    message._alreadyReactedAndDeleted = true;
+    await sock.sendMessage(chatId, {
+      react: { text: "✅", key: message.key },
+    }).catch(() => {});
+    await sock.sendMessage(chatId, {
+      delete: message.key,
+    }).catch(() => {});
   } catch (error) {
     await sock.sendMessage(selfJid, {
       text: `❌ Could not recover view-once ${type}: ${error.message || "Failed to decrypt media"}`,

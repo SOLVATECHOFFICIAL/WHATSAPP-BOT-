@@ -528,7 +528,7 @@
               </button>
             </div>
 
-            <!-- PRIVACY & RECOVERY CONTROLS (Deleted Message Recovery & View-Once Recovery) -->
+            <!-- PRIVACY & RECOVERY CONTROLS (Deleted Message Recovery) -->
             <div id="privacy-recovery-card" style="margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line);">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                 <span class="muted-label" style="margin: 0; font-weight: 700; color: var(--ink);">PRIVACY & RECOVERY SETTINGS</span>
@@ -536,7 +536,7 @@
               </div>
 
               <!-- Deleted Message Recovery Toggle (Default OFF) -->
-              <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 12px; background: rgba(16,38,34,0.03); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 12px; background: rgba(16,38,34,0.03); border: 1px solid var(--line); border-radius: 8px;">
                 <div style="flex: 1;">
                   <div style="font-size: 13px; font-weight: 700; color: var(--ink); display: flex; align-items: center; gap: 6px;">
                     <span>🗑️ Deleted Message Recovery</span>
@@ -548,22 +548,6 @@
                 </div>
                 <button id="toggle-deleted-recovery-btn" type="button" class="license-btn" data-enabled="false" style="padding: 8px 14px; font-size: 11px; min-width: 78px; background: #475569; color: #fff;">
                   OFF
-                </button>
-              </div>
-
-              <!-- View-Once Recovery Toggle (Default ON) -->
-              <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 12px; background: rgba(16,38,34,0.03); border: 1px solid var(--line); border-radius: 8px;">
-                <div style="flex: 1;">
-                  <div style="font-size: 13px; font-weight: 700; color: var(--ink); display: flex; align-items: center; gap: 6px;">
-                    <span>🔓 View-Once Media Recovery</span>
-                    <span id="viewonce-recovery-badge" class="badge connected" style="font-size: 10px; padding: 2px 7px;">ON</span>
-                  </div>
-                  <p style="margin: 3px 0 0; font-size: 11px; color: var(--muted); line-height: 1.4;">
-                    Recovers View-Once photos, videos, and voice notes directly to your personal WhatsApp DM (never to the group).
-                  </p>
-                </div>
-                <button id="toggle-viewonce-recovery-btn" type="button" class="license-btn" data-enabled="true" style="padding: 8px 14px; font-size: 11px; min-width: 78px; background: var(--teal); color: #fff;">
-                  ON
                 </button>
               </div>
               <p id="privacy-pref-feedback" class="license-msg hidden" style="margin-top: 8px; font-size: 11px;"></p>
@@ -3137,18 +3121,15 @@
       }
 
       // ======================================================================
-      // USER PRIVACY & RECOVERY PREFERENCES (Deleted Message & View-Once DM)
+      // USER PRIVACY & RECOVERY PREFERENCES (Deleted Message Recovery DM)
       // ======================================================================
       const toggleDeletedRecoveryBtn = $("toggle-deleted-recovery-btn");
       const deletedRecoveryBadge = $("deleted-recovery-badge");
-      const toggleViewonceRecoveryBtn = $("toggle-viewonce-recovery-btn");
-      const viewonceRecoveryBadge = $("viewonce-recovery-badge");
       const privacyPrefFeedback = $("privacy-pref-feedback");
 
       function updatePreferencesUI(prefs) {
         if (!prefs || typeof prefs !== "object") return;
         const delOn = Boolean(prefs.deletedMessageRecovery === true);
-        const voOn = prefs.viewOnceRecovery === undefined ? true : Boolean(prefs.viewOnceRecovery);
 
         if (toggleDeletedRecoveryBtn) {
           toggleDeletedRecoveryBtn.setAttribute("data-enabled", String(delOn));
@@ -3158,16 +3139,6 @@
         if (deletedRecoveryBadge) {
           deletedRecoveryBadge.textContent = delOn ? "ON" : "OFF";
           deletedRecoveryBadge.classList.toggle("connected", delOn);
-        }
-
-        if (toggleViewonceRecoveryBtn) {
-          toggleViewonceRecoveryBtn.setAttribute("data-enabled", String(voOn));
-          toggleViewonceRecoveryBtn.textContent = voOn ? "ON" : "OFF";
-          toggleViewonceRecoveryBtn.style.background = voOn ? "var(--teal)" : "#475569";
-        }
-        if (viewonceRecoveryBadge) {
-          viewonceRecoveryBadge.textContent = voOn ? "ON" : "OFF";
-          viewonceRecoveryBadge.classList.toggle("connected", voOn);
         }
       }
 
@@ -3209,7 +3180,6 @@
                 await setDoc(doc(db, "user_preferences", currentUser.uid), {
                   userId: currentUser.uid,
                   deletedMessageRecovery: Boolean(data.preferences.deletedMessageRecovery),
-                  viewOnceRecovery: Boolean(data.preferences.viewOnceRecovery),
                   updatedAt: new Date().toISOString(),
                 }, { merge: true });
               } catch {}
@@ -3237,16 +3207,6 @@
           toggleDeletedRecoveryBtn.disabled = true;
           await saveUserPreferenceUpdate({ deletedMessageRecovery: next });
           toggleDeletedRecoveryBtn.disabled = false;
-        });
-      }
-
-      if (toggleViewonceRecoveryBtn) {
-        toggleViewonceRecoveryBtn.addEventListener("click", async () => {
-          const current = toggleViewonceRecoveryBtn.getAttribute("data-enabled") === "true";
-          const next = !current;
-          toggleViewonceRecoveryBtn.disabled = true;
-          await saveUserPreferenceUpdate({ viewOnceRecovery: next });
-          toggleViewonceRecoveryBtn.disabled = false;
         });
       }
 
