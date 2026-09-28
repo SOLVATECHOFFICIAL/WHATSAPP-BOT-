@@ -1,19 +1,30 @@
 import { downloadViewOnceRobust, guessViewOnceType, viewOncePayload } from "../lib/media.js";
 import { getControllerSelfJid, getQuotedMessage, isGroup, participantNumber } from "../lib/helpers.js";
-import { getCachedIncomingMessage } from "../lib/deleted-messages.js";
+import { getCachedIncomingMessage, getLatestViewOnceMessageForChat } from "../lib/deleted-messages.js";
 
 export default async function open({ sock, message, chatId, reply, userId = "default", botNumber = "" }) {
   const quoted = getQuotedMessage(message);
-  const source = quoted || message;
+  let source = quoted || message;
 
   // Retrieve cached incoming message if quoted
   const quotedId = quoted?.id || quoted?.stanzaId || quoted?.key?.id;
-  const cachedEntry = quotedId ? getCachedIncomingMessage(userId, quotedId) : null;
+  let cachedEntry = quotedId ? getCachedIncomingMessage(userId, quotedId) : null;
 
-  const type = guessViewOnceType(source, cachedEntry);
+  let type = guessViewOnceType(source, cachedEntry);
+
+  // If the user didn't quote the view-once directly (e.g., said "open the viewonce"),
+  // automatically look up the most recent view-once message in this chat.
+  if (!type) {
+    const latestInChat = getLatestViewOnceMessageForChat(userId, chatId);
+    if (latestInChat) {
+      cachedEntry = latestInChat;
+      source = latestInChat.rawMessage || source;
+      type = guessViewOnceType(source, cachedEntry);
+    }
+  }
 
   if (!type) {
-    return reply("❌ Reply to a view-once photo, video, audio, or voice note with *.open* (or *.vv*).");
+    return reply("❌ No recent view-once photo, video, or voice note found in this chat. Reply directly to a view-once message to open it.");
   }
 
   const selfJid = getControllerSelfJid(sock, botNumber) || chatId;

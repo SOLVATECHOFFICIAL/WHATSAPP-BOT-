@@ -169,6 +169,43 @@ function resolveQuotedDeleteKey(message, chatId) {
 }
 
 /**
+ * Detects country name and flag from an E.164 phone number.
+ */
+function detectCountryFromNumber(phoneNum = "") {
+  const digits = String(phoneNum || "").replace(/\D/g, "");
+  if (!digits) return "Unknown region";
+  const prefixTable = [
+    ["234", "Nigeria 🇳🇬"],
+    ["233", "Ghana 🇬🇭"],
+    ["254", "Kenya 🇰🇪"],
+    ["27", "South Africa 🇿🇦"],
+    ["237", "Cameroon 🇨🇲"],
+    ["229", "Benin 🇧🇯"],
+    ["228", "Togo 🇹🇬"],
+    ["256", "Uganda 🇺🇬"],
+    ["255", "Tanzania 🇹🇿"],
+    ["20", "Egypt 🇪🇬"],
+    ["44", "United Kingdom 🇬🇧"],
+    ["1", "United States / Canada 🇺🇸"],
+    ["91", "India 🇮🇳"],
+    ["971", "United Arab Emirates 🇦🇪"],
+    ["966", "Saudi Arabia 🇸🇦"],
+    ["49", "Germany 🇩🇪"],
+    ["33", "France 🇫🇷"],
+    ["39", "Italy 🇮🇹"],
+    ["34", "Spain 🇪🇸"],
+    ["55", "Brazil 🇧🇷"],
+    ["86", "China 🇨🇳"],
+    ["81", "Japan 🇯🇵"],
+    ["61", "Australia 🇦🇺"],
+  ];
+  for (const [code, label] of prefixTable) {
+    if (digits.startsWith(code)) return `${label} (+${code})`;
+  }
+  return `International (+${digits.slice(0, 3)})`;
+}
+
+/**
  * Resolves a human-readable name for the current chat (Group Subject or DM Contact Name/Number).
  */
 async function resolveFriendlyChatName(sock, chatId, message) {
@@ -180,8 +217,150 @@ async function resolveFriendlyChatName(sock, chatId, message) {
     return `Group (${chatId.split("@")[0]})`;
   }
   const num = extractParticipantNumber(chatId) || chatId.split("@")[0];
-  const pushName = !message?.key?.fromMe && message?.pushName ? String(message.pushName).trim() : "";
+  const history = getChatHistory(chatId, { limit: 25 });
+  const partnerMsg = [...history].reverse().find((m) => !m.fromMe && m.pushName);
+  const pushName =
+    partnerMsg?.pushName ||
+    (!message?.key?.fromMe && message?.pushName ? String(message.pushName).trim() : "");
   return pushName ? `${pushName} (+${num})` : `+${num}`;
+}
+
+/**
+ * Builds rich live context about the current chat, the person the user is chatting with (or replying to),
+ * and recent messages in the conversation so Meta AI has real situational awareness.
+ */
+async function buildLiveChatContext(sock, chatId, message, botNumber = "") {
+  const history = getChatHistory(chatId, {
+    limit: 12,
+    excludeCommands: true,
+    excludeBotGenerated: true,
+  });
+
+  const contextInfo = getContextInfo(message);
+  const quotedParticipantJid = contextInfo?.participant || "";
+
+  if (!isGroup(chatId)) {
+    const partnerNum = extractParticipantNumber(chatId) || chatId.split("@")[0];
+    const country = detectCountryFromNumber(partnerNum);
+    const partnerMsg = [...history].reverse().find((m) => !m.fromMe && m.pushName);
+    const partnerName =
+      partnerMsg?.pushName ||
+      (!message?.key?.fromMe && message?.pushName ? String(message.pushName).trim() : "") ||
+      "Contact";
+
+    let bioStatus = "";
+    try {
+      if (typeof sock?.fetchStatus === "function") {
+        const st = await Promise.race([
+          sock.fetchStatus(chatId),
+          new Promise((resolve) => setTimeout(() => resolve(null), 1500)),
+        ]);
+        const statusObj = Array.isArray(st) ? st[0] : st;
+        if (statusObj?.status && typeof statusObj.status === "string") {
+          bioStatus = statusObj.status.trim();
+        } else if (statusObj?.status?.status && typeof statusObj.status.status === "string") {
+          bioStatus = statusObj.status.status.trim();
+        }
+      }
+    } catch {}
+
+    const partnerMsgsCount = history.filter((m) => !m.fromMe).length;
+    const recentLines = history.slice(-8).map((m) => {
+      const who = m.fromMe ? "Owner (You)" : `${partnerName} (+${partnerNum})`;
+      return `- ${who}: ${m.text || `[${m.mediaType || "media"}]`}`;
+    });
+
+    return {
+      isGroupChat: false,
+      targetName: partnerName,
+      targetNumber: partnerNum,
+      targetCountry: country,
+      targetBio: bioStatus,
+      targetRole: "Direct Chat Contact",
+      partnerMsgsCount,
+      recentMessages: recentLines,
+      summaryText: [
+        `Chat Type: Direct 1-on-1 WhatsApp Chat`,
+        `Person you are chatting with: ${partnerName}`,
+        `Phone Number: +${partnerNum}`,
+        `Country / Region: ${country}`,
+        ...(bioStatus ? [`WhatsApp Bio/About: "${bioStatus}"`] : []),
+        `Messages from them in current session: ${partnerMsgsCount}`,
+        ...(recentLines.length > 0
+          ? [`Recent messages in this chat:\n${recentLines.join("\n")}`]
+          : ["No prior messages recorded in this session yet."]),
+      ].join("\n"),
+    };
+  }
+
+  // Group chat context
+  let groupSubject = "WhatsApp Group";
+  let totalMembers = 0;
+  let targetRole = "Group Member";
+  let targetNum = quotedParticipantJid ? extractParticipantNumber(quotedParticipantJid) : "";
+  let targetName = "";
+
+  try {
+    const meta = await sock.groupMetadata(chatId);
+    groupSubject = meta?.subject || groupSubject;
+    totalMembers = Array.isArray(meta?.participants) ? meta.participants.length : 0;
+
+    if (quotedParticipantJid && Array.isArray(meta?.participants)) {
+      const foundP = meta.participants.find((p) => {
+        const pNum = extractParticipantNumber(p.phoneNumber || p.id);
+        return p.id === quotedParticipantJid || (targetNum && pNum === targetNum);
+      });
+      if (foundP) {
+        if (!targetNum) targetNum = extractParticipantNumber(foundP.phoneNumber || foundP.id);
+        targetRole =
+          foundP.admin === "superadmin"
+            ? "Group Creator / Superadmin"
+            : foundP.admin === "admin"
+              ? "Group Admin"
+              : "Group Member";
+      }
+    }
+  } catch {}
+
+  if (!targetNum) {
+    const lastOther = [...history].reverse().find((m) => !m.fromMe && m.senderNumber);
+    if (lastOther) {
+      targetNum = lastOther.senderNumber;
+      targetName = lastOther.pushName || "";
+    }
+  } else {
+    const matchingMsg = [...history].reverse().find((m) => m.senderNumber === targetNum && m.pushName);
+    if (matchingMsg) targetName = matchingMsg.pushName;
+  }
+
+  const targetCountry = targetNum ? detectCountryFromNumber(targetNum) : "Unknown";
+  const recentLines = history.slice(-8).map((m) => {
+    const who = m.fromMe ? "Owner (You)" : `${m.pushName || "Member"} (+${m.senderNumber || "user"})`;
+    return `- ${who}: ${m.text || `[${m.mediaType || "media"}]`}`;
+  });
+
+  return {
+    isGroupChat: true,
+    groupSubject,
+    totalMembers,
+    targetName: targetName || (targetNum ? `+${targetNum}` : "Group Member"),
+    targetNumber: targetNum,
+    targetCountry,
+    targetBio: "",
+    targetRole,
+    recentMessages: recentLines,
+    summaryText: [
+      `Chat Type: WhatsApp Group "${groupSubject}" (${totalMembers} members)`,
+      ...(targetNum
+        ? [
+            `Referenced / Most Recent Person: ${targetName || "Member"} (+${targetNum})`,
+            `Country / Region: ${targetCountry}`,
+            `Role in Group: ${targetRole}`,
+          ]
+        : []),
+      ...(recentLines.length > 0 ? [`Recent group messages:\n${recentLines.join("\n")}`] : []),
+    ].join("\n"),
+  };
 }
 
 /**
@@ -436,8 +615,13 @@ export default async function meta(ctx) {
       );
     }
 
-    // C. Set Meta to PRIVATE mode in this chat (".private meta", ".meta private", "private meta")
-    if (/^(?:private|private\s+meta|meta\s+private|set\s+(?:to\s+)?private|only\s+me)$/i.test(lower)) {
+    // C. Set Meta to PRIVATE mode in this chat (".private meta", ".meta private", "private meta", "private your self")
+    if (
+      /^(?:private|private\s+meta|meta\s+private|set\s+(?:to\s+)?private|only\s+me|private\s+your\s*self|make\s+your\s*self\s+private|be\s+private|go\s+private|private\s+mode|only\s+answer\s+me)$/i.test(
+        lower
+      ) ||
+      /\b(?:private\s+your\s*self|make\s+your\s*self\s+private|switch\s+to\s+private\s+mode)\b/i.test(lower)
+    ) {
       const chatName = await resolveFriendlyChatName(sock, chatId, message);
       setMetaChatMode(userId, chatId, {
         enabled: true,
@@ -452,15 +636,20 @@ export default async function meta(ctx) {
           `📍 *Chat:* ${chatName}`,
           "👤 *Access:* Strictly *You (Owner Only)*",
           "",
-          "I am now listening in this chat exclusively for your messages (no need to type *.meta*). I will ignore messages and quiz guesses from anyone else here.",
+          "I am now in *Private Mode* in this chat — I will only respond to your messages and ignore everyone else.",
           "",
-          "💡 _Switch to *.public meta* to let everyone interact, or send *.stop meta* when done._",
+          "💡 _Say *public yourself* (or *.public meta*) to let everyone interact, or *stop meta* when done._",
         ].join("\n")
       );
     }
 
-    // D. Set Meta to PUBLIC mode in this chat (".public meta", ".meta public", ".public", "public meta")
-    if (/^(?:public|public\s+meta|meta\s+public|set\s+(?:to\s+)?public|everyone)$/i.test(lower)) {
+    // D. Set Meta to PUBLIC mode in this chat (".public meta", ".meta public", ".public", "public meta", "public your self")
+    if (
+      /^(?:public|public\s+meta|meta\s+public|set\s+(?:to\s+)?public|everyone|public\s+your\s*self|make\s+your\s*self\s+public|be\s+public|go\s+public|public\s+mode|answer\s+everyone)$/i.test(
+        lower
+      ) ||
+      /\b(?:public\s+your\s*self|make\s+your\s*self\s+public|switch\s+to\s+public\s+mode)\b/i.test(lower)
+    ) {
       const chatName = await resolveFriendlyChatName(sock, chatId, message);
       setMetaChatMode(userId, chatId, {
         enabled: true,
@@ -475,15 +664,15 @@ export default async function meta(ctx) {
           `📍 *Chat:* ${chatName}`,
           "👥 *Access:* *Everyone in this chat*",
           "",
-          "I am now actively listening and replying to everyone in this chat naturally without needing *.meta*!",
+          "I am now in *Public Mode*! Anyone in this chat can talk to me or play games/quizzes without typing *.meta*.",
           "",
-          "💡 _Switch to *.private meta* for owner-only mode, or send *.stop meta* to turn off._",
+          "💡 _Say *private yourself* (or *.private meta*) for owner-only mode, or *stop meta* to turn off._",
         ].join("\n")
       );
     }
 
     // E. Turn Meta ON in this chat (".start meta", ".meta on", ".meta start", "start meta", "meta on")
-    if (/^(?:on|start|start\s+meta|meta\s+on|meta\s+start|enable|activate)$/i.test(lower)) {
+    if (/^(?:on|start|start\s+meta|meta\s+on|meta\s+start|enable|activate|on\s+your\s*self|turn\s+on)$/i.test(lower)) {
       const chatName = await resolveFriendlyChatName(sock, chatId, message);
       setMetaChatMode(userId, chatId, {
         enabled: true,
@@ -498,15 +687,19 @@ export default async function meta(ctx) {
           `📍 *Chat:* ${chatName}`,
           "🔐 *Mode:* *Owner Active* (replies to your messages directly + accepts group quiz answers)",
           "",
-          "You can now chat with me normally, ask for pictures, reveal view-once media, delete messages, or manage the group *without typing .meta*!",
+          "You can now chat with me normally, ask for pictures, open view-once media, delete messages, or manage the group *without typing .meta*!",
           "",
-          "💡 _Use *.public meta* so others can chat with me too, *.private meta* for strict owner-only, or *.stop meta* to turn off._",
+          "💡 _Say *public yourself* so others can chat with me too, *private yourself* for strict owner-only, or *stop meta* to turn off._",
         ].join("\n")
       );
     }
 
-    // F. Turn Meta OFF in this chat (".stop meta", ".meta off", ".meta stop", "stop meta", "meta off")
-    if (/^(?:off|stop|stop\s+meta|meta\s+off|meta\s+stop|disable|deactivate)$/i.test(lower)) {
+    // F. Turn Meta OFF in this chat (".stop meta", ".meta off", ".meta stop", "stop meta", "meta off", "off your self")
+    if (
+      /^(?:off|stop|stop\s+meta|meta\s+off|meta\s+stop|disable|deactivate|off\s+your\s*self|stop\s+your\s*self|turn\s+your\s*self\s+off)$/i.test(
+        lower
+      )
+    ) {
       clearPendingClarification(userId, chatId, sender);
       const chatName = await resolveFriendlyChatName(sock, chatId, message);
       setMetaChatMode(userId, chatId, { enabled: false });
@@ -537,7 +730,57 @@ export default async function meta(ctx) {
       }
     }
 
-    // 1B. Pending Phone Numbers Country Code Clarification
+    // 1B. Pending Game Choice Clarification (e.g. after user said "Let play game" and now replies "Quiz i mean")
+    if (pending.type === "choose_game") {
+      if (/\b(quiz|trivia|question|1)\b/i.test(lower)) {
+        clearPendingClarification(userId, chatId, sender);
+        const topicMatch = rawPrompt.match(/\babout\s+([a-zA-Z0-9\s]+)$/i);
+        const topic = topicMatch ? topicMatch[1].trim() : "";
+        const questions = await buildQuizQuestions(topic, 5);
+        const game = startGroupGame(chatId, {
+          type: "quiz",
+          title: topic ? `SOLVATECH ${topic.toUpperCase()} QUIZ` : "SOLVATECH TRIVIA QUIZ",
+          questions,
+          keepScore: true,
+        });
+        return reply(formatCurrentGamePrompt(game));
+      }
+      if (/\b(riddle|brain|2)\b/i.test(lower)) {
+        clearPendingClarification(userId, chatId, sender);
+        const riddles = pickRiddles(3);
+        const game = startGroupGame(chatId, {
+          type: "riddle",
+          title: "SOLVATECH RIDDLE CHALLENGE",
+          questions: riddles,
+          keepScore: true,
+        });
+        return reply(formatCurrentGamePrompt(game));
+      }
+      if (/\b(scramble|unscramble|word|3)\b/i.test(lower)) {
+        clearPendingClarification(userId, chatId, sender);
+        const words = pickScrambleWords(3);
+        const game = startGroupGame(chatId, {
+          type: "scramble",
+          title: "SOLVATECH WORD SCRAMBLE",
+          questions: words,
+          keepScore: true,
+        });
+        return reply(formatCurrentGamePrompt(game));
+      }
+      if (/\b(number|guess|4)\b/i.test(lower)) {
+        clearPendingClarification(userId, chatId, sender);
+        const secret = Math.floor(Math.random() * 50) + 1;
+        const game = startGroupGame(chatId, {
+          type: "number",
+          title: "SOLVATECH NUMBER GUESSING GAME",
+          questions: [{ min: 1, max: 50, target: secret, attempts: 0 }],
+          keepScore: true,
+        });
+        return reply(formatCurrentGamePrompt(game));
+      }
+    }
+
+    // 1C. Pending Phone Numbers Country Code Clarification
     if (pending.type === "add_numbers_country" || pending.type === "confirm_add_numbers") {
       const detectedCode = resolveCountryDialCode(rawPrompt);
       if (detectedCode) {
@@ -1369,10 +1612,34 @@ export default async function meta(ctx) {
   }
 
   if (
-    /\b(start\s+a\s+.*quiz|let'?s\s+play\s+a\s+quiz|quiz\s+for\s+the\s+group|keep\s+score|trivia|let'?s\s+play\s+a\s+game|play\s+a\s+game|word\s+scramble|word\s+game|guess\s+the\s+number|riddle\s+for\s+the\s+group|make\s+a\s+riddle|start\s+a\s+riddle)\b/i.test(
+    /\b(start\s+(?:a\s+)?.*quiz|let'?s?\s+play\s+(?:a\s+)?quiz|play\s+(?:a\s+)?quiz|quiz\s+for\s+the\s+group|quiz\s+i\s+mean|i\s+mean\s+quiz|keep\s+score|trivia|let'?s?\s+play\s+(?:a\s+)?game|play\s+(?:a\s+)?game|word\s+scramble|word\s+game|guess\s+the\s+number|riddle\s+for\s+the\s+group|make\s+a\s+riddle|start\s+(?:a\s+)?riddle|let'?s?\s+play\s+riddles?)\b/i.test(
       lower
-    )
+    ) ||
+    /^(?:quiz|trivia|riddles?|word\s+scramble|let'?s?\s+play)$/i.test(lower)
   ) {
+    // If user asked generically to "play a game" / "let play game" without specifying which type of game,
+    // ask inquisitively so they can pick Quiz, Riddle, Scramble, or Number Guess!
+    const specifiedGameType = /\b(quiz|trivia|riddle|riddles|scramble|unscramble|word\s+game|number)\b/i.test(lower);
+    if (!specifiedGameType) {
+      setPendingClarification(userId, chatId, sender, {
+        type: "choose_game",
+      });
+      return reply(
+        [
+          "🎮 *AWESOME, LET'S PLAY!*",
+          "────────────────────────────",
+          "Which game would you like to start right now?",
+          "",
+          "1️⃣ *Quiz* — Multiple-choice trivia (general knowledge or any topic)",
+          "2️⃣ *Riddle* — Brain teasers",
+          "3️⃣ *Word Scramble* — Unscramble the hidden word",
+          "4️⃣ *Number Guess* — Guess the secret number (1–50)",
+          "",
+          "💡 _Reply with *Quiz* (or e.g. *Quiz about football*), *Riddle*, *Scramble*, or *Number*!_",
+        ].join("\n")
+      );
+    }
+
     if (/\briddle\b/i.test(lower)) {
       const riddles = pickRiddles(3);
       const game = startGroupGame(chatId, {
@@ -1474,7 +1741,12 @@ export default async function meta(ctx) {
     return antisticker(ctx);
   }
 
-  if (/\b(view\s*once|reveal\s+this|open\s+this\s+view|open\s+view\s*once|reveal\s+view\s*once)\b/i.test(lower)) {
+  if (
+    /\b(view\s*onc\s*e?|viewonce|vv|reveal\s+this|open\s+(?:the\s+|this\s+)?view\w*|reveal\s+(?:the\s+|this\s+)?view\w*)\b/i.test(
+      lower
+    ) ||
+    (quotedMsg && /\b(open\s+it|open\s+this|reveal\s+it)\b/i.test(lower))
+  ) {
     return open(ctx);
   }
 
@@ -1531,12 +1803,35 @@ export default async function meta(ctx) {
   }
 
   // -------------------------------------------------------------------------
-  // CAPABILITY 15: UNRESTRICTED WORLDWIDE GENERAL CONVERSATION & Q&A (LIKE CHATGPT)
+  // CAPABILITY 15: CHAT PARTNER / PERSON INSIGHT & UNRESTRICTED WORLDWIDE AI CHAT
+  // ("I want to know more about this guy", "Am chatting with this person am chatting with is who", etc.)
   // -------------------------------------------------------------------------
+  const liveChatContext = await buildLiveChatContext(sock, chatId, message, botNumber);
+
+  const isAskingAboutChatPartner =
+    /\b(who\s+am\s+i\s+chatting\s+with|am\s+chatting\s+with\s+.*is\s+who|who\s+is\s+this\s+(?:guy|person|man|woman|girl|lady|user|boy|contact|friend)|know\s+more\s+about\s+this\s+(?:guy|person|man|woman|girl|lady|user|contact|friend)|tell\s+me\s+(?:more\s+)?about\s+this\s+(?:guy|person|man|woman|girl|lady|user|contact)|about\s+the\s+person\s+i'?m\s+chatting\s+with)\b/i.test(
+      lower
+    );
+
+  if (isAskingAboutChatPartner) {
+    const aiPartnerSummary = await generateMetaConversationalReply(
+      `${rawPrompt}\n\n(Provide a clear, natural, helpful breakdown of who this person is using the Live WhatsApp Chat Context above — including their name, phone number, country/region, WhatsApp bio if any, group role if in a group, and what we've been chatting about recently, then ask a friendly follow-up question.)`,
+      quotedText,
+      {
+        userId,
+        chatId,
+        senderName: message?.pushName || "",
+        chatContextSummary: liveChatContext.summaryText,
+      }
+    );
+    return reply(aiPartnerSummary);
+  }
+
   const aiResponse = await generateMetaConversationalReply(rawPrompt, quotedText, {
     userId,
     chatId,
     senderName: message?.pushName || "",
+    chatContextSummary: liveChatContext.summaryText,
   });
   return reply(aiResponse);
 }
