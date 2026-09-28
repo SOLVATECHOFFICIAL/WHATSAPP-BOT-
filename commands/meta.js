@@ -3,28 +3,36 @@ import {
   explainImageBuffer,
   extractTextFromImage,
   generateMetaConversationalReply,
+  generateMetaImage,
   pickRiddles,
   pickScrambleWords,
   summarizeAvailableMessages,
   translateContent,
 } from "../lib/ai-engine.js";
 import {
+  clearPendingClarification,
+  disableAllMetaChats,
   evaluateGameAnswer,
   formatCurrentGamePrompt,
   formatGameScoreboard,
   getActiveGame,
   getChatHistory,
+  getMetaChatMode,
   getOnlineParticipantsForChat,
+  getPendingClarification,
   getRecentMessagesBySender,
+  listActiveMetaChats,
   removeChatMessageById,
+  setMetaChatMode,
+  setPendingClarification,
   startGroupGame,
   stopGroupGame,
+  updateMetaChatName,
 } from "../lib/chat-memory.js";
 import {
   downloadMessageMedia,
   extractParticipantNumber,
   getContextInfo,
-  getMessageContent,
   getMessageText,
   getQuotedMessage,
   isGroup,
@@ -75,6 +83,73 @@ import resetwarns from "./resetwarns.js";
 import welcome from "./welcome.js";
 import goodbye from "./goodbye.js";
 
+const COUNTRY_CODE_MAP = {
+  nigeria: "234",
+  naija: "234",
+  ng: "234",
+  ghana: "233",
+  gh: "233",
+  kenya: "254",
+  ke: "254",
+  "south africa": "27",
+  sa: "27",
+  uk: "44",
+  "united kingdom": "44",
+  england: "44",
+  britain: "44",
+  us: "1",
+  usa: "1",
+  america: "1",
+  "united states": "1",
+  canada: "1",
+  india: "91",
+  uae: "971",
+  dubai: "971",
+  cameroon: "237",
+  benin: "229",
+  togo: "228",
+  uganda: "256",
+  tanzania: "255",
+  egypt: "20",
+};
+
+function resolveCountryDialCode(input = "") {
+  const clean = String(input || "").toLowerCase().trim();
+  if (!clean) return null;
+
+  const plusMatch = clean.match(/(?:^|\s)\+?(\d{1,3})(?:\b|\s|$)/);
+  if (plusMatch && ["1", "20", "27", "44", "91", "228", "229", "233", "234", "237", "254", "255", "256", "971"].includes(plusMatch[1])) {
+    return plusMatch[1];
+  }
+
+  for (const [name, code] of Object.entries(COUNTRY_CODE_MAP)) {
+    const regex = new RegExp(`\\b${name}\\b`, "i");
+    if (regex.test(clean)) {
+      return code;
+    }
+  }
+  return null;
+}
+
+function normalizeNumberWithCountryCode(rawNum, countryCode = "") {
+  const digits = String(rawNum || "").replace(/\D/g, "");
+  if (!digits) return "";
+  if (digits.startsWith("00")) return digits.slice(2);
+
+  if (countryCode) {
+    const cc = String(countryCode).replace(/\D/g, "");
+    if (digits.startsWith(cc) && digits.length >= cc.length + 7) {
+      return digits;
+    }
+    if (digits.startsWith("0")) {
+      return `${cc}${digits.slice(1)}`;
+    }
+    return `${cc}${digits}`;
+  }
+
+  return normalizeNumber(rawNum);
+}
+
 /**
  * Extracts quoted message deletion key if the user is replying to a message.
  */
@@ -91,6 +166,22 @@ function resolveQuotedDeleteKey(message, chatId) {
     id: contextInfo.stanzaId,
     ...(quotedParticipant ? { participant: quotedParticipant } : {}),
   };
+}
+
+/**
+ * Resolves a human-readable name for the current chat (Group Subject or DM Contact Name/Number).
+ */
+async function resolveFriendlyChatName(sock, chatId, message) {
+  if (isGroup(chatId)) {
+    try {
+      const meta = await sock.groupMetadata(chatId);
+      if (meta?.subject) return meta.subject;
+    } catch {}
+    return `Group (${chatId.split("@")[0]})`;
+  }
+  const num = extractParticipantNumber(chatId) || chatId.split("@")[0];
+  const pushName = !message?.key?.fromMe && message?.pushName ? String(message.pushName).trim() : "";
+  return pushName ? `${pushName} (+${num})` : `+${num}`;
 }
 
 /**
@@ -138,9 +229,13 @@ async function resolveAuthorizedGroupAdminSession({
 
   const adminSessions = await findEligibleAdminSessionsForGroup(chatId, null, currentSession);
   if (adminSessions.length === 0) {
+    const memberAddRestricted = metadata.memberAddMode === false || metadata.memberAddMode === "admin_add";
     return {
       ok: false,
-      error: "❌ Action cannot be completed because no connected SOLVATECH BOT session is currently a group admin in this group.",
+      notBotAdmin: true,
+      memberAddRestricted,
+      metadata,
+      error: "❌ I can't perform that action because this bot is not a group admin in this group.",
     };
   }
 
@@ -150,6 +245,92 @@ async function resolveAuthorizedGroupAdminSession({
     allAdminSessions: adminSessions,
     metadata: adminSessions[0].metadata || metadata,
   };
+}
+
+/**
+ * Executes group member addition for a list of raw phone numbers using the resolved country code,
+ * verifying each number and reporting honest per-number results.
+ */
+async function executeGroupAddNumbers({
+  adminSession,
+  chatId,
+  rawNumbers,
+  countryCode,
+  reply,
+}) {
+  const added = [];
+  const failed = [];
+  const seen = new Set();
+
+  for (const raw of rawNumbers) {
+    const rawClean = String(raw || "").trim();
+    const digitsOnly = rawClean.replace(/\D/g, "");
+    const normalized = normalizeNumberWithCountryCode(rawClean, countryCode);
+
+    if (!normalized || seen.has(normalized)) continue;
+    seen.add(normalized);
+
+    // Validate realistic E.164 phone number length (10 to 15 digits with country code)
+    // Specifically for Nigeria (234), valid numbers are 13 digits (234 + 10 digits)
+    if (
+      normalized.length < 10 ||
+      normalized.length > 15 ||
+      (normalized.startsWith("234") && normalized.length !== 13)
+    ) {
+      failed.push({
+        raw: rawClean || digitsOnly,
+        num: normalized,
+        reason:
+          normalized.startsWith("234") && normalized.length !== 13
+            ? `Incomplete number (${digitsOnly.length} digits provided; Nigerian numbers require 11 local digits or 13 with +234)`
+            : `Invalid phone number length (${digitsOnly.length} digits)`,
+      });
+      continue;
+    }
+
+    const jid = `${normalized}@s.whatsapp.net`;
+    try {
+      const res = await adminSession.sock.groupParticipantsUpdate(chatId, [jid], "add");
+      const firstStatus = Array.isArray(res) && res[0]?.status ? String(res[0].status) : "200";
+      if (firstStatus === "200") {
+        added.push({ num: normalized, jid, alreadyIn: false });
+      } else if (firstStatus === "409") {
+        added.push({ num: normalized, jid, alreadyIn: true });
+      } else {
+        const statusReason =
+          firstStatus === "403"
+            ? "User's WhatsApp privacy settings restrict being added directly to groups"
+            : firstStatus === "408"
+              ? "User recently left this group or invite timed out"
+              : firstStatus === "400" || firstStatus === "404"
+                ? "Number is not registered on WhatsApp"
+                : `WhatsApp returned status ${firstStatus}`;
+        failed.push({ raw: rawClean, num: normalized, reason: statusReason });
+      }
+    } catch (err) {
+      failed.push({
+        raw: rawClean,
+        num: normalized,
+        reason: err?.message || "WhatsApp rejected the add request",
+      });
+    }
+  }
+
+  const lines = [];
+  for (const a of added) {
+    lines.push(`✅ Added ${a.num}${a.alreadyIn ? " (already in group)" : ""}`);
+  }
+  for (const f of failed) {
+    lines.push(`❌ Couldn't add ${f.raw || f.num} — ${f.reason}`);
+  }
+
+  if (lines.length === 0) {
+    return reply("⚠️ No valid phone numbers were found to add.");
+  }
+
+  return reply(lines.join("\n"), {
+    mentions: added.map((a) => a.jid),
+  });
 }
 
 export default async function meta(ctx) {
@@ -164,8 +345,6 @@ export default async function meta(ctx) {
     text = "",
     reply,
     userId = "default",
-    verifiedUid = "",
-    userEmail = "",
     botNumber = "",
   } = ctx;
 
@@ -182,10 +361,222 @@ export default async function meta(ctx) {
     Boolean(unwrappedSource?.imageMessage) ||
     Boolean(unwrappedSource?.documentMessage?.mimetype?.startsWith("image/"));
 
-  // 0. If user sent bare `.meta` with no request
+  // Keep chat name updated if Meta is active in this chat
+  if (!message?.key?.fromMe && message?.pushName && !isGroup(chatId)) {
+    const num = extractParticipantNumber(chatId) || chatId.split("@")[0];
+    updateMetaChatName(userId, chatId, `${message.pushName} (+${num})`);
+  }
+
+  // =========================================================================
+  // 0. CONTINUOUS META MODE CONTROLS (Owner-Only)
+  // (.start meta, .meta on, .stop meta, .meta off, .private meta, .public meta,
+  //  .meta off all, .meta list where you are on / check all places responding)
+  // =========================================================================
+  if (senderIsLinkedAccount && rawPrompt) {
+    // A. Turn OFF Meta in ALL chats ("meta off all", "meta off all my chat", "stop meta everywhere")
+    if (
+      /\b(?:off|stop|disable|deactivate)\s+all(?:\s+my)?(?:\s+chats?|\s+groups?|\s+places?)?\b/i.test(lower) ||
+      /\b(?:meta|ai)\s+(?:off|stop)\s+(?:everywhere|all)\b/i.test(lower) ||
+      /\b(?:stop|turn\s+off)\s+meta\s+(?:in\s+)?all\b/i.test(lower)
+    ) {
+      const disabledList = disableAllMetaChats(userId);
+      if (disabledList.length === 0) {
+        return reply("ℹ️ Meta AI continuous mode is already *OFF* across all your personal chats and groups.");
+      }
+      const summaryLines = disabledList.map(
+        (s, idx) => `${idx + 1}. *${s.chatName}* (${s.isGroup ? "Group" : "Direct Chat"}) — was *${s.mode.toUpperCase()}*`
+      );
+      return reply(
+        [
+          "🛑 *META AI TURNED OFF EVERYWHERE*",
+          "────────────────────────────",
+          `Deactivated continuous Meta AI in *${disabledList.length}* chat(s):`,
+          ...summaryLines,
+          "",
+          "✅ Normal chatting and standard commands are now active everywhere.",
+        ].join("\n")
+      );
+    }
+
+    // B. List all chats/groups where Meta is currently ON ("list where you are on", "check all the place you are responding")
+    if (
+      /^(?:list|status|where\s+are\s+you\s+on|list\s+where\s+you\s+are\s+on|check\s+all\s+the\s+places?\s+you\s+are\s+responding|where\s+is\s+meta\s+on|active\s+chats)$/i.test(
+        lower
+      ) ||
+      /\b(list\s+where\s+you\s+are\s+on|places?\s+you\s+are\s+responding|where\s+you\s+are\s+active|chats?\s+where\s+meta\s+is\s+on)\b/i.test(
+        lower
+      )
+    ) {
+      const activeChats = listActiveMetaChats(userId);
+      if (activeChats.length === 0) {
+        return reply(
+          "ℹ️ *Meta AI is not currently turned ON in any chat.*\n\nUse *.start meta* (or *.meta on*), *.private meta*, or *.public meta* inside any friend's chat or group to activate continuous mode."
+        );
+      }
+
+      const lines = activeChats.map((s, idx) => {
+        const typeLabel = s.isGroup ? "👥 Group" : "👤 Friend / DM";
+        const modeBadge =
+          s.mode === "public"
+            ? "🌐 *[PUBLIC]*"
+            : s.strictPrivate
+              ? "🔒 *[PRIVATE - Strict Owner Only]*"
+              : "🔐 *[PRIVATE - Owner Chat + Group Quiz]*";
+        return `${idx + 1}. ${modeBadge} — *${s.chatName}* (${typeLabel})`;
+      });
+
+      return reply(
+        [
+          `📡 *ACTIVE META AI CHATS (${activeChats.length})*`,
+          "────────────────────────────",
+          ...lines,
+          "",
+          "💡 _Send *.stop meta* in a chat to turn it off there, or *.meta off all* to turn off every chat at once._",
+        ].join("\n")
+      );
+    }
+
+    // C. Set Meta to PRIVATE mode in this chat (".private meta", ".meta private", "private meta")
+    if (/^(?:private|private\s+meta|meta\s+private|set\s+(?:to\s+)?private|only\s+me)$/i.test(lower)) {
+      const chatName = await resolveFriendlyChatName(sock, chatId, message);
+      setMetaChatMode(userId, chatId, {
+        enabled: true,
+        mode: "private",
+        strictPrivate: true,
+        chatName,
+      });
+      return reply(
+        [
+          "🔒 *META AI: PRIVATE MODE ON*",
+          "────────────────────────────",
+          `📍 *Chat:* ${chatName}`,
+          "👤 *Access:* Strictly *You (Owner Only)*",
+          "",
+          "I am now listening in this chat exclusively for your messages (no need to type *.meta*). I will ignore messages and quiz guesses from anyone else here.",
+          "",
+          "💡 _Switch to *.public meta* to let everyone interact, or send *.stop meta* when done._",
+        ].join("\n")
+      );
+    }
+
+    // D. Set Meta to PUBLIC mode in this chat (".public meta", ".meta public", ".public", "public meta")
+    if (/^(?:public|public\s+meta|meta\s+public|set\s+(?:to\s+)?public|everyone)$/i.test(lower)) {
+      const chatName = await resolveFriendlyChatName(sock, chatId, message);
+      setMetaChatMode(userId, chatId, {
+        enabled: true,
+        mode: "public",
+        strictPrivate: false,
+        chatName,
+      });
+      return reply(
+        [
+          "🌐 *META AI: PUBLIC MODE ON*",
+          "────────────────────────────",
+          `📍 *Chat:* ${chatName}`,
+          "👥 *Access:* *Everyone in this chat*",
+          "",
+          "I am now actively listening and replying to everyone in this chat naturally without needing *.meta*!",
+          "",
+          "💡 _Switch to *.private meta* for owner-only mode, or send *.stop meta* to turn off._",
+        ].join("\n")
+      );
+    }
+
+    // E. Turn Meta ON in this chat (".start meta", ".meta on", ".meta start", "start meta", "meta on")
+    if (/^(?:on|start|start\s+meta|meta\s+on|meta\s+start|enable|activate)$/i.test(lower)) {
+      const chatName = await resolveFriendlyChatName(sock, chatId, message);
+      setMetaChatMode(userId, chatId, {
+        enabled: true,
+        mode: "private",
+        strictPrivate: false,
+        chatName,
+      });
+      return reply(
+        [
+          "🤖 *META AI CONTINUOUS MODE: ON*",
+          "────────────────────────────",
+          `📍 *Chat:* ${chatName}`,
+          "🔐 *Mode:* *Owner Active* (replies to your messages directly + accepts group quiz answers)",
+          "",
+          "You can now chat with me normally, ask for pictures, reveal view-once media, delete messages, or manage the group *without typing .meta*!",
+          "",
+          "💡 _Use *.public meta* so others can chat with me too, *.private meta* for strict owner-only, or *.stop meta* to turn off._",
+        ].join("\n")
+      );
+    }
+
+    // F. Turn Meta OFF in this chat (".stop meta", ".meta off", ".meta stop", "stop meta", "meta off")
+    if (/^(?:off|stop|stop\s+meta|meta\s+off|meta\s+stop|disable|deactivate)$/i.test(lower)) {
+      clearPendingClarification(userId, chatId, sender);
+      const chatName = await resolveFriendlyChatName(sock, chatId, message);
+      setMetaChatMode(userId, chatId, { enabled: false });
+      return reply(
+        `🛑 *Meta AI continuous mode is now OFF* in *${chatName}*.\nYou can now chat normally or use your standard bot commands.`
+      );
+    }
+  }
+
+  // =========================================================================
+  // 1. RESOLVE ANY ACTIVE PENDING CLARIFICATION IN THIS CHAT
+  // (e.g. User replying with outfit/style for an image, or country code for numbers)
+  // =========================================================================
+  const pending = getPendingClarification(userId, chatId, sender);
+  if (pending && rawPrompt && !/^(?:cancel|stop|nevermind|never\s+mind|forget\s+it|no)$/i.test(lower)) {
+    // 1A. Pending Image Generation Outfit/Style Clarification
+    if (pending.type === "image_generation") {
+      clearPendingClarification(userId, chatId, sender);
+      const combinedPrompt = `${pending.basePrompt}, ${rawPrompt}`;
+      try {
+        const imgResult = await generateMetaImage(combinedPrompt);
+        return sock.sendMessage(chatId, {
+          image: imgResult.buffer,
+          caption: imgResult.caption,
+        });
+      } catch (err) {
+        return reply(`❌ ${err.message || "Could not generate image right now."}`);
+      }
+    }
+
+    // 1B. Pending Phone Numbers Country Code Clarification
+    if (pending.type === "add_numbers_country" || pending.type === "confirm_add_numbers") {
+      const detectedCode = resolveCountryDialCode(rawPrompt);
+      if (detectedCode) {
+        clearPendingClarification(userId, chatId, sender);
+        const authCheck = await resolveAuthorizedGroupAdminSession({
+          sock,
+          chatId,
+          sender,
+          senderJids,
+          userId,
+          botNumber,
+        });
+        if (!authCheck.ok) {
+          if (authCheck.notBotAdmin) {
+            return reply(
+              "❌ I am unable to add the number(s) because the group admins did not allow regular members to add participants, and this bot account is not a group admin here."
+            );
+          }
+          return reply(authCheck.error);
+        }
+        return executeGroupAddNumbers({
+          adminSession: authCheck.adminSession,
+          chatId,
+          rawNumbers: pending.rawNumbers,
+          countryCode: detectedCode,
+          reply,
+        });
+      }
+    }
+  } else if (pending && /^(?:cancel|stop|nevermind|never\s+mind|forget\s+it|no)$/i.test(lower)) {
+    clearPendingClarification(userId, chatId, sender);
+    return reply("👍 Got it, I've cancelled that request. What else can I help you with?");
+  }
+
+  // =========================================================================
+  // 2. BARE `.meta` WITH NO TEXT
+  // =========================================================================
   if (!rawPrompt) {
     if (hasImageMedia) {
-      // Bare `.meta` on an image -> explain the image and extract any text
       try {
         const imgBuf = await downloadMessageMedia(sourceMediaMsg, "imageMessage", sock);
         const explanation = await explainImageBuffer(imgBuf, "Explain this image and transcribe any visible text.");
@@ -196,47 +587,165 @@ export default async function meta(ctx) {
     }
 
     if (quotedText) {
-      const response = await generateMetaConversationalReply("Explain or summarize this message.", quotedText);
+      const response = await generateMetaConversationalReply(
+        "Explain or respond to this message naturally.",
+        quotedText,
+        { userId, chatId, senderName: message?.pushName || "" }
+      );
       return reply(response);
     }
 
+    const activeState = getMetaChatMode(userId, chatId);
+    const statusLine = activeState
+      ? `🟢 *Continuous Mode in this Chat:* ON (*${activeState.mode.toUpperCase()}*)`
+      : `⚪ *Continuous Mode in this Chat:* OFF (Send *.start meta* to chat without typing .meta)`;
+
     return reply(
       [
-        "🤖 *SOLVATECH META AI ASSISTANT*",
+        "🤖 *SOLVATECH META AI*",
         "────────────────────────────",
-        "Ask me anything or tell me what to do in natural language!",
+        statusLine,
         "",
-        "*Examples:*",
-        "• `.meta summarize the chat while I was away`",
-        "• `.meta mention everyone who is currently online`",
-        "• `.meta check my license`",
-        "• `.meta start a quiz and keep score`",
-        "• `.meta make a riddle for the group`",
-        "• `.meta delete my last 5 messages`",
-        "• `.meta delete the message I'm replying to`",
-        "• `.meta add these two numbers to the group 23480...`",
-        "• `.meta remove 20 random members`",
-        "• `.meta explain this image` / `.meta extract all text from this image`",
-        "• `.meta translate this`",
-        "• `.meta create a group announcement`",
+        "I am your general-purpose AI assistant (like ChatGPT) with full control of your WhatsApp tools:",
+        "• *Ask Anything:* Science, coding, math, writing, world facts, or normal chat",
+        "• *Generate Pictures:* `.meta give me a fine pic of a guy in a black suit`",
+        "• *Continuous Mode:* `.start meta` / `.stop meta` / `.private meta` / `.public meta`",
+        "• *Manage Active Chats:* `.meta list where you are on` / `.meta off all`",
+        "• *Chat & Group Tools:* Summarize chat, check who is online, start quizzes/riddles, add/remove members, OCR images, reveal view-once, or delete messages.",
       ].join("\n")
     );
   }
 
-  // 1. Check if there is an active group game and the user is answering or controlling it
+  // =========================================================================
+  // 3. ACTIVE GROUP GAME ANSWER EVALUATION
+  // =========================================================================
   const activeGame = getActiveGame(chatId);
-  if (activeGame && !/\b(start|new|stop|end|cancel|score|leaderboard|hint|next|skip|summarize|delete|remove|kick|add|license|expire|online|translate)\b/i.test(lower)) {
-    const evalResult = evaluateGameAnswer(chatId, rawPrompt, sender, message.pushName || "");
+  const currentMetaMode = getMetaChatMode(userId, chatId);
+  const blockGameForNonOwner =
+    currentMetaMode?.enabled &&
+    currentMetaMode.mode === "private" &&
+    currentMetaMode.strictPrivate &&
+    !senderIsLinkedAccount;
+
+  if (
+    activeGame &&
+    !blockGameForNonOwner &&
+    !/\b(start|new|stop|end|cancel|score|leaderboard|hint|next|skip|summarize|delete|remove|kick|add|license|expire|online|translate|pic|picture|photo|image|draw)\b/i.test(
+      lower
+    )
+  ) {
+    const evalResult = evaluateGameAnswer(chatId, rawPrompt, sender, message?.pushName || "");
     if (evalResult.matched) {
-      return reply(evalResult.responseText, evalResult.mentions?.length ? { mentions: evalResult.mentions } : {});
+      return reply(
+        evalResult.responseText,
+        evalResult.mentions?.length ? { mentions: evalResult.mentions } : {}
+      );
     }
+  }
+
+  // =========================================================================
+  // 4. IMAGE / PICTURE GENERATION ("give me a fine pic of a guy", "generate an image of...")
+  // =========================================================================
+  const isImageGenerationRequest =
+    !hasImageMedia &&
+    !quotedMsg &&
+    (/\b(?:give|send|show|generate|create|make|draw|get)\s+(?:me\s+)?(?:a\s+|an\s+|some\s+)?(?:fine\s+|nice\s+|cool\s+|handsome\s+|beautiful\s+|good\s+|cute\s+)?(?:picture|pic|photo|image|portrait|drawing|wallpaper|artwork)\b/i.test(
+      lower
+    ) ||
+      /^(?:picture|pic|photo|image)\s+of\s+/i.test(lower));
+
+  if (isImageGenerationRequest) {
+    const subject = rawPrompt
+      .replace(
+        /^(?:please\s+)?(?:can\s+you\s+)?(?:give|send|show|generate|create|make|draw|get)\s+(?:me\s+)?(?:a\s+|an\s+|some\s+)?(?:fine\s+|nice\s+|cool\s+|good\s+)?(?:picture|pic|photo|image|portrait|drawing|wallpaper|artwork)\s*(?:of\s+)?/i,
+        ""
+      )
+      .trim();
+
+    if (!subject) {
+      setPendingClarification(userId, chatId, sender, {
+        type: "image_generation",
+        basePrompt: "High quality portrait",
+      });
+      return reply("🎨 What would you like me to generate a picture of? Describe it and I'll create it right away!");
+    }
+
+    // Check if the user asked for a vague person/character ("a guy", "a fine guy", "a girl", "a man", "a woman", "a boy", "a lady")
+    // without specifying outfit/cloth/setting — ask naturally just like the user requested!
+    const isPersonSubject = /\b(guy|man|boy|gentleman|girl|woman|lady|person|model)\b/i.test(subject);
+    const hasOutfitOrSettingDetail =
+      /\b(wearing|dressed|suit|shirt|hoodie|jacket|agbada|native|kaftan|dress|gown|jeans|tuxedo|uniform|armor|casual|traditional|streetwear|beach|office|car|studio|city|night|forest|gym|crown|glasses)\b/i.test(
+        subject
+      ) || subject.split(/\s+/).length >= 6;
+
+    if (isPersonSubject && !hasOutfitOrSettingDetail) {
+      setPendingClarification(userId, chatId, sender, {
+        type: "image_generation",
+        basePrompt: subject,
+      });
+      return reply(
+        `🎨 Sure! In which cloth/outfit or style should *${subject}* be (for example: a sharp black suit, white native attire/agbada, casual streetwear, or corporate wear)?\n\n_(Reply directly with your choice and I'll generate the picture immediately!)_`
+      );
+    }
+
+    try {
+      const imgResult = await generateMetaImage(subject);
+      return sock.sendMessage(chatId, {
+        image: imgResult.buffer,
+        caption: imgResult.caption,
+      });
+    } catch (err) {
+      return reply(`❌ ${err.message || "Could not generate that image right now."}`);
+    }
+  }
+
+  // =========================================================================
+  // OWNER-ONLY / ADMIN CAPABILITIES GUARD WHEN IN PUBLIC MODE
+  // If a non-owner in a Public Meta chat sends a message, only allow safe AI,
+  // games, translation, OCR, and image generation — never owner account/delete actions.
+  // =========================================================================
+  if (currentMetaMode?.mode === "public" && !senderIsLinkedAccount) {
+    // Allow OCR / Image explanation
+    if (hasImageMedia) {
+      try {
+        const imgBuf = await downloadMessageMedia(sourceMediaMsg, "imageMessage", sock);
+        if (/\b(extract|ocr|read\s+.*text|transcribe|words)\b/i.test(lower)) {
+          const textOut = await extractTextFromImage(imgBuf);
+          return reply(textOut ? `📖 *EXTRACTED TEXT:*\n${textOut}` : "🔍 No readable text detected in this image.");
+        }
+        const explanation = await explainImageBuffer(imgBuf, rawPrompt);
+        return reply(explanation);
+      } catch (err) {
+        return reply(`❌ Could not process image: ${err.message}`);
+      }
+    }
+
+    // Allow Translation
+    if (/\btranslate\b/i.test(lower)) {
+      const langMatch = rawPrompt.match(/\b(?:to|into|in)\s+([a-zA-Z]+)\b/i);
+      const targetLanguage = langMatch ? langMatch[1] : "English";
+      const textToTranslate =
+        quotedText ||
+        rawPrompt
+          .replace(/^(?:please\s+)?translate(?:\s+this)?(?:\s+(?:to|into|in)\s+[a-zA-Z]+)?\s*[:\-]?\s*/i, "")
+          .trim();
+      if (textToTranslate) {
+        const translated = await translateContent(textToTranslate, targetLanguage);
+        return reply(translated);
+      }
+    }
+
+    // General worldwide AI conversation for public participants
+    const publicAiResponse = await generateMetaConversationalReply(rawPrompt, quotedText, {
+      userId,
+      chatId,
+      senderName: message?.pushName || "",
+    });
+    return reply(publicAiResponse);
   }
 
   // -------------------------------------------------------------------------
   // CAPABILITY 1: LICENSE & ACCOUNT EXPIRY
-  // Examples:
-  // ".meta check my license", ".meta when does my license expire?",
-  // ".meta is my license still active", ".meta when will my key expire", ".meta tell me my expiry"
   // -------------------------------------------------------------------------
   if (
     /\b(license|licence|expiry|expire|expires|expiration|subscription)\b/i.test(lower) &&
@@ -248,8 +757,10 @@ export default async function meta(ctx) {
   // -------------------------------------------------------------------------
   // CAPABILITY 2: MESSAGE DELETION ("delete my last 5 messages", "delete the message I'm replying to")
   // -------------------------------------------------------------------------
-  if (/\b(delete|erase|unsend|clear)\b/i.test(lower) && /\b(message|messages|msg|msgs|replying|replied|this|last)\b/i.test(lower)) {
-    // Case A: "delete my last N messages" / "delete my last message"
+  if (
+    /\b(delete|erase|unsend|clear)\b/i.test(lower) &&
+    /\b(message|messages|msg|msgs|replying|replied|this|last)\b/i.test(lower)
+  ) {
     const lastNMatch =
       lower.match(/\b(?:delete|erase|unsend|clear)\s+(?:my\s+)?last\s+(\d+)\s*(?:messages?|msgs?)?\b/i) ||
       lower.match(/\b(?:delete|erase|unsend|clear)\s+(\d+)\s+(?:of\s+my\s+)?(?:last|recent)\s*(?:messages?|msgs?)\b/i);
@@ -293,7 +804,6 @@ export default async function meta(ctx) {
         }
       }
 
-      // Also delete the .meta command message itself if possible
       if (message.key?.id) {
         try {
           message._alreadyReactedAndDeleted = true;
@@ -318,10 +828,11 @@ export default async function meta(ctx) {
       return;
     }
 
-    // Case B: "delete the message I'm replying to" / "delete this message"
     const quotedDeleteKey = resolveQuotedDeleteKey(message, chatId);
     if (!quotedDeleteKey) {
-      return reply("⚠️ Please reply directly to the message you want me to delete, or specify e.g. `.meta delete my last 5 messages`.");
+      return reply(
+        "⚠️ Please reply directly to the message you want me to delete, or specify e.g. `delete my last 5 messages`."
+      );
     }
 
     const contextInfo = getContextInfo(message);
@@ -357,7 +868,6 @@ export default async function meta(ctx) {
       await deleteSock.sendMessage(chatId, { delete: quotedDeleteKey });
       removeChatMessageById(chatId, quotedDeleteKey.id);
 
-      // Also delete the .meta command message itself
       if (message.key?.id) {
         try {
           message._alreadyReactedAndDeleted = true;
@@ -387,8 +897,6 @@ export default async function meta(ctx) {
 
   // -------------------------------------------------------------------------
   // CAPABILITY 3: ONLINE / ACTIVE PRESENCE DETECTION
-  // Examples:
-  // ".meta mention everyone who is currently online", ".meta tell me who is currently online"
   // -------------------------------------------------------------------------
   if (/\b(online|active\s+right\s+now|currently\s+active|who\s+is\s+here|who\s+is\s+around)\b/i.test(lower)) {
     if (!isGroup(chatId)) {
@@ -415,7 +923,9 @@ export default async function meta(ctx) {
         [
           "🟢 *CURRENTLY ONLINE / ACTIVE IN GROUP*",
           "────────────────────────────",
-          selfJid ? `• @${extractParticipantNumber(selfJid)} — 🟢 Online now (You)` : "• No other members have broadcast live online presence in the last few minutes.",
+          selfJid
+            ? `• @${extractParticipantNumber(selfJid)} — 🟢 Online now (You)`
+            : "• No other members have broadcast live online presence in the last few minutes.",
           "",
           "ℹ️ _Note: WhatsApp only shares live presence for members who have interacted recently or have online visibility enabled._",
         ].join("\n"),
@@ -425,8 +935,7 @@ export default async function meta(ctx) {
 
     const mentions = onlineList.map((u) => u.mentionJid).filter(Boolean);
     const memberLines = onlineList.map(
-      (u, idx) =>
-        `${idx + 1}. @${u.userNumber}${u.pushName ? ` (*${u.pushName}*)` : ""} — ${u.statusLabel}`
+      (u, idx) => `${idx + 1}. @${u.userNumber}${u.pushName ? ` (*${u.pushName}*)` : ""} — ${u.statusLabel}`
     );
 
     const header = shouldMention
@@ -434,19 +943,13 @@ export default async function meta(ctx) {
       : `🟢 *CURRENTLY ONLINE / ACTIVE MEMBERS (${onlineList.length})*`;
 
     return reply(
-      [
-        header,
-        `Group: *${metadata.subject || "Group"}*`,
-        "────────────────────────────",
-        ...memberLines,
-      ].join("\n"),
+      [header, `Group: *${metadata.subject || "Group"}*`, "────────────────────────────", ...memberLines].join("\n"),
       { mentions }
     );
   }
 
   // -------------------------------------------------------------------------
   // CAPABILITY 4: GROUP ADMINISTRATION — REMOVE N RANDOM MEMBERS
-  // Example: ".meta remove 20 random members", ".meta kick 5 random members"
   // -------------------------------------------------------------------------
   const randomKickMatch = lower.match(
     /\b(?:remove|kick|boot)\s+(\d+)\s+random\s+(?:members?|participants?|users?|people)\b/i
@@ -473,7 +976,6 @@ export default async function meta(ctx) {
     const callerAliases = new Set([sender, ...senderJids].filter(Boolean).flatMap(jidAliases));
     const callerNumbers = new Set([sender, ...senderJids].map((j) => extractParticipantNumber(j)).filter(Boolean));
 
-    // Filter strictly to regular non-admin members, excluding the caller and all connected bot accounts
     const eligibleTargets = (metadata.participants || []).filter((p) => {
       if (p.admin === "admin" || p.admin === "superadmin" || p.admin === true) return false;
       const pJids = [p.id, p.jid, p.lid, p.phoneNumber].filter(Boolean);
@@ -495,7 +997,6 @@ export default async function meta(ctx) {
       return reply("ℹ️ There are no eligible non-admin members in this group to remove.");
     }
 
-    // Shuffle randomly
     const shuffled = [...eligibleTargets];
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -511,8 +1012,7 @@ export default async function meta(ctx) {
       try {
         await adminSession.sock.groupParticipantsUpdate(chatId, [participant.id], "remove");
         const num =
-          extractParticipantNumber(participant.phoneNumber || participant.id) ||
-          participant.id.split("@")[0];
+          extractParticipantNumber(participant.phoneNumber || participant.id) || participant.id.split("@")[0];
         removedNumbers.push(`@${num}`);
         removedMentions.push(participant.id);
       } catch (err) {
@@ -540,13 +1040,26 @@ export default async function meta(ctx) {
 
   // -------------------------------------------------------------------------
   // CAPABILITY 5: GROUP ADMINISTRATION — ADD ONE OR MORE NUMBERS TO GROUP
-  // Example: ".meta add these two numbers to the group 2348012345678 2348098765432"
+  // Supports country-code clarification when local/ambiguous numbers are pushed!
   // -------------------------------------------------------------------------
+  const combinedTextForNumbers = `${rawPrompt} ${quotedText || ""}`;
+  const rawPhoneMatches =
+    combinedTextForNumbers.match(/(?:\+\d{1,3}(?:[\s-]?\d{2,5}){2,4}|\b0?\d{7,14}\b)/g) || [];
+  const isBareNumberListInGroup =
+    isGroup(chatId) &&
+    rawPhoneMatches.length >= 2 &&
+    rawPrompt.replace(/[\d\s,+\-().]/g, "").trim().length < 15;
+
   if (
-    /\b(add|invite)\b/i.test(lower) &&
-    (/\b(number|numbers|person|people|member|members|group|them|him|her)\b/i.test(lower) ||
-      /\b\d{7,15}\b/.test(lower))
+    isBareNumberListInGroup ||
+    (/\b(add|invite)\b/i.test(lower) &&
+      (/\b(number|numbers|person|people|member|members|group|them|him|her|these)\b/i.test(lower) ||
+        rawPhoneMatches.length > 0))
   ) {
+    if (!isGroup(chatId)) {
+      return reply("⚠️ I can only add phone numbers inside a WhatsApp group chat.");
+    }
+
     const authCheck = await resolveAuthorizedGroupAdminSession({
       sock,
       chatId,
@@ -555,70 +1068,58 @@ export default async function meta(ctx) {
       userId,
       botNumber,
     });
+
     if (!authCheck.ok) {
+      if (authCheck.notBotAdmin) {
+        return reply(
+          "❌ I am unable to add the number(s) to this group because the group admins did not allow non-admin members to add participants, and this bot account is not currently a group admin here."
+        );
+      }
       return reply(authCheck.error);
     }
 
-    const combinedTextForNumbers = `${rawPrompt} ${quotedText || ""}`;
-    // Match formatted international numbers (e.g. +234 801 234 5678) or standalone 7-15 digit phone numbers
-    const rawMatches =
-      combinedTextForNumbers.match(/(?:\+\d{1,3}(?:[\s-]?\d{2,5}){2,4}|\b\d{7,15}\b)/g) || [];
-    const normalizedNumbers = [
-      ...new Set(
-        rawMatches
-          .map((m) => normalizeNumber(m))
-          .filter((n) => n.length >= 7 && n.length <= 15)
-      ),
-    ];
-
-    if (normalizedNumbers.length === 0) {
-      return reply("⚠️ Please provide the phone number(s) (with country code) you want me to add to the group.\nExample: `.meta add 2348012345678 and 2348098765432 to the group`");
-    }
-
-    const { adminSession } = authCheck;
-    const added = [];
-    const failed = [];
-
-    for (const num of normalizedNumbers) {
-      const jid = `${num}@s.whatsapp.net`;
-      try {
-        const res = await adminSession.sock.groupParticipantsUpdate(chatId, [jid], "add");
-        const firstStatus = Array.isArray(res) && res[0]?.status ? String(res[0].status) : "200";
-        if (firstStatus === "200" || firstStatus === "409") {
-          added.push({ num, jid, alreadyIn: firstStatus === "409" });
-        } else {
-          failed.push({ num, status: firstStatus });
-        }
-      } catch (err) {
-        failed.push({ num, status: err.message || "failed" });
-      }
-    }
-
-    const lines = ["➕ *GROUP ADD RESULT*", "────────────────────────────"];
-    if (added.length > 0) {
-      lines.push(
-        `✅ *Added (${added.length}):* ${added
-          .map((a) => `@${a.num}${a.alreadyIn ? " (already in group)" : ""}`)
-          .join(", ")}`
-      );
-    }
-    if (failed.length > 0) {
-      lines.push(
-        `❌ *Could not add (${failed.length}):* ${failed
-          .map((f) => `+${f.num} (status: ${f.status})`)
-          .join(", ")}`
+    if (rawPhoneMatches.length === 0) {
+      return reply(
+        "⚠️ Please provide or reply to the phone number(s) you want me to add to the group.\nExample: `.meta add 09083939939 08012345678`"
       );
     }
 
-    return reply(lines.join("\n"), {
-      mentions: added.map((a) => a.jid),
+    // Check if the user already specified a country in their prompt (e.g. "Nigeria", "+234")
+    const explicitCountryInPrompt = resolveCountryDialCode(rawPrompt);
+
+    // Check if any number lacks an explicit international prefix (e.g. starts with '0' or is < 11 digits without '+')
+    const hasAmbiguousLocalNumbers = rawPhoneMatches.some((raw) => {
+      const trimmed = raw.trim();
+      if (trimmed.startsWith("+")) return false;
+      const digits = trimmed.replace(/\D/g, "");
+      if (digits.startsWith("234") && digits.length === 13) return false;
+      if (digits.startsWith("233") && digits.length === 12) return false;
+      if (digits.startsWith("44") && digits.length >= 11) return false;
+      return true;
+    });
+
+    if (hasAmbiguousLocalNumbers && !explicitCountryInPrompt) {
+      setPendingClarification(userId, chatId, sender, {
+        type: "add_numbers_country",
+        rawNumbers: rawPhoneMatches,
+      });
+      const preview = rawPhoneMatches.slice(0, 4).join(", ") + (rawPhoneMatches.length > 4 ? ` ... (+${rawPhoneMatches.length - 4} more)` : "");
+      return reply(
+        `🌍 I found *${rawPhoneMatches.length}* phone number(s) to add (*${preview}*), but they don't specify a country code.\n\nWhich country or country code do these numbers belong to? (e.g., reply *Nigeria / +234*, *Ghana / +233*, *UK / +44*, or *US / +1*)`
+      );
+    }
+
+    return executeGroupAddNumbers({
+      adminSession: authCheck.adminSession,
+      chatId,
+      rawNumbers: rawPhoneMatches,
+      countryCode: explicitCountryInPrompt || "",
+      reply,
     });
   }
 
   // -------------------------------------------------------------------------
   // CAPABILITY 6: GROUP ADMINISTRATION — REMOVE / KICK SPECIFIC MEMBER(S)
-  // Examples:
-  // ".meta remove this person", ".meta kick the person I'm replying to", ".meta remove @2348012345678"
   // -------------------------------------------------------------------------
   if (
     /\b(remove|kick|boot|ban)\b/i.test(lower) &&
@@ -639,7 +1140,6 @@ export default async function meta(ctx) {
     const { adminSession, metadata } = authCheck;
     const resolved = resolveManualWarnTarget(metadata, message, args, chatId);
 
-    // Also support multiple @mentions or numbers in prompt
     const extraNumbers = (rawPrompt.match(/\b\d{7,15}\b/g) || []).map(normalizeNumber);
     const targetCandidates = [];
 
@@ -744,7 +1244,6 @@ export default async function meta(ctx) {
 
   // -------------------------------------------------------------------------
   // CAPABILITY 8: OTHER GROUP ADMIN & UTILITY ACTIONS
-  // (Promote, Demote, Lock, Unlock, Pin, Group Link, Group Info, Admins, TagAll)
   // -------------------------------------------------------------------------
   if (/\b(promote|make\s+.*admin)\b/i.test(lower)) {
     return promote(ctx);
@@ -780,12 +1279,12 @@ export default async function meta(ctx) {
 
   // -------------------------------------------------------------------------
   // CAPABILITY 9: GROUP ANNOUNCEMENT GENERATION (+ OPTIONAL TAGALL)
-  // Example: ".meta create a group announcement"
   // -------------------------------------------------------------------------
   if (/\b(create|make|write|draft|send)\s+(?:a\s+|an\s+)?(?:group\s+)?(?:announcement|notice)\b/i.test(lower)) {
     const announcementText = await generateMetaConversationalReply(
       `Create a clear, professional WhatsApp group announcement based on this request: "${rawPrompt}".`,
-      quotedText
+      quotedText,
+      { userId, chatId, senderName: message?.pushName || "" }
     );
 
     if (isGroup(chatId) && /\b(tag\s+everyone|mention\s+everyone|tag\s+all)\b/i.test(lower)) {
@@ -796,11 +1295,6 @@ export default async function meta(ctx) {
 
   // -------------------------------------------------------------------------
   // CAPABILITY 10: GROUP CONVERSATION INTELLIGENCE (SUMMARIZE / SEARCH CHAT)
-  // Examples:
-  // ".meta summarize the chat while I was away", ".meta summarize the last 50 messages",
-  // ".meta what happened in the last 30 messages?", ".meta what are people discussing?",
-  // ".meta who has been talking about the new bot update?", ".meta find where someone mentioned the license",
-  // ".meta explain what happened while I was offline", ".meta summarize this conversation"
   // -------------------------------------------------------------------------
   const isSingleQuotedSummary =
     Boolean(quotedText) &&
@@ -808,7 +1302,11 @@ export default async function meta(ctx) {
     !/\b(chat|group|conversation|away|offline|messages)\b/i.test(lower);
 
   if (isSingleQuotedSummary) {
-    const singleSummary = await generateMetaConversationalReply(rawPrompt, quotedText);
+    const singleSummary = await generateMetaConversationalReply(rawPrompt, quotedText, {
+      userId,
+      chatId,
+      senderName: message?.pushName || "",
+    });
     return reply(singleSummary);
   }
 
@@ -838,9 +1336,6 @@ export default async function meta(ctx) {
 
   // -------------------------------------------------------------------------
   // CAPABILITY 11: GROUP GAMES, QUIZZES & RIDDLES WITH SCOREKEEPING
-  // Examples:
-  // ".meta start a quiz for the group", ".meta start a quiz and keep score",
-  // ".meta let's play a game", ".meta make a riddle for the group"
   // -------------------------------------------------------------------------
   if (/\b(stop|end|cancel|finish)\s+(?:the\s+)?(?:quiz|game|riddle|trivia)\b/i.test(lower)) {
     const ended = stopGroupGame(chatId);
@@ -874,11 +1369,10 @@ export default async function meta(ctx) {
   }
 
   if (
-    /\b(start\s+a\s+quiz|quiz\s+for\s+the\s+group|keep\s+score|trivia|let'?s\s+play\s+a\s+game|play\s+a\s+game|word\s+scramble|guess\s+the\s+number|riddle\s+for\s+the\s+group|make\s+a\s+riddle)\b/i.test(
+    /\b(start\s+a\s+.*quiz|let'?s\s+play\s+a\s+quiz|quiz\s+for\s+the\s+group|keep\s+score|trivia|let'?s\s+play\s+a\s+game|play\s+a\s+game|word\s+scramble|word\s+game|guess\s+the\s+number|riddle\s+for\s+the\s+group|make\s+a\s+riddle|start\s+a\s+riddle)\b/i.test(
       lower
     )
   ) {
-    // 1. Riddle Game
     if (/\briddle\b/i.test(lower)) {
       const riddles = pickRiddles(3);
       const game = startGroupGame(chatId, {
@@ -890,7 +1384,6 @@ export default async function meta(ctx) {
       return reply(formatCurrentGamePrompt(game));
     }
 
-    // 2. Word Scramble Game
     if (/\b(scramble|unscramble|word\s+game)\b/i.test(lower)) {
       const words = pickScrambleWords(3);
       const game = startGroupGame(chatId, {
@@ -902,7 +1395,6 @@ export default async function meta(ctx) {
       return reply(formatCurrentGamePrompt(game));
     }
 
-    // 3. Number Guessing Game
     if (/\b(guess\s+the\s+number|number\s+game)\b/i.test(lower)) {
       const secret = Math.floor(Math.random() * 50) + 1;
       const game = startGroupGame(chatId, {
@@ -914,13 +1406,17 @@ export default async function meta(ctx) {
       return reply(formatCurrentGamePrompt(game));
     }
 
-    // 4. Default: Multi-Round Interactive Group Quiz with Live Scorekeeping
-    const topicMatch = rawPrompt.match(/\babout\s+([a-zA-Z0-9\s]+)$/i);
-    const topic = topicMatch ? topicMatch[1].trim() : "";
+    const topicMatch =
+      rawPrompt.match(/\babout\s+([a-zA-Z0-9\s]+)$/i) ||
+      rawPrompt.match(/\bstart\s+a\s+([a-zA-Z0-9\s]+?)\s+quiz\b/i);
+    const topic =
+      topicMatch && !/^(group|new|quick|fun|general)$/i.test(topicMatch[1].trim())
+        ? topicMatch[1].trim()
+        : "";
     const questions = await buildQuizQuestions(topic, 5);
     const game = startGroupGame(chatId, {
       type: "quiz",
-      title: "SOLVATECH GROUP TRIVIA QUIZ",
+      title: topic ? `SOLVATECH ${topic.toUpperCase()} QUIZ` : "SOLVATECH GROUP TRIVIA QUIZ",
       questions,
       keepScore: true,
     });
@@ -928,14 +1424,13 @@ export default async function meta(ctx) {
   }
 
   // -------------------------------------------------------------------------
-  // CAPABILITY 12: MEDIA, OCR & IMAGE EXPLANATION
-  // Examples:
-  // ".meta extract all text from this image", ".meta explain this image",
-  // ".meta make a sticker", ".meta open view once", ".meta recover deleted message"
+  // CAPABILITY 12: MEDIA, OCR, VIEW-ONCE REVEAL & IMAGE EXPLANATION
   // -------------------------------------------------------------------------
   if (
     hasImageMedia &&
-    /\b(extract|ocr|read\s+.*text|transcribe|words\s+in\s+this\s+image|text\s+from\s+this\s+image)\b/i.test(lower)
+    /\b(extract|ocr|read\s+.*text|transcribe|words\s+in\s+this\s+image|text\s+from\s+this\s+image|copy\s+all\s+the\s+words|what\s+does\s+this\s+screenshot\s+say)\b/i.test(
+      lower
+    )
   ) {
     return read(ctx);
   }
@@ -964,11 +1459,11 @@ export default async function meta(ctx) {
   }
 
   if (/\b(extract\s+.*text|ocr|read\s+.*image)\b/i.test(lower) && !hasImageMedia) {
-    return reply("⚠️ Please attach an image or reply to an image with `.meta extract all text from this image`.");
+    return reply("⚠️ Please attach an image or reply to an image to extract its text.");
   }
 
   if (/\b(explain\s+this\s+image|describe\s+this\s+image|what\s+is\s+in\s+this\s+image)\b/i.test(lower) && !hasImageMedia) {
-    return reply("⚠️ Please attach an image or reply to an image with `.meta explain this image`.");
+    return reply("⚠️ Please attach an image or reply to an image for me to analyze it.");
   }
 
   if (/\b(make\s+a\s+sticker|turn\s+.*into\s+a\s+sticker|convert\s+to\s+sticker|create\s+sticker)\b/i.test(lower)) {
@@ -979,7 +1474,7 @@ export default async function meta(ctx) {
     return antisticker(ctx);
   }
 
-  if (/\b(view\s*once|reveal\s+this|open\s+view\s*once)\b/i.test(lower)) {
+  if (/\b(view\s*once|reveal\s+this|open\s+this\s+view|open\s+view\s*once|reveal\s+view\s*once)\b/i.test(lower)) {
     return open(ctx);
   }
 
@@ -1006,7 +1501,7 @@ export default async function meta(ctx) {
     }
 
     if (!textToTranslate) {
-      return reply("⚠️ Please reply to a message with `.meta translate this` (or `.meta translate to French: <text>`).");
+      return reply("⚠️ Please reply to a message with `translate this` (or `translate to French: <text>`).");
     }
 
     const translated = await translateContent(textToTranslate, targetLanguage);
@@ -1036,8 +1531,12 @@ export default async function meta(ctx) {
   }
 
   // -------------------------------------------------------------------------
-  // CAPABILITY 15: GENERAL CONVERSATION, JOKES, RIDDLES, Q&A & CONTENT GENERATION
+  // CAPABILITY 15: UNRESTRICTED WORLDWIDE GENERAL CONVERSATION & Q&A (LIKE CHATGPT)
   // -------------------------------------------------------------------------
-  const aiResponse = await generateMetaConversationalReply(rawPrompt, quotedText);
+  const aiResponse = await generateMetaConversationalReply(rawPrompt, quotedText, {
+    userId,
+    chatId,
+    senderName: message?.pushName || "",
+  });
   return reply(aiResponse);
 }
