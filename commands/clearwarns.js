@@ -13,8 +13,12 @@ export default async function clearwarns({
   reply,
   userId = "default",
 }) {
-  const metadata = await requireAdmin(sock, chatId, sender, false, senderJids, senderIsLinkedAccount);
-  assertAdmin(metadata, [sender, ...(Array.isArray(senderJids) ? senderJids : [])], false);
+  const metadata = await requireAdmin(sock, chatId, sender, true, senderJids, senderIsLinkedAccount);
+  assertAdmin(metadata, [sender, ...(Array.isArray(senderJids) ? senderJids : [])], true, [
+    sock.user?.id,
+    sock.user?.lid,
+    sock.user?.phoneNumber,
+  ].filter(Boolean));
 
   const resolved = resolveGroupTargetJids(metadata, message, args);
   if (!resolved || !resolved.canonicalJid) {

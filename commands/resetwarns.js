@@ -10,7 +10,7 @@ export default async function resetwarns({
   reply,
   userId = "default",
 }) {
-  await requireAdmin(sock, chatId, sender, false, senderJids, senderIsLinkedAccount);
+  await requireAdmin(sock, chatId, sender, true, senderJids, senderIsLinkedAccount);
 
   await resetWarnings(chatId, userId);
   await reply("✅ *All group warnings have been reset to 0.*");
