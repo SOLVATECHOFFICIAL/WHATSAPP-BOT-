@@ -68,19 +68,16 @@ async function readResponse(response: Response) {
   return payload;
 }
 
-const RAILWAY_URL = 'https://web-production-215ab.up.railway.app';
-const isSelfHosted = typeof window !== 'undefined' && (
-  window.location.hostname.includes('railway.app') ||
-  window.location.hostname === 'localhost' ||
-  window.location.hostname === '127.0.0.1' ||
-  window.location.hostname.includes('run.app')
-);
+const RAILWAY_URL = 'https://web-production-c6f21.up.railway.app';
+const isSelfHosted = typeof window !== 'undefined' && window.location.hostname.includes('railway.app');
 const DEFAULT_BACKEND_URL = isSelfHosted ? window.location.origin : RAILWAY_URL;
 function getApiUrl(path: string) {
   let custom = typeof window !== 'undefined' ? (localStorage.getItem('solvatech_backend_url') || '') : '';
   if (custom && (
     custom.includes('3c1de8') ||
     custom.includes('localhost:5000') ||
+    custom.includes('web-production-215ab.up.railway.app') ||
+    custom.includes('run.app') ||
     (!isSelfHosted && typeof window !== 'undefined' && (custom.includes(window.location.hostname) || custom.includes('solvatech.name.ng')))
   )) {
     try { localStorage.removeItem('solvatech_backend_url'); } catch {}
