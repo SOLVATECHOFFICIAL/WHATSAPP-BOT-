@@ -558,23 +558,9 @@ export default async function meta(ctx) {
       /\b(?:meta|ai)\s+(?:off|stop)\s+(?:everywhere|all)\b/i.test(lower) ||
       /\b(?:stop|turn\s+off)\s+meta\s+(?:in\s+)?all\b/i.test(lower)
     ) {
-      const disabledList = disableAllMetaChats(userId);
-      if (disabledList.length === 0) {
-        return reply("ℹ️ Meta AI continuous mode is already *OFF* across all your personal chats and groups.");
-      }
-      const summaryLines = disabledList.map(
-        (s, idx) => `${idx + 1}. *${s.chatName}* (${s.isGroup ? "Group" : "Direct Chat"}) — was *${s.mode.toUpperCase()}*`
-      );
-      return reply(
-        [
-          "🛑 *META AI TURNED OFF EVERYWHERE*",
-          "────────────────────────────",
-          `Deactivated continuous Meta AI in *${disabledList.length}* chat(s):`,
-          ...summaryLines,
-          "",
-          "✅ Normal chatting and standard commands are now active everywhere.",
-        ].join("\n")
-      );
+      clearPendingClarification(userId, chatId, sender);
+      disableAllMetaChats(userId);
+      return reply("*META IS NOW OFF*");
     }
 
     // B. List all chats/groups where Meta is currently ON ("list where you are on", "check all the place you are responding")
@@ -588,20 +574,12 @@ export default async function meta(ctx) {
     ) {
       const activeChats = listActiveMetaChats(userId);
       if (activeChats.length === 0) {
-        return reply(
-          "ℹ️ *Meta AI is not currently turned ON in any chat.*\n\nUse *.start meta* (or *.meta on*), *.private meta*, or *.public meta* inside any friend's chat or group to activate continuous mode."
-        );
+        return reply("ℹ️ *Meta AI is not currently turned ON in any chat.*\n\nSend *.meta on* in any chat or group to turn it on for everyone.");
       }
 
       const lines = activeChats.map((s, idx) => {
         const typeLabel = s.isGroup ? "👥 Group" : "👤 Friend / DM";
-        const modeBadge =
-          s.mode === "public"
-            ? "🌐 *[PUBLIC]*"
-            : s.strictPrivate
-              ? "🔒 *[PRIVATE - Strict Owner Only]*"
-              : "🔐 *[PRIVATE - Owner Chat + Group Quiz]*";
-        return `${idx + 1}. ${modeBadge} — *${s.chatName}* (${typeLabel})`;
+        return `${idx + 1}. 🌐 *[PUBLIC]* — *${s.chatName}* (${typeLabel})`;
       });
 
       return reply(
@@ -610,40 +588,12 @@ export default async function meta(ctx) {
           "────────────────────────────",
           ...lines,
           "",
-          "💡 _Send *.stop meta* in a chat to turn it off there, or *.meta off all* to turn off every chat at once._",
+          "💡 _Send *.meta off* in a chat to turn it off, or *.meta off all* to turn off everywhere._",
         ].join("\n")
       );
     }
 
-    // C. Set Meta to PRIVATE mode in this chat (".private meta", ".meta private", "private meta", "private your self")
-    if (
-      /^(?:private|private\s+meta|meta\s+private|set\s+(?:to\s+)?private|only\s+me|private\s+your\s*self|make\s+your\s*self\s+private|be\s+private|go\s+private|private\s+mode|only\s+answer\s+me)$/i.test(
-        lower
-      ) ||
-      /\b(?:private\s+your\s*self|make\s+your\s*self\s+private|switch\s+to\s+private\s+mode)\b/i.test(lower)
-    ) {
-      const chatName = await resolveFriendlyChatName(sock, chatId, message);
-      setMetaChatMode(userId, chatId, {
-        enabled: true,
-        mode: "private",
-        strictPrivate: true,
-        chatName,
-      });
-      return reply(
-        [
-          "🔒 *META AI: PRIVATE MODE ON*",
-          "────────────────────────────",
-          `📍 *Chat:* ${chatName}`,
-          "👤 *Access:* Strictly *You (Owner Only)*",
-          "",
-          "I am now in *Private Mode* in this chat — I will only respond to your messages and ignore everyone else.",
-          "",
-          "💡 _Say *public yourself* (or *.public meta*) to let everyone interact, or *stop meta* when done._",
-        ].join("\n")
-      );
-    }
-
-    // D. Set Meta to PUBLIC mode in this chat (".public meta", ".meta public", ".public", "public meta", "public your self")
+    // C. Set Meta to PUBLIC mode in this chat (".public meta", ".meta public", ".public", "public meta", "public your self")
     if (
       /^(?:public|public\s+meta|meta\s+public|set\s+(?:to\s+)?public|everyone|public\s+your\s*self|make\s+your\s*self\s+public|be\s+public|go\s+public|public\s+mode|answer\s+everyone)$/i.test(
         lower
@@ -657,65 +607,67 @@ export default async function meta(ctx) {
         strictPrivate: false,
         chatName,
       });
-      return reply(
-        [
-          "🌐 *META AI: PUBLIC MODE ON*",
-          "────────────────────────────",
-          `📍 *Chat:* ${chatName}`,
-          "👥 *Access:* *Everyone in this chat*",
-          "",
-          "I am now in *Public Mode*! Anyone in this chat can talk to me or play games/quizzes without typing *.meta*.",
-          "",
-          "💡 _Say *private yourself* (or *.private meta*) for owner-only mode, or *stop meta* to turn off._",
-        ].join("\n")
-      );
+      return reply("*META IS NOW ON FOR ALL*");
     }
 
-    // E. Turn Meta ON in this chat (".start meta", ".meta on", ".meta start", "start meta", "meta on")
+    // D. Turn Meta ON in this chat (".start meta", ".meta on", ".meta start", "start meta", "meta on", "on")
     if (/^(?:on|start|start\s+meta|meta\s+on|meta\s+start|enable|activate|on\s+your\s*self|turn\s+on)$/i.test(lower)) {
       const chatName = await resolveFriendlyChatName(sock, chatId, message);
       setMetaChatMode(userId, chatId, {
         enabled: true,
-        mode: "private",
+        mode: "public",
         strictPrivate: false,
         chatName,
       });
-      return reply(
-        [
-          "🤖 *META AI CONTINUOUS MODE: ON*",
-          "────────────────────────────",
-          `📍 *Chat:* ${chatName}`,
-          "🔐 *Mode:* *Owner Active* (replies to your messages directly + accepts group quiz answers)",
-          "",
-          "You can now chat with me normally, ask for pictures, open view-once media, delete messages, or manage the group *without typing .meta*!",
-          "",
-          "💡 _Say *public yourself* so others can chat with me too, *private yourself* for strict owner-only, or *stop meta* to turn off._",
-        ].join("\n")
-      );
+      return reply("*META IS NOW ON FOR ALL*");
     }
 
-    // F. Turn Meta OFF in this chat (".stop meta", ".meta off", ".meta stop", "stop meta", "meta off", "off your self")
+    // E. Turn Meta OFF in this chat (".stop meta", ".meta off", ".meta stop", "stop meta", "meta off", "off your self", "off")
     if (
       /^(?:off|stop|stop\s+meta|meta\s+off|meta\s+stop|disable|deactivate|off\s+your\s*self|stop\s+your\s*self|turn\s+your\s*self\s+off)$/i.test(
         lower
       )
     ) {
       clearPendingClarification(userId, chatId, sender);
-      const chatName = await resolveFriendlyChatName(sock, chatId, message);
       setMetaChatMode(userId, chatId, { enabled: false });
-      return reply(
-        `🛑 *Meta AI continuous mode is now OFF* in *${chatName}*.\nYou can now chat normally or use your standard bot commands.`
-      );
+      return reply("*META IS NOW OFF*");
     }
   }
 
   // =========================================================================
   // 1. RESOLVE ANY ACTIVE PENDING CLARIFICATION IN THIS CHAT
-  // (e.g. User replying with outfit/style for an image, or country code for numbers)
   // =========================================================================
   const pending = getPendingClarification(userId, chatId, sender);
   if (pending && rawPrompt && !/^(?:cancel|stop|nevermind|never\s+mind|forget\s+it|no)$/i.test(lower)) {
-    // 1A. Pending Image Generation Outfit/Style Clarification
+    // 1A. Pending Random Member Removal Confirmation
+    if (pending.type === "confirm_remove_random_member") {
+      if (/^(?:yes|y|confirm|proceed|remove|kick|do\s+it|sure|ok|okay|yes\s+remove|yes\s+remove\s+him|yes\s+kick|remove\s+him)$/i.test(lower)) {
+        clearPendingClarification(userId, chatId, sender);
+        const authCheck = await resolveAuthorizedGroupAdminSession({
+          sock,
+          chatId,
+          sender,
+          senderJids,
+          userId,
+          botNumber,
+        });
+        if (!authCheck.ok) {
+          return reply(authCheck.error);
+        }
+        try {
+          await authCheck.adminSession.sock.groupParticipantsUpdate(chatId, [pending.targetJid], "remove");
+          const targetNum = extractParticipantNumber(pending.targetJid);
+          return reply(
+            `✅ Removed *${pending.targetName || "member"}* (@${targetNum}) from the group.`,
+            { mentions: [pending.targetJid] }
+          );
+        } catch (err) {
+          return reply(`❌ Failed to remove member: ${err.message || "Permission error"}`);
+        }
+      }
+    }
+
+    // 1B. Pending Image Generation Outfit/Style Clarification
     if (pending.type === "image_generation") {
       clearPendingClarification(userId, chatId, sender);
       const combinedPrompt = `${pending.basePrompt}, ${rawPrompt}`;
@@ -730,7 +682,7 @@ export default async function meta(ctx) {
       }
     }
 
-    // 1B. Pending Game Choice Clarification (e.g. after user said "Let play game" and now replies "Quiz i mean")
+    // 1C. Pending Game Choice Clarification (e.g. after user said "Let play game" and now replies "Quiz i mean")
     if (pending.type === "choose_game") {
       if (/\b(quiz|trivia|question|1)\b/i.test(lower)) {
         clearPendingClarification(userId, chatId, sender);
@@ -780,7 +732,7 @@ export default async function meta(ctx) {
       }
     }
 
-    // 1C. Pending Phone Numbers Country Code Clarification
+    // 1D. Pending Phone Numbers Country Code Clarification
     if (pending.type === "add_numbers_country" || pending.type === "confirm_add_numbers") {
       const detectedCode = resolveCountryDialCode(rawPrompt);
       if (detectedCode) {
@@ -812,7 +764,7 @@ export default async function meta(ctx) {
     }
   } else if (pending && /^(?:cancel|stop|nevermind|never\s+mind|forget\s+it|no)$/i.test(lower)) {
     clearPendingClarification(userId, chatId, sender);
-    return reply("👍 Got it, I've cancelled that request. What else can I help you with?");
+    return reply("👍 Request cancelled. What else would you like me to do?");
   }
 
   // =========================================================================
@@ -998,19 +950,87 @@ export default async function meta(ctx) {
   }
 
   // -------------------------------------------------------------------------
-  // CAPABILITY 2: MESSAGE DELETION ("delete my last 5 messages", "delete the message I'm replying to")
+  // CAPABILITY 2: MESSAGE DELETION ("delete all the last 50 messages in this group", "delete my messages", "delete my last 5 messages")
   // -------------------------------------------------------------------------
   if (
-    /\b(delete|erase|unsend|clear)\b/i.test(lower) &&
-    /\b(message|messages|msg|msgs|replying|replied|this|last)\b/i.test(lower)
+    /\b(delete|erase|unsend|clear|purge)\b/i.test(lower) &&
+    /\b(message|messages|msg|msgs|chat|replying|replied|this|last|\d+)\b/i.test(lower)
   ) {
+    const isGroupBulkDelete =
+      isGroup(chatId) &&
+      (/\b(?:group|all|everyone|everybody)\b/i.test(lower) ||
+        /\b(?:last\s+\d+|delete\s+\d+)\s*(?:messages?|msgs?)\s*(?:in\s+this\s+group)?\b/i.test(lower));
+
+    const groupNMatch =
+      lower.match(/\b(?:delete|erase|clear|unsend|purge)\s+(?:all\s+)?(?:the\s+)?(?:last\s+)?(\d+)\s*(?:messages?|msgs?)?(?:\s+in\s+this\s+group)?\b/i) ||
+      lower.match(/\b(?:delete|erase|clear|unsend|purge)\s+(\d+)\s+(?:messages?|msgs?)\b/i);
+
+    // A. Group Bulk Message Deletion (Admin only, up to 50 messages)
+    if (isGroupBulkDelete && (groupNMatch || /\b(?:all\s+messages|all\s+the\s+messages|chat)\b/i.test(lower))) {
+      const authCheck = await resolveAuthorizedGroupAdminSession({
+        sock,
+        chatId,
+        sender,
+        senderJids,
+        userId,
+        botNumber,
+      });
+      if (!authCheck.ok) {
+        return reply(authCheck.error);
+      }
+
+      const requestedCount = groupNMatch ? Math.max(1, Math.min(50, parseInt(groupNMatch[1], 10))) : 50;
+      const history = getChatHistory(chatId, { limit: requestedCount + 5 });
+      const candidates = history.filter((m) => m.id && m.id !== message.key?.id).slice(-requestedCount);
+
+      if (candidates.length === 0) {
+        return reply("ℹ️ No recent messages found in session history to delete.");
+      }
+
+      let deletedCount = 0;
+      for (const item of candidates) {
+        try {
+          await authCheck.adminSession.sock.sendMessage(chatId, {
+            delete: {
+              remoteJid: chatId,
+              fromMe: Boolean(item.fromMe),
+              id: item.id,
+              ...(item.key?.participant ? { participant: item.key.participant } : {}),
+            },
+          });
+          removeChatMessageById(chatId, item.id);
+          deletedCount += 1;
+        } catch {}
+      }
+
+      if (message.key?.id) {
+        try {
+          await authCheck.adminSession.sock.sendMessage(chatId, {
+            delete: {
+              remoteJid: chatId,
+              fromMe: Boolean(message.key.fromMe),
+              id: message.key.id,
+              ...(message.key.participant ? { participant: message.key.participant } : {}),
+            },
+          });
+          removeChatMessageById(chatId, message.key.id);
+        } catch {}
+      }
+
+      return reply(`🗑️ Deleted *${deletedCount}* recent message(s) from this group.`);
+    }
+
+    // B. Self Message Deletion ("delete my messages", "delete my chat", "delete my last 5 messages")
     const lastNMatch =
       lower.match(/\b(?:delete|erase|unsend|clear)\s+(?:my\s+)?last\s+(\d+)\s*(?:messages?|msgs?)?\b/i) ||
       lower.match(/\b(?:delete|erase|unsend|clear)\s+(\d+)\s+(?:of\s+my\s+)?(?:last|recent)\s*(?:messages?|msgs?)\b/i);
-    const isSingleLastSelf = /\b(?:delete|erase|unsend)\s+my\s+last\s+(?:message|msg)\b/i.test(lower);
+    const isSelfDelete =
+      /\b(?:delete|erase|unsend|clear)\s+(?:my\s+)?(?:messages?|msgs?|chat)\b/i.test(lower) ||
+      lastNMatch ||
+      /\b(?:delete|erase|unsend)\s+my\s+last\s+(?:message|msg)\b/i.test(lower);
 
-    if (lastNMatch || isSingleLastSelf) {
-      const requestedCount = lastNMatch ? Math.max(1, Math.min(50, parseInt(lastNMatch[1], 10))) : 1;
+    if (isSelfDelete) {
+      const requestedCount = lastNMatch ? Math.max(1, Math.min(50, parseInt(lastNMatch[1], 10))) : 10;
       const ownCandidates = [
         sender,
         ...senderJids,
@@ -1072,69 +1092,65 @@ export default async function meta(ctx) {
     }
 
     const quotedDeleteKey = resolveQuotedDeleteKey(message, chatId);
-    if (!quotedDeleteKey) {
-      return reply(
-        "⚠️ Please reply directly to the message you want me to delete, or specify e.g. `delete my last 5 messages`."
-      );
-    }
+    if (quotedDeleteKey) {
+      const contextInfo = getContextInfo(message);
+      const quotedSender = contextInfo?.participant ? normalizedUser(contextInfo.participant) : "";
+      const ownJids = [
+        sock.user?.id,
+        sock.user?.lid,
+        sock.user?.phoneNumber,
+        botNumber ? `${botNumber}@s.whatsapp.net` : "",
+      ]
+        .filter(Boolean)
+        .map(normalizedUser);
+      const ownAliases = new Set(ownJids.flatMap(jidAliases));
+      const quotedIsOwn = !quotedSender || jidAliases(quotedSender).some((a) => ownAliases.has(a));
 
-    const contextInfo = getContextInfo(message);
-    const quotedSender = contextInfo?.participant ? normalizedUser(contextInfo.participant) : "";
-    const ownJids = [
-      sock.user?.id,
-      sock.user?.lid,
-      sock.user?.phoneNumber,
-      botNumber ? `${botNumber}@s.whatsapp.net` : "",
-    ]
-      .filter(Boolean)
-      .map(normalizedUser);
-    const ownAliases = new Set(ownJids.flatMap(jidAliases));
-    const quotedIsOwn = !quotedSender || jidAliases(quotedSender).some((a) => ownAliases.has(a));
-
-    let deleteSock = sock;
-    if (isGroup(chatId) && !quotedIsOwn) {
-      const authCheck = await resolveAuthorizedGroupAdminSession({
-        sock,
-        chatId,
-        sender,
-        senderJids,
-        userId,
-        botNumber,
-      });
-      if (!authCheck.ok) {
-        return reply(authCheck.error);
-      }
-      deleteSock = authCheck.adminSession.sock;
-    }
-
-    try {
-      await deleteSock.sendMessage(chatId, { delete: quotedDeleteKey });
-      removeChatMessageById(chatId, quotedDeleteKey.id);
-
-      if (message.key?.id) {
-        try {
-          message._alreadyReactedAndDeleted = true;
-          await deleteSock.sendMessage(chatId, {
-            delete: {
-              remoteJid: chatId,
-              fromMe: Boolean(message.key.fromMe),
-              id: message.key.id,
-              ...(message.key.participant ? { participant: message.key.participant } : {}),
-            },
-          });
-          removeChatMessageById(chatId, message.key.id);
-        } catch {}
+      let deleteSock = sock;
+      if (isGroup(chatId) && !quotedIsOwn) {
+        const authCheck = await resolveAuthorizedGroupAdminSession({
+          sock,
+          chatId,
+          sender,
+          senderJids,
+          userId,
+          botNumber,
+        });
+        if (!authCheck.ok) {
+          return reply(authCheck.error);
+        }
+        deleteSock = authCheck.adminSession.sock;
       }
 
-      const confirmMsg = await deleteSock.sendMessage(chatId, {
-        text: "🗑️ Replied-to message has been deleted.",
-      });
-      if (confirmMsg?.key?.id) {
-        scheduleAutoDeleteNotice(deleteSock, chatId, confirmMsg.key, 4000);
+      try {
+        await deleteSock.sendMessage(chatId, { delete: quotedDeleteKey });
+        removeChatMessageById(chatId, quotedDeleteKey.id);
+
+        if (message.key?.id) {
+          try {
+            message._alreadyReactedAndDeleted = true;
+            await deleteSock.sendMessage(chatId, {
+              delete: {
+                remoteJid: chatId,
+                fromMe: Boolean(message.key.fromMe),
+                id: message.key.id,
+                ...(message.key.participant ? { participant: message.key.participant } : {}),
+              },
+            });
+            removeChatMessageById(chatId, message.key.id);
+          } catch {}
+        }
+
+        const confirmMsg = await deleteSock.sendMessage(chatId, {
+          text: "🗑️ Replied-to message has been deleted.",
+        });
+        if (confirmMsg?.key?.id) {
+          scheduleAutoDeleteNotice(deleteSock, chatId, confirmMsg.key, 4000);
+        }
+        return;
+      } catch (err) {
+        return reply(`❌ Could not delete that message: ${err.message || "Permission denied"}`);
       }
-      return;
-    } catch (err) {
-      return reply(`❌ Could not delete that message: ${err.message || "Permission denied"}`);
     }
   }
 
@@ -1192,16 +1208,14 @@ export default async function meta(ctx) {
   }
 
   // -------------------------------------------------------------------------
-  // CAPABILITY 4: GROUP ADMINISTRATION — REMOVE N RANDOM MEMBERS
+  // CAPABILITY 4: GROUP ADMINISTRATION — REMOVE RANDOM MEMBER(S) WITH CONFIRMATION
   // -------------------------------------------------------------------------
-  const randomKickMatch = lower.match(
-    /\b(?:remove|kick|boot)\s+(\d+)\s+random\s+(?:members?|participants?|users?|people)\b/i
-  );
+  const randomKickMatch =
+    lower.match(/\b(?:remove|kick|boot)\s+(\d+)\s+random\s+(?:members?|participants?|users?|people|person)\b/i) ||
+    lower.match(/\b(?:remove|kick|boot)\s+(?:a\s+|1\s+)?random\s+(?:person|member|user|participant)\b/i);
+
   if (randomKickMatch) {
-    const requestedCount = parseInt(randomKickMatch[1], 10);
-    if (!requestedCount || requestedCount <= 0) {
-      return reply("⚠️ Please specify a valid number of random members to remove (e.g. `.meta remove 5 random members`).");
-    }
+    const requestedCount = randomKickMatch[1] ? parseInt(randomKickMatch[1], 10) : 1;
 
     const authCheck = await resolveAuthorizedGroupAdminSession({
       sock,
@@ -1240,40 +1254,51 @@ export default async function meta(ctx) {
       return reply("ℹ️ There are no eligible non-admin members in this group to remove.");
     }
 
-    const shuffled = [...eligibleTargets];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    // Pick random target
+    const pickedParticipant = eligibleTargets[Math.floor(Math.random() * eligibleTargets.length)];
+    const targetNum =
+      extractParticipantNumber(pickedParticipant.phoneNumber || pickedParticipant.id) ||
+      pickedParticipant.id.split("@")[0];
+
+    // Look for name in recent chat history
+    const history = getChatHistory(chatId, { limit: 40 });
+    const targetMsg = history.find(
+      (m) => extractParticipantNumber(m.sender) === targetNum && m.pushName
+    );
+    const targetName = targetMsg?.pushName || `+${targetNum}`;
+
+    if (requestedCount === 1) {
+      setPendingClarification(userId, chatId, sender, {
+        type: "confirm_remove_random_member",
+        targetJid: pickedParticipant.id,
+        targetName,
+      });
+      return reply(
+        `I go with *${targetName}* (@${targetNum}). Should I remove him? Reply *yes* or *confirm* to proceed.`,
+        { mentions: [pickedParticipant.id] }
+      );
     }
 
+    // Multiple random members removal
+    const shuffled = [...eligibleTargets].sort(() => Math.random() - 0.5);
     const selected = shuffled.slice(0, Math.min(requestedCount, shuffled.length));
     const removedNumbers = [];
     const removedMentions = [];
-    let failedCount = 0;
 
-    for (const participant of selected) {
+    for (const p of selected) {
       try {
-        await adminSession.sock.groupParticipantsUpdate(chatId, [participant.id], "remove");
-        const num =
-          extractParticipantNumber(participant.phoneNumber || participant.id) || participant.id.split("@")[0];
+        await adminSession.sock.groupParticipantsUpdate(chatId, [p.id], "remove");
+        const num = extractParticipantNumber(p.phoneNumber || p.id) || p.id.split("@")[0];
         removedNumbers.push(`@${num}`);
-        removedMentions.push(participant.id);
-      } catch (err) {
-        failedCount += 1;
-        logger.warn(`Failed to remove random member ${participant.id}:`, err.message);
-      }
-    }
-
-    if (removedNumbers.length === 0) {
-      return reply("❌ Failed to remove the selected members. Please verify the bot's group admin permissions.");
+        removedMentions.push(p.id);
+      } catch {}
     }
 
     return reply(
       [
         `👢 *RANDOM MEMBER REMOVAL COMPLETE*`,
         "────────────────────────────",
-        `✅ *Removed:* ${removedNumbers.length} / ${selected.length} requested (${eligibleTargets.length} non-admin members were eligible)`,
-        ...(failedCount > 0 ? [`⚠️ *Failed:* ${failedCount}`] : []),
+        `✅ *Removed:* ${removedNumbers.length} / ${selected.length}`,
         "",
         removedNumbers.join(", "),
       ].join("\n"),
