@@ -1982,11 +1982,11 @@
         if (!user || !user.uid) return;
         const candidateRef = sessionStorage.getItem("solvatech_ref_code") || localStorage.getItem("solvatech_ref_code") || "";
 
-        // 1. Direct Firebase Firestore customer write via Client SDK (if initialized)
-        if (db) {
+        // 1. Direct Firebase Firestore customer write via Client SDK (only if authenticated)
+        if (db && auth?.currentUser && auth.currentUser.uid === user.uid) {
           try {
             const userDocRef = doc(db, "users", user.uid);
-            const userSnap = await getDoc(userDocRef);
+            const userSnap = await getDoc(userDocRef).catch(() => null);
             const nowIso = new Date().toISOString();
 
             const profileData = {
@@ -1997,38 +1997,19 @@
               updatedAt: nowIso,
             };
 
-            if (!userSnap.exists()) {
+            if (!userSnap || !userSnap.exists()) {
               profileData.createdAt = nowIso;
             }
 
-            const existing = userSnap.exists() ? (userSnap.data() || {}) : {};
-            // If user does not have a permanent referrer yet and a candidate referral code is present
-            if (!existing.referredBy && !existing.referredByCode && candidateRef) {
+            if (candidateRef) {
               const cleanRef = candidateRef.trim().toUpperCase().replace(/^REF-/, "");
               profileData.referredByCode = cleanRef;
               profileData.referredAt = nowIso;
-
-              // Query Firestore to find referrer's UID
-              try {
-                const usersSnap = await getDocs(collection(db, "users"));
-                usersSnap.forEach((uDoc) => {
-                  if (uDoc.id === user.uid) return; // Prevent self-referral
-                  const uData = uDoc.data() || {};
-                  const uCode = (uData.referralCode || "").toUpperCase().replace(/^REF-/, "");
-                  if (uCode === cleanRef) {
-                    profileData.referredBy = uDoc.id;
-                    profileData.referredByUid = uDoc.id;
-                  }
-                });
-              } catch (lookupErr) {
-                console.debug("Client Firestore referrer resolution notice:", lookupErr.message);
-              }
             }
 
             await setDoc(userDocRef, profileData, { merge: true });
-            console.log("Customer profile and permanent referral attribution synced to Firebase Firestore");
           } catch (fsErr) {
-            console.debug("Client Firestore user profile sync notice:", fsErr.message);
+            console.debug("Client Firestore user profile sync note:", fsErr?.message || fsErr);
           }
         }
 
@@ -3175,7 +3156,7 @@
           const data = await safeFetchJson(res);
           if (res.ok && data.preferences) {
             updatePreferencesUI(data.preferences);
-            if (db && currentUser?.uid) {
+            if (db && auth?.currentUser && auth.currentUser.uid === currentUser?.uid) {
               try {
                 await setDoc(doc(db, "user_preferences", currentUser.uid), {
                   userId: currentUser.uid,
@@ -3634,7 +3615,7 @@
             }
 
             // Directly write to Firestore from authenticated customer client as permanent source of truth
-            if (db && currentUser && currentUser.uid) {
+            if (db && auth?.currentUser && auth.currentUser.uid === currentUser?.uid) {
               try {
                 const expiryDateStr = data.license?.expiresAt || data.expiresAt;
                 const daysVal = data.license?.durationDays || data.durationDays;
