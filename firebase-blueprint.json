@@ -217,9 +217,23 @@
         "email": { "type": "string", "description": "Admin email" },
         "role": { "type": "string", "description": "super_admin or admin" }
       }
+    },
+    "SystemSetting": {
+      "title": "SystemSetting",
+      "description": "Global system settings including active backend URL",
+      "type": "object",
+      "properties": {
+        "backendUrl": { "type": "string", "description": "Global active Railway backend URL" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp of last update" },
+        "updatedBy": { "type": "string", "description": "Admin email who updated the backend URL" }
+      }
     }
   },
   "firestore": {
+    "/system_settings/{settingId}": {
+      "schema": "SystemSetting",
+      "description": "Global system configurations including backend URL"
+    },
     "/users/{userId}": {
       "schema": "UserProfile",
       "description": "User profiles and referral attributes"

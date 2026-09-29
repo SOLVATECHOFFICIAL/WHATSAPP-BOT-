@@ -24,6 +24,12 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // Global System Settings Collection (Railway Backend URL discovery for all visitors)
+    match /system_settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Admins Collection
     match /admins/{userId} {
       allow read: if isSignedIn();

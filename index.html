@@ -2727,6 +2727,33 @@
           }
         }
 
+        // Global Railway Backend Sync via Firestore (Option 1):
+        // Automatically sync the global Railway backend URL so all GitHub Pages & external users connect seamlessly
+        async function syncGlobalBackendConfig() {
+          try {
+            if (!db) return;
+            const configSnap = await getDoc(doc(db, "system_settings", "backend_config"));
+            if (configSnap.exists()) {
+              const data = configSnap.data();
+              if (data && data.backendUrl && typeof data.backendUrl === "string") {
+                const cloudUrl = data.backendUrl.trim().replace(/\/+$/, "");
+                if (cloudUrl && cloudUrl.startsWith("http")) {
+                  customApiUrl = cloudUrl;
+                  localStorage.setItem("solvatech_backend_url", cloudUrl);
+                  console.log("[Solvatech Cloud] Connected to global Railway backend from Firestore:", cloudUrl);
+                  const railwayInput = $("admin-railway-url-input");
+                  if (railwayInput) {
+                    railwayInput.value = cloudUrl;
+                  }
+                }
+              }
+            }
+          } catch (err) {
+            console.warn("[Solvatech Cloud] Global backend config sync:", err?.message || err);
+          }
+        }
+        syncGlobalBackendConfig();
+
         initDashboardTabs();
 
         onAuthStateChanged(auth, (user) => {
@@ -4135,18 +4162,29 @@
             rawVal = "https://" + rawVal;
           }
           rawVal = rawVal.replace(/\/+$/, "");
-          urlInput.value = rawVal;
-
           localStorage.setItem("solvatech_backend_url", rawVal);
           localStorage.removeItem("solvatech_railway_unlocked");
           customApiUrl = rawVal;
+
+          // Save globally in Firestore for all GitHub/web users (Option 1)
+          if (db) {
+            setDoc(doc(db, "system_settings", "backend_config"), {
+              backendUrl: rawVal,
+              updatedAt: new Date().toISOString(),
+              updatedBy: auth?.currentUser?.email || "admin",
+            }, { merge: true }).then(() => {
+              console.log("[Solvatech Cloud] Saved global Railway backend URL to Firestore:", rawVal);
+            }).catch((err) => {
+              console.warn("[Solvatech Cloud] Could not save global backend URL to Firestore:", err?.message || err);
+            });
+          }
 
           setLockedState(true);
 
           if (feedback) {
             feedback.style.display = "block";
             feedback.style.color = "#4ade80";
-            feedback.innerHTML = `✅ <strong>Railway deployment automatically locked forever!</strong> Bot calls routed to <code>${rawVal}</code>.`;
+            feedback.innerHTML = `✅ <strong>Railway deployment saved to Cloud & locked forever!</strong> All GitHub and web users are now automatically routed to <code>${rawVal}</code>.`;
           }
 
           testRailwayConnection(rawVal);
