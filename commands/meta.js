@@ -726,10 +726,14 @@ export async function executeGroupAddNumbers({
   const failedOther = [];
   const seen = new Set();
 
+  let index = 0;
   for (const raw of rawNumbers) {
     const rawClean = String(raw || "").trim();
     const digitsOnly = rawClean.replace(/\D/g, "");
-    const normalized = normalizeNumberWithCountryCode(rawClean, countryCode);
+    // Auto-detect 11-digit Nigerian local numbers (070, 080, 081, 090, 091) if no countryCode was specified
+    const effectiveCountryCode =
+      countryCode || (/^0[789][01]\d{8}$/.test(digitsOnly) ? "234" : "");
+    const normalized = normalizeNumberWithCountryCode(rawClean, effectiveCountryCode);
 
     if (!normalized || seen.has(normalized)) continue;
     seen.add(normalized);
@@ -750,9 +754,15 @@ export async function executeGroupAddNumbers({
       continue;
     }
 
+    // Sequential delay so numbers are added one after the other cleanly
+    if (index > 0) {
+      await new Promise((r) => setTimeout(r, 1200));
+    }
+    index += 1;
+
     let jid = `${normalized}@s.whatsapp.net`;
 
-    // Verify if number is registered on WhatsApp
+    // Verify if number is registered on WhatsApp (if check succeeds and explicitly says false, record notOnWhatsApp)
     if (typeof adminSession.sock?.onWhatsApp === "function") {
       try {
         const waCheck = await Promise.race([
@@ -760,7 +770,7 @@ export async function executeGroupAddNumbers({
           new Promise((resolve) => setTimeout(() => resolve(null), 3500)),
         ]);
         if (Array.isArray(waCheck) && waCheck.length > 0) {
-          if (!waCheck[0]?.exists) {
+          if (waCheck[0]?.exists === false) {
             notOnWhatsApp.push({ num: normalized });
             continue;
           }
@@ -801,7 +811,7 @@ export async function executeGroupAddNumbers({
   ];
 
   if (added.length > 0) {
-    lines.push(`✅ *Added (${added.length}):* ${added.map((a) => `+${a.num}`).join(", ")}`);
+    lines.push(`✅ *Added One-by-One (${added.length}):* ${added.map((a) => `+${a.num}`).join(", ")}`);
   }
   if (alreadyIn.length > 0) {
     lines.push(`ℹ️ *Already in group (${alreadyIn.length}):* ${alreadyIn.map((a) => `+${a.num}`).join(", ")}`);
@@ -982,6 +992,8 @@ export async function handleSmartAddRequest({
     const trimmed = raw.trim();
     if (trimmed.startsWith("+")) return false;
     const digits = trimmed.replace(/\D/g, "");
+    // Standard 11-digit Nigerian mobile numbers (070, 080, 081, 090, 091) are unambiguous
+    if (/^0[789][01]\d{8}$/.test(digits)) return false;
     for (const [code, prof] of Object.entries(COUNTRY_PROFILES)) {
       if (digits.startsWith(code) && digits.length === code.length + prof.localLen) {
         return false;
@@ -1003,29 +1015,7 @@ export async function handleSmartAddRequest({
     );
   }
 
-  // If multiple numbers were given, verify and show confirmation list or execute
-  if (rawPhoneMatches.length > 1) {
-    const normalizedList = rawPhoneMatches
-      .map((r) => normalizeNumberWithCountryCode(r, explicitCountryInPrompt || ""))
-      .filter((n) => n && n.length >= 10 && n.length <= 15);
-
-    setPendingClarification(userId, chatId, sender, {
-      type: "confirm_bulk_add_members",
-      numbers: normalizedList,
-      countryCode: explicitCountryInPrompt || "",
-    });
-
-    return reply(
-      [
-        `📋 *CONFIRM NUMBERS TO ADD (${normalizedList.length})*`,
-        "────────────────────────────",
-        normalizedList.map((n, i) => `${i + 1}. +${n}`).join("\n"),
-        "",
-        `Should I proceed to verify and add these *${normalizedList.length}* numbers to the group? Reply *yes* or *confirm* to proceed.`,
-      ].join("\n")
-    );
-  }
-
+  // Add all provided numbers sequentially one after the other immediately!
   return executeGroupAddNumbers({
     adminSession: authCheck.adminSession,
     chatId,
@@ -1205,7 +1195,11 @@ export default async function meta(ctx) {
       const removedMentions = [];
       let failedCount = 0;
 
-      for (const t of targets) {
+      for (let i = 0; i < targets.length; i++) {
+        const t = targets[i];
+        if (i > 0) {
+          await new Promise((r) => setTimeout(r, 1000));
+        }
         try {
           await authCheck.adminSession.sock.groupParticipantsUpdate(chatId, [t.id], "remove");
           removedNumbers.push(`@${t.num}`);
@@ -1217,7 +1211,7 @@ export default async function meta(ctx) {
 
       return reply(
         [
-          `👢 *MEMBER REMOVAL COMPLETE*`,
+          `👢 *MEMBER REMOVAL COMPLETE (ONE-BY-ONE)*`,
           "────────────────────────────",
           `✅ *Successfully Removed:* ${removedNumbers.length} / ${targets.length}`,
           ...(failedCount > 0 ? [`⚠️ *Could Not Remove:* ${failedCount}`] : []),
@@ -1431,26 +1425,20 @@ export default async function meta(ctx) {
       ));
 
   if (isColoredTextGraphicRequest) {
-    // Check if user specified actual text (or quoted a message), or just said "a text" / "text"
+    // Extract the requested text or fall back to quoted message or "SOLVATECH" immediately without asking questions
     const extractedCandidate = rawPrompt
       .replace(/^(?:please\s+)?(?:i\s+ask(?:ed)?\s+(?:for\s+it\s+)?to\s+|can\s+you\s+)?(?:put|make|create|write|render|turn|design|send|give)\s+(?:me\s+)?/i, "")
       .replace(/\b(?:in|with)\s+(?:a\s+)?(?:red|crimson|blue|cyan|green|emerald|lime|gold|yellow|purple|violet|pink|magenta|orange|teal|silver|white|black|neon)?\s*(?:colour|color)?\s*(?:as|into|on|like)?\s*(?:a\s+|an\s+)?(?:pic|picture|image|photo|card|banner)?.*$/i, "")
       .replace(/\b(?:as|into|like)\s+(?:a\s+|an\s+)?(?:colour|color)?\s*(?:pic|picture|image|photo|card|banner).*$/i, "")
       .trim();
 
-    const actualText =
+    let actualText =
       quotedText && (!extractedCandidate || /^(?:this|this\s+text|it|a\s+text|text)$/i.test(extractedCandidate))
         ? quotedText.trim()
         : extractedCandidate;
 
     if (!actualText || /^(?:a\s+text|text|some\s+text|my\s+text|the\s+text|words?|a\s+word|it)$/i.test(actualText)) {
-      setPendingClarification(userId, chatId, sender, {
-        type: "colored_text_pic",
-        colorHint: rawPrompt,
-      });
-      return reply(
-        "🎨 What exact text or name would you like me to write on the picture, and in what color? _(Reply with the text, e.g. *SOLVATECH in gold* or *Boss Daniel in blue*, and I'll send the picture right away!)_"
-      );
+      actualText = message?.pushName || "SOLVATECH";
     }
 
     try {
@@ -1472,35 +1460,17 @@ export default async function meta(ctx) {
       /^(?:a\s+|an\s+)?(?:fine\s+|nice\s+|cool\s+|beautiful\s+)?(?:picture|pic|poc|pik|pix|photo|foto|image|portrait|drawing|wallpaper)s?\s+(?:of|for)\s+/i.test(
         lower
       ) ||
-      /\b(?:picture|pic|photo|image)\s+of\s+(?:a\s+|an\s+|the\s+)?[a-z0-9]/i.test(lower));
+      /\b(?:picture|pic|poc|pik|pix|photo|foto|image|wallpaper)\s+(?:of|for)\s+(?:a\s+|an\s+|the\s+)?[a-z0-9]/i.test(lower));
 
   if (isImageGenerationRequest) {
-    const subject = rawPrompt
-      .replace(
-        /^.*?\b(?:picture|pic|poc|pik|pix|photo|foto|image|portrait|drawing|wallpaper|artwork)s?\s*(?:of\s+|for\s+)?/i,
-        ""
-      )
-      .replace(/\s+(?:is\s+giving\s+this|please|now|for\s+me).*$/i, "")
-      .trim();
-
-    if (!subject) {
-      setPendingClarification(userId, chatId, sender, {
-        type: "image_generation",
-        basePrompt: "High quality photo",
-      });
-      return reply("🎨 What would you like me to generate a picture of? Describe it and I'll send the picture right away!");
-    }
-
-    const isPersonSubject = /\b^(?:a\s+|an\s+)?(?:fine\s+|handsome\s+|cute\s+|beautiful\s+)?(guy|man|boy|gentleman|girl|woman|lady|person|model)$\b/i.test(subject);
-    if (isPersonSubject) {
-      setPendingClarification(userId, chatId, sender, {
-        type: "image_generation",
-        basePrompt: subject,
-      });
-      return reply(
-        `🎨 Sure! In which cloth/outfit or style should *${subject}* be (for example: a sharp black suit, white native attire/agbada, casual streetwear, or corporate wear)?\n\n_(Reply directly with your choice and I'll generate the picture immediately!)_`
-      );
-    }
+    const subject =
+      rawPrompt
+        .replace(
+          /^.*?\b(?:picture|pic|poc|pik|pix|photo|foto|image|portrait|drawing|wallpaper|artwork)s?\s*(?:of\s+|for\s+)?/i,
+          ""
+        )
+        .replace(/\s+(?:is\s+giving\s+this|please|now|for\s+me).*$/i, "")
+        .trim() || rawPrompt;
 
     try {
       const imgResult = await generateMetaImage(subject);
@@ -1815,7 +1785,90 @@ export default async function meta(ctx) {
   }
 
   // -------------------------------------------------------------------------
-  // CAPABILITY 4: GROUP ADMINISTRATION — REMOVE RANDOM / N / ALL MEMBERS WITH CONFIRMATION
+  // CAPABILITY 4A: GROUP DISBAND — REMOVE EACH USER ONE AFTER THE OTHER
+  // ("disband group", "disband this group", "destroy group", "empty this group")
+  // -------------------------------------------------------------------------
+  if (
+    /\b(?:disband|destroy|empty|wipe\s+out)\s+(?:this\s+|the\s+)?(?:group|groups|members?)\b/i.test(lower) ||
+    /\b(?:remove|kick)\s+(?:each|every)\s+(?:user|member|person)\s+one\s+(?:after\s+(?:the\s+)?other|by\s+one)\b/i.test(lower)
+  ) {
+    const authCheck = await resolveAuthorizedGroupAdminSession({
+      sock,
+      chatId,
+      sender,
+      senderJids,
+      userId,
+      botNumber,
+    });
+    if (!authCheck.ok) {
+      return reply(authCheck.error);
+    }
+
+    const { adminSession, allAdminSessions, metadata } = authCheck;
+    const callerAliases = new Set([sender, ...senderJids].filter(Boolean).flatMap(jidAliases));
+    const callerNumbers = new Set([sender, ...senderJids].map((j) => extractParticipantNumber(j)).filter(Boolean));
+
+    const targetsToKick = (metadata.participants || []).filter((p) => {
+      if (p.admin === "superadmin" || isOwner(metadata, p.id)) return false;
+      const pJids = [p.id, p.jid, p.lid, p.phoneNumber].filter(Boolean);
+      const pAliases = pJids.flatMap(jidAliases);
+      const pNums = pJids.map((j) => extractParticipantNumber(j)).filter(Boolean);
+
+      if (pAliases.some((a) => callerAliases.has(a)) || pNums.some((n) => callerNumbers.has(n))) {
+        return false;
+      }
+
+      const targetInfo = extractParticipantTargetDetails(p, metadata);
+      if (targetInfo && allAdminSessions.some((sess) => doesSessionMatchParticipant(sess, targetInfo))) {
+        return false;
+      }
+      return true;
+    });
+
+    if (targetsToKick.length === 0) {
+      return reply("ℹ️ There are no removable members left in this group to disband.");
+    }
+
+    await reply(`🚨 *DISBANDING GROUP:* Removing *${targetsToKick.length}* member(s) one after the other...`);
+
+    const removedNumbers = [];
+    const removedMentions = [];
+    let failedCount = 0;
+
+    for (let i = 0; i < targetsToKick.length; i++) {
+      const p = targetsToKick[i];
+      const num = extractParticipantNumber(p.phoneNumber || p.id) || p.id.split("@")[0];
+      if (i > 0) {
+        await new Promise((r) => setTimeout(r, 1000));
+      }
+      try {
+        if (p.admin === "admin" || p.admin === true) {
+          await adminSession.sock.groupParticipantsUpdate(chatId, [p.id], "demote").catch(() => {});
+          await new Promise((r) => setTimeout(r, 400));
+        }
+        await adminSession.sock.groupParticipantsUpdate(chatId, [p.id], "remove");
+        removedNumbers.push(`@${num}`);
+        removedMentions.push(p.id);
+      } catch {
+        failedCount += 1;
+      }
+    }
+
+    return reply(
+      [
+        `💥 *GROUP DISBAND COMPLETE*`,
+        "────────────────────────────",
+        `✅ *Removed One-by-One:* ${removedNumbers.length} / ${targetsToKick.length}`,
+        ...(failedCount > 0 ? [`⚠️ *Could Not Remove:* ${failedCount}`] : []),
+        "",
+        removedNumbers.join(", "),
+      ].join("\n"),
+      { mentions: removedMentions }
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // CAPABILITY 4B: GROUP ADMINISTRATION — REMOVE RANDOM / N / ALL MEMBERS WITH CONFIRMATION
   // ("remove 1 random person from group", "remove 50 members from group", "remove all members")
   // Always suggests the target(s) and asks for confirmation before kicking!
   // -------------------------------------------------------------------------

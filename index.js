@@ -1423,6 +1423,15 @@ app.use((error, _request, response, _next) => {
   response.status(500).json({ error: "Internal server error." });
 });
 
+// Prevent any transient Baileys or network error from crashing the server process
+process.on("uncaughtException", (err) => {
+  logger.warn("Caught uncaughtException (process kept alive)", err?.message || String(err));
+});
+
+process.on("unhandledRejection", (reason) => {
+  logger.warn("Caught unhandledRejection (process kept alive)", reason?.message || String(reason));
+});
+
 app.listen(PORT, "0.0.0.0", () => {
   logger.info("SOLVATECH BOT web server listening", String(PORT));
   syncAllFromFirestore()
@@ -1440,5 +1449,19 @@ app.listen(PORT, "0.0.0.0", () => {
     auditActiveSessions().catch((err) => {
       logger.debug("Background license audit notice", err.message);
     });
-  }, 30000).unref();
+  }, 30000);
+
+  // Continuous Railway / Cloud self-ping every 15 seconds so container never idles or sleeps
+  setInterval(async () => {
+    try {
+      await fetch(`http://127.0.0.1:${PORT}/api/health`).catch(() => {});
+      const publicDomain = process.env.RAILWAY_PUBLIC_DOMAIN || process.env.RAILWAY_STATIC_URL;
+      if (publicDomain) {
+        const externalUrl = publicDomain.startsWith("http")
+          ? `${publicDomain.replace(/\/$/, "")}/api/health`
+          : `https://${publicDomain.replace(/\/$/, "")}/api/health`;
+        await fetch(externalUrl).catch(() => {});
+      }
+    } catch {}
+  }, 15000);
 });
