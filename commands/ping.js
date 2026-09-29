@@ -12,14 +12,17 @@ export default async function ping({ sock, reply, startedAt }) {
   const latency = Date.now() - (startedAt || Date.now());
   const memUsed = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(1);
   const uptime = formatUptime(process.uptime());
-  const status = sock?.user ? "Connected 🟢" : "Connecting 🟡";
+  const status = sock?.user ? "_Connected 🟢_" : "_Connecting 🟡_";
 
   await reply([
-    "🏓 *SOLVATECH PING & STATUS*",
-    `• *Latency:* ${latency} ms`,
-    `• *Status:* ${status}`,
-    `• *Uptime:* ${uptime}`,
-    `• *RAM:* ${memUsed} MB`,
-    `• *Platform:* ${os.type()} (${os.arch()})`,
+    "╭━━〔 🏓 *SOLVATECH PING & LATENCY* 〕━━╮",
+    "",
+    `┃ ⚡ *Response Speed:* *${latency} ms*`,
+    `┃ 📡 *Socket State:* ${status}`,
+    `┃ ⏳ *Continuous Uptime:* *${uptime}*`,
+    `┃ 💾 *Memory Allocated:* *${memUsed} MB*`,
+    `┃ 🖥️ *Host Platform:* _${os.type()} (${os.arch()})_`,
+    "",
+    "╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯",
   ].join("\n"));
 }

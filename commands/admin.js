@@ -13,14 +13,22 @@ export default async function admin({ sock, chatId, reply }) {
 
   const mentions = adminParticipants.map((p) => p.id);
   const listText = adminParticipants
-    .map((p, idx) => `${idx + 1}. ${mentionText(p.id)} ${p.admin === "superadmin" ? "👑 (Owner)" : "⭐ (Admin)"}`)
+    .map((p, idx) => `│ ${idx + 1}. ${mentionText(p.id)} ${p.admin === "superadmin" ? "👑 *(Creator/Owner)*" : "⭐ *(Admin)*"}`)
     .join("\n");
 
   const message = [
-    `🛡️ *GROUP ADMINS (${adminParticipants.length})*`,
-    `Group: *${metadata.subject}*`,
+    `╭━━〔 🛡️ *GROUP ADMINISTRATOR ROSTER (${adminParticipants.length})* 〕━━╮`,
     "",
+    `┃ 🏷️ *Group:* *${metadata.subject}*`,
+    `┃ 👥 *Total Admins:* *${adminParticipants.length}*`,
+    "",
+    "╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯",
+    "",
+    "╭──〔 📋 *ADMIN LIST* 〕──╮",
+    "│",
     listText,
+    "│",
+    "╰─────────────────────────",
   ].join("\n");
 
   await reply(message, { mentions });

@@ -20,20 +20,28 @@ export default async function spam({ sock, chatId, senderIsLinkedAccount, text, 
 
   const messageText = String(text || "").trim();
   if (!messageText) {
-    return reply(
-      `❌ *Usage:* \`.spam <message>\`\n` +
-      `Example: \`.spam Important update\`\n` +
-      `_Use *.stop* anytime to stop messaging._`
-    );
+    return reply([
+      "╭━━〔 ❌ *BROADCAST USAGE* 〕━━╮",
+      "",
+      "┃ 💡 *Command:* `*.spam <message>*`",
+      "┃ 📝 *Example:* `*.spam Important notice*`",
+      "┃ 🛑 *Cancel:* _Use *.stop* anytime to terminate_",
+      "",
+      "╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯",
+    ].join("\n"));
   }
 
   // Cancel any prior active task for this chat/account and start fresh task
   const task = startSpamTask(userId, chatId);
 
-  await reply(
-    `🚀 *Broadcast started:* Repeating message...\n` +
-    `_Use *.stop* anytime to cancel._`
-  );
+  await reply([
+    "╭━━〔 🚀 *BROADCAST INITIATED* 〕━━╮",
+    "",
+    "┃ 📢 *State:* _Repeating message sequentially..._",
+    "┃ 🛑 *Control:* _Type *.stop* anytime to terminate immediately._",
+    "",
+    "╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯",
+  ].join("\n"));
 
   // Run repeated operation asynchronously with sequential rate-limiting
   (async () => {
@@ -59,9 +67,9 @@ export default async function spam({ sock, chatId, senderIsLinkedAccount, text, 
       stopSpamTask(userId, chatId);
 
       if (wasCancelled) {
-        await reply(`🛑 *Operation stopped:* Delivered ${sentCount} message${sentCount === 1 ? "" : "s"}.`).catch(() => {});
+        await reply(`🛑 *Broadcast Terminated:* Delivered *${sentCount}* message${sentCount === 1 ? "" : "s"}.`).catch(() => {});
       } else if (sentCount >= MAX_COUNT) {
-        await reply(`✅ *Broadcast completed:* Delivered ${sentCount} messages.`).catch(() => {});
+        await reply(`✅ *Broadcast Completed:* Delivered *${sentCount}* messages.`).catch(() => {});
       }
     }
   })();

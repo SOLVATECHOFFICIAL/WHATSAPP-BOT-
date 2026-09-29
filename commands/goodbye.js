@@ -17,19 +17,23 @@ export default async function goodbye({
   if (!["on", "off"].includes(value)) {
     const current = await getGroupSettings(chatId, userId);
     return reply([
-      "╔════ *SOLVATECH AUTO GOODBYE* ════╗",
+      "╭━━〔 👋 *SOLVATECH AUTO-GOODBYE* 〕━━╮",
       "",
-      `┃ 👋 *Status:* ${current.goodbye ? "🟢 ENABLED (ON)" : "🔴 DISABLED (OFF)"}`,
+      `┃ ⚙️ *Current Status:* ${current.goodbye ? "🟢 *ENABLED (ON)*" : "🔴 *DISABLED (OFF)*"}`,
+      "┃ 💬 *Action:* _Sends farewell notice automatically when members leave_",
       "",
-      "╚══════════════════════════════════╝",
+      "╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯",
       "",
-      "*USAGE:*",
-      "• *.autogoodbye on* — Enable auto goodbye for this group",
-      "• *.autogoodbye off* — Disable auto goodbye for this group",
+      "╭──〔 💡 *COMMAND USAGE* 〕──╮",
+      "│",
+      "│ • *.autogoodbye on* — _Activate auto-goodbye for this group_",
+      "│ • *.autogoodbye off* — _Deactivate auto-goodbye for this group_",
+      "│",
+      "╰────────────────────────────",
     ].join("\n"));
   }
 
   const enabled = value === "on";
   await setGroupSetting(chatId, "goodbye", enabled, userId);
-  await reply(`✅ Auto Goodbye has been turned ${enabled ? "ON" : "OFF"} for this group.`);
+  await reply(`✅ *Auto Goodbye:* ${enabled ? "🟢 *ENABLED (ON)*" : "🔴 *DISABLED (OFF)*"}\n_Configuration saved to group cloud settings._`);
 }

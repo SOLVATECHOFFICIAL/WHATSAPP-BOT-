@@ -8,13 +8,13 @@ export default async function sticker({ sock, message, chatId, reply }) {
   const type = mediaTypeFromMessage(source);
 
   if (!type || (type !== "image" && type !== "video")) {
-    return reply("❌ Reply to an image or video with *.sticker*.");
+    return reply("❌ *Media Missing:* Please reply directly to an image or short video with *.sticker*.");
   }
 
   try {
     const buffer = await downloadMessageMedia(source, `${type}Message`, sock);
     if (!buffer || buffer.length === 0) {
-      return reply("❌ Could not download the media.");
+      return reply("❌ *Download Error:* Could not download the media payload.");
     }
 
     const isVideo = type === "video";
@@ -26,6 +26,6 @@ export default async function sticker({ sock, message, chatId, reply }) {
     });
   } catch (error) {
     logger.error("Sticker command error", error);
-    await reply(`❌ Failed to create sticker: ${error.message || "Could not process media"}`);
+    await reply(`❌ *Sticker Conversion Failed:* ${error.message || "Could not process media"}`);
   }
 }

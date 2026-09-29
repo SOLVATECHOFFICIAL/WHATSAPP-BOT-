@@ -52,20 +52,23 @@ export default async function anti({
   if (!setting || !["on", "off"].includes(value)) {
     const current = await getGroupSettings(chatId, userId);
     return reply([
-      "╔════ *SOLVATECH ANTI PROTECTIONS* ════╗",
+      "╭━━〔 🛡️ *SOLVATECH ANTI PROTECTIONS* 〕━━╮",
       "",
-      `┃ 🔗 *Anti-Link:* ${current.antiLink ? "🟢 ON" : "🔴 OFF"}`,
-      `┃ 🤖 *Anti-Bot:* ${current.antiBot ? "🟢 ON" : "🔴 OFF"}`,
-      `┃ 📢 *Anti-Status-Mention:* ${current.antiStatusMention ? "🟢 ON" : "🔴 OFF"}`,
-      `┃ ⚠️ *Shared Warning Limit:* ${current.warningLimit || 3}`,
+      `┃ 🔗 *Anti-Link:* ${current.antiLink ? "🟢 *ENABLED (ON)*" : "🔴 *DISABLED (OFF)*"}`,
+      `┃ 🤖 *Anti-Bot:* ${current.antiBot ? "🟢 *ENABLED (ON)*" : "🔴 *DISABLED (OFF)*"}`,
+      `┃ 📢 *Anti-Status-Mention:* ${current.antiStatusMention ? "🟢 *ENABLED (ON)*" : "🔴 *DISABLED (OFF)*"}`,
+      `┃ ⚠️ *Shared Warning Limit:* *${current.warningLimit || 3}* _violations_`,
       "",
-      "╚════════════════════════════════════╝",
+      "╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯",
       "",
-      "*COMMAND USAGE:*",
-      "• *.antilink on/off* — Prohibited external links",
-      "• *.antibot on/off* — Rogue automated bot accounts",
-      "• *.antistatus on/off* — WhatsApp status group mentions",
-      "• *.anti limit <number>* — Configure max warning limit (e.g. 3)",
+      "╭──〔 💡 *USAGE & CONTROLS* 〕──╮",
+      "│",
+      "│ • *.antilink on/off* — _Auto-delete external group links & warn_",
+      "│ • *.antibot on/off* — _Auto-remove unauthorized bot accounts_",
+      "│ • *.antistatus on/off* — _Auto-remove status group mentions & warn_",
+      "│ • *.anti limit <N>* — _Set max warning limit (e.g. *.anti limit 3*)_",
+      "│",
+      "╰───────────────────────────────",
     ].join("\n"));
   }
 
@@ -76,5 +79,5 @@ export default async function anti({
   if (setting === "antiBot") displayName = "Anti-Bot";
   if (setting === "antiStatusMention") displayName = "Anti-Status-Mention";
 
-  await reply(`✅ *${displayName} Protection:* ${enabled ? "🟢 ENABLED (ON)" : "🔴 DISABLED (OFF)"}`);
+  await reply(`✅ *${displayName} Protection:* ${enabled ? "🟢 *ENABLED (ON)*" : "🔴 *DISABLED (OFF)*"}\n_Settings saved and synced to Firebase._`);
 }

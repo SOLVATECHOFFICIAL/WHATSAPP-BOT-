@@ -25,15 +25,16 @@ export default async function uptime({ sock, reply, startedAt }) {
   const botNumber = sock?.user?.id?.split(":")[0]?.split("@")[0] || "Unknown";
 
   const lines = [
-    "⏱️ *SOLVATECH BOT • LIVE UPTIME*",
+    "╭━━〔 ⏱️ *SOLVATECH BOT LIVE RUNTIME* 〕━━╮",
     "",
-    `┃ ⏳ *Continuous Uptime:* ${uptimeFormatted}`,
-    `┃ 🟢 *Connection Status:* ${isConnected ? "Live Connected" : "Connecting..."}`,
-    `┃ 📱 *Linked Account:* +${botNumber}`,
-    `┃ 🏓 *Response Latency:* ${latency} ms`,
-    `┃ 💾 *RAM Usage:* ${memUsedMb} MB`,
-    `┃ 🖥️ *System:* ${os.type()} ${os.arch()}`,
-    "╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+    `┃ ⏳ *Continuous Uptime:* *${uptimeFormatted}*`,
+    `┃ 🟢 *Connection Status:* _${isConnected ? "Live Connected" : "Connecting..."}_`,
+    `┃ 📱 *Linked Account:* *+${botNumber}*`,
+    `┃ 🏓 *Response Latency:* *${latency} ms*`,
+    `┃ 💾 *RAM Usage:* *${memUsedMb} MB*`,
+    `┃ 🖥️ *Host System:* _${os.type()} ${os.arch()}_`,
+    "",
+    "╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯",
   ];
 
   await reply(lines.join("\n"));

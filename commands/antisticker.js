@@ -8,14 +8,14 @@ export default async function antisticker({ sock, message, chatId, reply }) {
   const content = unwrapMediaMessage(source);
 
   if (!content.stickerMessage) {
-    return reply("❌ Reply to a sticker with *.antisticker* to convert it to an image or video.");
+    return reply("❌ *Sticker Missing:* Please reply directly to a sticker with *.antisticker* to convert it to an image or video.");
   }
 
   try {
     const targetChat = chatId || message.key.remoteJid;
     const buffer = await downloadMessageMedia(source, "stickerMessage", sock);
     if (!buffer || buffer.length === 0) {
-      return reply("❌ Could not download the sticker media.");
+      return reply("❌ *Download Error:* Could not download the sticker media.");
     }
 
     // Comprehensive animated sticker detection
@@ -39,7 +39,7 @@ export default async function antisticker({ sock, message, chatId, reply }) {
           video: videoBuffer,
           mimetype: "video/mp4",
           gifPlayback: true,
-          caption: "✨ Animated sticker converted to video.",
+          caption: "✨ *Animated sticker converted to video.*",
         });
       }
       throw new Error("Unable to convert animated sticker frames to video.");
@@ -50,10 +50,10 @@ export default async function antisticker({ sock, message, chatId, reply }) {
     await sock.sendMessage(targetChat, {
       image: imageBuffer,
       mimetype: "image/png",
-      caption: "✨ Sticker converted to picture.",
+      caption: "✨ *Sticker converted to picture.*",
     });
   } catch (error) {
     logger.error("Antisticker command error", error);
-    await reply(`❌ Failed to convert sticker: ${error.message || "Unknown error"}`);
+    await reply(`❌ *Conversion Failed:* ${error.message || "Unknown error"}`);
   }
 }

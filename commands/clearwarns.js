@@ -22,7 +22,7 @@ export default async function clearwarns({
 
   const resolved = resolveGroupTargetJids(metadata, message, args);
   if (!resolved || !resolved.canonicalJid) {
-    return reply("❌ Please tag or reply to the user whose warnings you want to clear.\nUsage: *.clearwarns @user*");
+    return reply("❌ *Target Missing:* Please tag or reply to the member whose warnings you wish to clear.\n_Usage: *.clearwarns @user*_");
   }
 
   await clearWarning(chatId, resolved.allJids, userId);
@@ -30,5 +30,5 @@ export default async function clearwarns({
   const limit = settings.warningLimit || 3;
   const num = resolved.canonicalJid.split("@")[0].split(":")[0];
   const mentions = [...new Set([resolved.canonicalJid, resolved.mentionJid].filter(Boolean))];
-  await reply(`✅ Cleared warnings for @${num} (*0/${limit}*).`, { mentions });
+  await reply(`✅ *Warnings Cleared:* @${num} is now at *0/${limit}* warnings.\n_Record updated and synchronized to Firebase._`, { mentions });
 }

@@ -6,15 +6,17 @@ export default async function owner({ reply }) {
   const OFFICIAL_SITE = "https://solvatech.name.ng";
 
   const message = [
-    "╭━━〔 *SOLVATECH BOT OWNER* 〕━━╮",
-    `┃ 👑 *Developer:* ${OWNER_NAME}`,
-    `┃ 📞 *Contact:* ${OWNER_PHONE}`,
-    `┃ 💬 *WhatsApp Direct:* ${OWNER_WA_LINK}`,
-    `┃ 🌐 *Official Platform:* ${OFFICIAL_SITE}`,
-    `┃ 🛡️ *License & Support:* Active`,
+    "╭━━〔 👑 *SOLVATECH BOT DEVELOPER & OWNER* 〕━━╮",
+    "",
+    `┃ 👤 *Official Name:* *${OWNER_NAME}*`,
+    `┃ 📞 *Direct Phone:* *${OWNER_PHONE}*`,
+    `┃ 💬 *WhatsApp Chat:* _${OWNER_WA_LINK}_`,
+    `┃ 🌐 *Official Portal:* _${OFFICIAL_SITE}_`,
+    "┃ 🛡️ *License & Tech Support:* _24/7 Active_",
+    "",
     "╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯",
     "",
-    `_For official bot updates, custom feature inquiries, or licensing assistance, contact ${OWNER_NAME} via WhatsApp._`,
+    `_For official bot upgrades, license renewals, custom AI tools, or developer inquiries, message *${OWNER_NAME}* directly._`,
   ].join("\n");
 
   await reply(message);

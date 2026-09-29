@@ -23,10 +23,10 @@ export default async function warns({
   if (sub === "limit" || sub === "setlimit") {
     const limitNum = parseInt(val, 10);
     if (!limitNum || isNaN(limitNum) || limitNum < 1 || limitNum > 20) {
-      return reply("❌ Please specify a valid warning limit between 1 and 20. Example: *.warns limit 3*");
+      return reply("❌ *Invalid parameter:* Please specify a valid warning limit between *1* and *20*.\n_Example: *.warns limit 3*_");
     }
     const newLimit = await setWarningLimit(chatId, limitNum, userId);
-    return reply(`✅ Group warning limit set to *${newLimit}*. Members exceeding this will be removed.`);
+    return reply(`✅ *Group Warning Threshold Updated:* *${newLimit}* violations before removal.\n_Synced to Firebase Firestore._`);
   }
 
   const settings = await getGroupSettings(chatId, userId);
@@ -52,12 +52,19 @@ export default async function warns({
 
     const mentions = [...new Set([resolved.canonicalJid, resolved.mentionJid].filter(Boolean))];
     return reply([
-      "⚠️ *SOLVATECH MEMBER WARNING STATUS*",
-      "────────────────────────────",
+      "╭━━〔 ⚠️ *SOLVATECH MEMBER WARNING STATUS* 〕━━╮",
+      "",
       `┃ 👤 *Member:* @${targetClean}`,
-      `┃ 🔢 *Active Warnings:* ${count} / ${settings.warningLimit || 3}`,
-      ...(last ? [`┃ 🚫 *Last Violation:* ${last.reason || "Rule breach"}`] : []),
-      "╰────────────────────────────",
+      `┃ 🔢 *Active Warnings:* *${count}* of *${settings.warningLimit || 3}* limit`,
+      ...(last ? [`┃ 🚫 *Last Violation:* _${last.reason || "Rule breach"}_`] : []),
+      "",
+      "╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯",
+      "",
+      count >= (settings.warningLimit || 3)
+        ? "🚨 *Status:* _Warning threshold reached. Further violations will result in removal._"
+        : count > 0
+          ? "⚠️ *Status:* _Under active warning. Please adhere to group rules._"
+          : "🟢 *Status:* _Clean record (0 active warnings)._",
     ].join("\n"), { mentions });
   }
 
@@ -66,32 +73,39 @@ export default async function warns({
 
   if (activeEntries.length === 0) {
     return reply([
-      "⚠️ *SOLVATECH GROUP WARNING STATUS*",
-      "────────────────────────────",
-      `┃ 🛡️ *Configured Limit:* ${settings.warningLimit || 3} violations`,
-      "┃ 🟢 *Active Violations:* None (0 members warned)",
-      "╰────────────────────────────",
+      "╭━━〔 ⚠️ *SOLVATECH GROUP WARNING STATUS* 〕━━╮",
       "",
-      "_Tip: Use .warns limit <N> to change the maximum threshold._",
+      `┃ 🛡️ *Configured Threshold:* *${settings.warningLimit || 3}* violations`,
+      "┃ 🟢 *Active Violations:* _None (0 warned members)_",
+      "┃ 📊 *Overall Health:* _100% Compliant_",
+      "",
+      "╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯",
+      "",
+      "_Tip: Use *.warns limit <N>* to adjust maximum group threshold._",
     ].join("\n"));
   }
 
   const lines = activeEntries.map(([jid, count]) => {
     const num = jid.split("@")[0].split(":")[0];
-    return `• @${num} — *${count} / ${settings.warningLimit || 3}* warnings`;
+    return `│ • @${num} — *${count} / ${settings.warningLimit || 3}* _warnings_`;
   });
 
   const mentions = activeEntries.map(([jid]) => jid);
 
   return reply([
-    "⚠️ *ACTIVE GROUP WARNINGS*",
-    "────────────────────────────",
-    `┃ 🛡️ *Max Limit:* ${settings.warningLimit || 3} violations before removal`,
-    `┃ 👥 *Warned Members:* ${activeEntries.length}`,
-    "────────────────────────────",
+    "╭━━〔 ⚠️ *ACTIVE GROUP WARNING ROSTER* 〕━━╮",
     "",
+    `┃ 🛡️ *Max Threshold:* *${settings.warningLimit || 3}* violations before removal`,
+    `┃ 👥 *Warned Members:* *${activeEntries.length}*`,
+    "",
+    "╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯",
+    "",
+    "╭──〔 📋 *MEMBER BREAKDOWN* 〕──╮",
+    "│",
     ...lines,
+    "│",
+    "╰───────────────────────────────",
     "",
-    "_Commands: .clearwarns @user | .resetwarns | .warns limit <N>_",
+    "_Commands: *.clearwarns @user* | *.resetwarns* | *.warns limit <N>*_",
   ].join("\n"), { mentions });
 }

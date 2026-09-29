@@ -17,19 +17,23 @@ export default async function welcome({
   if (!["on", "off"].includes(value)) {
     const current = await getGroupSettings(chatId, userId);
     return reply([
-      "╔════ *SOLVATECH AUTO WELCOME* ════╗",
+      "╭━━〔 🎈 *SOLVATECH AUTO-WELCOME* 〕━━╮",
       "",
-      `┃ 🎈 *Status:* ${current.welcome ? "🟢 ENABLED (ON)" : "🔴 DISABLED (OFF)"}`,
+      `┃ ⚙️ *Current Status:* ${current.welcome ? "🟢 *ENABLED (ON)*" : "🔴 *DISABLED (OFF)*"}`,
+      "┃ 💬 *Action:* _Greets new members automatically upon joining_",
       "",
-      "╚══════════════════════════════════╝",
+      "╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯",
       "",
-      "*USAGE:*",
-      "• *.autowelcome on* — Enable auto welcome for this group",
-      "• *.autowelcome off* — Disable auto welcome for this group",
+      "╭──〔 💡 *COMMAND USAGE* 〕──╮",
+      "│",
+      "│ • *.autowelcome on* — _Activate auto-welcome for this group_",
+      "│ • *.autowelcome off* — _Deactivate auto-welcome for this group_",
+      "│",
+      "╰────────────────────────────",
     ].join("\n"));
   }
 
   const enabled = value === "on";
   await setGroupSetting(chatId, "welcome", enabled, userId);
-  await reply(`✅ Auto Welcome has been turned ${enabled ? "ON" : "OFF"} for this group.`);
+  await reply(`✅ *Auto Welcome:* ${enabled ? "🟢 *ENABLED (ON)*" : "🔴 *DISABLED (OFF)*"}\n_Configuration saved to group cloud settings._`);
 }

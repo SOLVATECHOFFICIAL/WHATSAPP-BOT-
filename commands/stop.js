@@ -14,8 +14,14 @@ export default async function stop(ctx) {
 
   const stopped = stopSpamTask(userId, chatId);
   if (stopped) {
-    await reply("🛑 *Active repeated operation stopped immediately.*");
+    await reply([
+      "╭━━〔 🛑 *BROADCAST STOPPED* 〕━━╮",
+      "",
+      "┃ 🛑 *Status:* _Repeated operation terminated immediately._",
+      "",
+      "╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯",
+    ].join("\n"));
   } else {
-    await reply("ℹ️ No active repeated operation is running in this chat.");
+    await reply("ℹ️ *Notice:* _No active repeated broadcast operation is currently running in this chat._");
   }
 }

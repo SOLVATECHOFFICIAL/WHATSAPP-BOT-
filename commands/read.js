@@ -25,18 +25,20 @@ export default async function read({ sock, message, reply }) {
     const extractedText = await extractTextFromImage(buffer);
 
     if (!extractedText) {
-      return reply("🔍 *OCR Result:* No readable text was detected in this image.");
+      return reply("🔍 *OCR Result:* _No readable text detected in this image._");
     }
 
     await reply(
       [
-        "📖 *VERBATIM OCR EXTRACTED TEXT*",
-        "────────────────────────────",
+        "╭━━〔 📖 *VERBATIM OCR EXTRACTED TEXT* 〕━━╮",
+        "",
         extractedText,
+        "",
+        "╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯",
       ].join("\n")
     );
   } catch (error) {
     logger.error("OCR extraction failed", error);
-    await reply(`❌ OCR extraction failed: ${error.message || "Failed to process image"}`);
+    await reply(`❌ *OCR Extraction Failed:* ${error.message || "Failed to process image"}`);
   }
 }

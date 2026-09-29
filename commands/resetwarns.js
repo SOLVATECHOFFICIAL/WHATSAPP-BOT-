@@ -13,5 +13,14 @@ export default async function resetwarns({
   await requireAdmin(sock, chatId, sender, true, senderJids, senderIsLinkedAccount);
 
   await resetWarnings(chatId, userId);
-  await reply("✅ *All group warnings have been reset to 0.*");
+  await reply([
+    "╭━━〔 🔄 *GROUP WARNINGS RESET* 〕━━╮",
+    "",
+    "┃ 🟢 *All active member warnings have been reset to 0.*",
+    "┃ 📊 *Status:* _Clean group slate_",
+    "",
+    "╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯",
+    "",
+    "_Group data synced with Firebase Firestore._",
+  ].join("\n"));
 }

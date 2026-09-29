@@ -57,6 +57,33 @@
         "settings": { "type": "object", "description": "Group settings map by groupId" }
       }
     },
+    "MetaChatSession": {
+      "title": "MetaChatSession",
+      "description": "Persistent continuous Meta AI chat session configuration",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "User account ID" },
+        "chatId": { "type": "string", "description": "WhatsApp chat or group JID" },
+        "chatName": { "type": "string", "description": "Chat display name" },
+        "isGroup": { "type": "boolean", "description": "Whether chat is a group" },
+        "enabled": { "type": "boolean", "description": "Whether continuous Meta AI is enabled" },
+        "mode": { "type": "string", "description": "private or public mode" },
+        "strictPrivate": { "type": "boolean", "description": "Strict private flag" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp of last update" }
+      }
+    },
+    "UserSetting": {
+      "title": "UserSetting",
+      "description": "User dashboard preferences and recovery configuration",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Verified UID" },
+        "safeUserId": { "type": "string", "description": "Safe user ID" },
+        "deletedMessageRecovery": { "type": "boolean", "description": "Deleted message recovery setting" },
+        "viewOnceRecovery": { "type": "boolean", "description": "View once recovery setting" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp of update" }
+      }
+    },
     "WhatsAppSession": {
       "title": "WhatsAppSession",
       "description": "Baileys WhatsApp session state and credentials",
@@ -212,6 +239,14 @@
     "/group_settings/{userId}": {
       "schema": "GroupSettings",
       "description": "Group configurations per user account"
+    },
+    "/meta_chats/{docId}": {
+      "schema": "MetaChatSession",
+      "description": "Persistent continuous Meta AI chat sessions"
+    },
+    "/user_settings/{userId}": {
+      "schema": "UserSetting",
+      "description": "User preferences and recovery configurations"
     },
     "/whatsapp_sessions/{userId}": {
       "schema": "WhatsAppSession",

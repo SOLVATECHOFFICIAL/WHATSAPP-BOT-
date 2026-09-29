@@ -5,6 +5,17 @@ const SOLVATECH_LOGO_URL = "https://solvatechofficial.github.io/WHATSAPP-BOT-/so
 export default async function alive({ reply }) {
   await reply({
     image: SOLVATECH_LOGO_URL,
-    caption: `⚡ *${BOT_NAME} IS ONLINE*\n👤 *Owner:* ${OWNER_NAME}\n🟢 *Status:* Active & Listening`,
+    caption: [
+      "╭━━〔 ⚡ *SOLVATECH BOT STATUS* 〕━━╮",
+      "",
+      `┃ 🤖 *Bot Engine:* *${BOT_NAME}*`,
+      `┃ 👑 *Developer:* *${OWNER_NAME}*`,
+      "┃ 🟢 *Operational State:* _Active & Listening_",
+      "┃ 🛡️ *System Health:* _100% Operational_",
+      "",
+      "╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯",
+      "",
+      "_Type *.menu* for the complete list of commands._",
+    ].join("\n"),
   });
 }
