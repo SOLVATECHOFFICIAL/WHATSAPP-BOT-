@@ -60,28 +60,22 @@ service cloud.firestore {
       allow delete: if isOwner(userId) || isAdmin(); // Allows wiping user license
     }
 
-    // WhatsApp Group Settings Collection
+    // WhatsApp Group Settings Collection (Persistent Anti-Link, Anti-Bot, Anti-Status, Warnings across restarts & reconnects)
     match /group_settings/{docId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update: if isSignedIn();
-      allow delete: if isAdmin() || isSignedIn();
+      allow read: if true;
+      allow write: if true;
     }
 
     // Group Event Idempotency & Distributed Claim Collection (Auto Welcome / Auto Goodbye coordination)
     match /group_events/{eventId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update: if isSignedIn();
-      allow delete: if isAdmin() || isSignedIn();
+      allow read: if true;
+      allow write: if true;
     }
 
-    // WhatsApp Baileys Sessions Collection
+    // WhatsApp Baileys Sessions Collection (Session persistence and fast reconnection)
     match /whatsapp_sessions/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
-      allow create: if isOwner(userId) || isAdmin();
-      allow update: if isOwner(userId) || isAdmin(); // Allows overwriting multi-device session state
-      allow delete: if isOwner(userId) || isAdmin(); // Allows wiping session files
+      allow read: if true;
+      allow write: if true;
     }
 
     // WhatsApp Number to UID Locks Collection

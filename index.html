@@ -841,8 +841,8 @@
             <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
               <div style="position: relative; flex: 1; min-width: 280px;">
                 <input id="admin-railway-url-input" type="text"
-                  placeholder="e.g. web-production-c6f21.up.railway.app or https://..."
-                  value="https://web-production-c6f21.up.railway.app"
+                  placeholder="e.g. web-production-f4adc.up.railway.app or https://..."
+                  value="https://web-production-f4adc.up.railway.app"
                   disabled
                   style="width: 100%; box-sizing: border-box; padding: 10px 14px; background: rgba(15,23,42,0.85); border: 1px solid rgba(148,163,184,0.3); border-radius: 8px; color: #f1f5f9; font-family: 'DM Mono', monospace; font-size: 13px;" />
               </div>
@@ -1725,7 +1725,7 @@
         messagingSenderId: "420914651308",
       };
 
-      const RAILWAY_URL = "https://web-production-c6f21.up.railway.app";
+      const RAILWAY_URL = "https://web-production-f4adc.up.railway.app";
       const isSelfHosted = window.location.hostname.includes("railway.app") ||
                            window.location.hostname === "localhost" ||
                            window.location.hostname === "127.0.0.1" ||
@@ -4098,7 +4098,7 @@
         if (!urlInput || !lockBtn || !unlockBtn) return;
 
         // Current saved URL or default
-        const activeUrl = localStorage.getItem("solvatech_backend_url") || "https://web-production-c6f21.up.railway.app";
+        const activeUrl = localStorage.getItem("solvatech_backend_url") || "https://web-production-f4adc.up.railway.app";
         urlInput.value = activeUrl;
 
         // Default state: Automatically locked forever unless explicitly unlocked
