@@ -1726,14 +1726,16 @@
       };
 
       const RAILWAY_URL = "https://web-production-c6f21.up.railway.app";
-      const isSelfHosted = window.location.hostname.includes("railway.app");
+      const isSelfHosted = window.location.hostname.includes("railway.app") ||
+                           window.location.hostname === "localhost" ||
+                           window.location.hostname === "127.0.0.1" ||
+                           window.location.hostname.includes("run.app");
       const DEFAULT_BACKEND_URL = isSelfHosted ? window.location.origin : RAILWAY_URL;
       let customApiUrl = localStorage.getItem("solvatech_backend_url") || "";
       if (customApiUrl && (
         customApiUrl.includes("3c1de8") ||
         customApiUrl.includes("localhost:5000") ||
         customApiUrl.includes("web-production-215ab.up.railway.app") ||
-        customApiUrl.includes("run.app") ||
         (!isSelfHosted && (customApiUrl.includes(window.location.hostname) || customApiUrl.includes("solvatech.name.ng")))
       )) {
         try { localStorage.removeItem("solvatech_backend_url"); } catch (e) {}
