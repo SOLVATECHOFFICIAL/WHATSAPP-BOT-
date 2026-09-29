@@ -1133,6 +1133,7 @@ export default async function meta(ctx) {
   // Users should NOT send ".meta <command>" like ".meta delete my chat".
   // They must turn ".meta on" first, and then everyone talks/commands normally without ".meta"!
   if (!isContinuousMeta) {
+    if (!senderIsLinkedAccount) return;
     const activeState = getMetaChatMode(userId, chatId);
     if (!activeState?.enabled) {
       return reply("Send *.meta on* first to turn Meta ON for all, then send your message or command normally without *.meta*.");
