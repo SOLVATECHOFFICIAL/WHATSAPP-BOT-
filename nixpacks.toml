@@ -1,3 +1,0 @@
-# Nixpacks build configuration for Railway
-[phases.setup]
-nixPkgs = ["ffmpeg"]
