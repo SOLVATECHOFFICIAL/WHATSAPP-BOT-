@@ -1,0 +1,12 @@
+node_modules/
+.env
+sessions/*
+!sessions/.gitkeep
+data/*
+!data/.gitkeep
+logs/*
+!logs/.gitkeep
+tmp/
+dist/
+runtime/*
+!runtime/.gitkeep

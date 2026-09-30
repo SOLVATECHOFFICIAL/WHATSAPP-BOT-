@@ -5,38 +5,14 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { PORT } from "./lib/config.js";
 import { logger } from "./lib/logger.js";
-import {
-  getWhatsAppController,
-  restoreAllSessions,
-  auditActiveSessions,
-  getAllWhatsAppStatuses,
-  disconnectUserWhatsAppSession,
-  getAllPairingInspectorStates,
-  clearAllSystemBugsAndCache,
-} from "./lib/whatsapp.js";
-import {
-  getLockedNumberForUid,
-  getAllNumberLocks,
-  wipeNumberFromAccount,
-  getAllNumberHistory,
-} from "./lib/number-lock.js";
-import {
-  requireAuth,
-  requireAdmin,
-  createPreviewToken,
-  readFirestoreCollectionRest,
-  setUserAccountStatus,
-  isUserAccountDisabled,
-  recordAdminAuditLog,
-  getAdminAuditLogs,
-} from "./lib/auth.js";
+import { getWhatsAppController, restoreAllSessions, auditActiveSessions, getAllWhatsAppStatuses } from "./lib/whatsapp.js";
+import { getLockedNumberForUid, getAllNumberLocks } from "./lib/number-lock.js";
+import { requireAuth, requireAdmin, createPreviewToken, getFirebaseServerFirestore } from "./lib/auth.js";
 import {
   createLicenseRecord,
   listAllLicenses,
   redeemLicenseCode,
   getUserLicenseStatus,
-  syncAllFromFirestore,
-  stopActiveLicense,
   ADMIN_EMAIL,
 } from "./lib/license.js";
 import {
@@ -46,10 +22,6 @@ import {
   getAdminReferralAudit,
   getOfficialLicensePrice,
 } from "./lib/referral.js";
-import {
-  getUserPreferences,
-  setUserPreferences,
-} from "./lib/database.js";
 
 process.on("uncaughtException", (error) => {
   logger.error("Process uncaught exception handled gracefully", error?.stack || error?.message);
@@ -100,8 +72,8 @@ const staticOptions = {
   }
 };
 
-app.use(express.static(rootDir, staticOptions));
 app.use(express.static(publicDir, staticOptions));
+app.use(express.static(rootDir, staticOptions));
 
 /**
  * ARCHITECTURAL NOTE - STORAGE ON RAILWAY & PRODUCTION:
@@ -158,21 +130,12 @@ for (const p of prefixes) {
   });
 
   // Studio Preview / Development Session Provider
-  // Used when testing or running concurrent user sessions with isolated containers.
-  app.post(`${p}/auth/preview-session`, (request, response) => {
-    const rawVisitorId = typeof request.body?.visitorId === "string" ? request.body.visitorId.trim().replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 48) : "";
-    const requestedEmail = typeof request.body?.email === "string" ? request.body.email.trim().toLowerCase() : "";
-    const requestedName = typeof request.body?.name === "string" ? request.body.name.trim() : "";
-    const isExplicitAdmin = requestedEmail === ADMIN_EMAIL.toLowerCase() || request.body?.isAdmin === true;
-
-    const uid = isExplicitAdmin
-      ? "admin_awoyinfasolomon1"
-      : (rawVisitorId ? `usr_${rawVisitorId}` : `usr_${Math.random().toString(36).slice(2, 9)}_${Date.now().toString(36)}`);
-
+  // Used when testing in environments whose dynamic domain is not yet allowlisted in Firebase Console.
+  app.post(`${p}/auth/preview-session`, (_request, response) => {
     const user = {
-      uid,
-      email: isExplicitAdmin ? ADMIN_EMAIL : (requestedEmail || `${uid}@solvatech.bot`),
-      displayName: isExplicitAdmin ? "Solomon Awoyinfa (Admin)" : (requestedName || `SOLVATECH User (${uid.slice(-4)})`),
+      uid: "admin_awoyinfasolomon1",
+      email: ADMIN_EMAIL,
+      displayName: "Solomon Awoyinfa (Admin)",
       photoURL: "./solva.webp",
     };
     const token = createPreviewToken(user);
@@ -180,7 +143,7 @@ for (const p of prefixes) {
       token,
       user,
       mode: "preview",
-      message: "Isolated session established successfully.",
+      message: "Studio preview session established successfully.",
     });
   });
 
@@ -193,17 +156,15 @@ for (const p of prefixes) {
     const userEmail = request.auth.email;
     const controller = getWhatsAppController(safeUserId, { verifiedUid, userEmail });
     
-    const [lockedNumber, license, preferences] = await Promise.all([
+    const [lockedNumber, license] = await Promise.all([
       getLockedNumberForUid(verifiedUid),
       getUserLicenseStatus(verifiedUid, userEmail),
-      getUserPreferences(safeUserId, verifiedUid),
     ]);
 
     response.json({
       ...controller.getStatus(),
       lockedNumber,
       license,
-      preferences,
       userId: verifiedUid,
       user: {
         uid: request.auth.uid,
@@ -212,33 +173,6 @@ for (const p of prefixes) {
         photoURL: request.auth.photoURL,
       },
     });
-  });
-
-  app.get(`${p}/user/preferences`, requireAuth, async (request, response) => {
-    try {
-      const preferences = await getUserPreferences(request.safeUserId, request.verifiedUid);
-      response.json({ ok: true, preferences });
-    } catch (error) {
-      logger.error("Failed to fetch user preferences", error.message);
-      response.status(500).json({ error: "Could not load user preferences." });
-    }
-  });
-
-  app.post(`${p}/user/preferences`, requireAuth, async (request, response) => {
-    try {
-      const updates = {};
-      if (typeof request.body?.deletedMessageRecovery === "boolean") {
-        updates.deletedMessageRecovery = request.body.deletedMessageRecovery;
-      }
-      if (typeof request.body?.viewOnceRecovery === "boolean") {
-        updates.viewOnceRecovery = request.body.viewOnceRecovery;
-      }
-      const preferences = await setUserPreferences(request.safeUserId, request.verifiedUid, updates);
-      response.json({ ok: true, preferences });
-    } catch (error) {
-      logger.error("Failed to update user preferences", error.message);
-      response.status(500).json({ error: "Could not save user preferences." });
-    }
   });
 
   app.get(`${p}/user/profile`, requireAuth, (request, response) => {
@@ -298,150 +232,6 @@ for (const p of prefixes) {
     } catch (error) {
       logger.error(`Disconnect failed for verified user ${verifiedUid}`, error.stack || error.message);
       response.status(500).json({ error: "The WhatsApp session could not be cleared.", userId: verifiedUid });
-    }
-  });
-
-  // User-facing Clear Bugs & Cache endpoint (Flushes stale keys, dead sockets, and RAM buffers while preserving active linked sessions)
-  app.post(`${p}/clear-cache`, requireAuth, async (request, response) => {
-    try {
-      const safeUserId = request.safeUserId;
-      const verifiedUid = request.verifiedUid;
-      const userEmail = request.auth.email;
-      const controller = getWhatsAppController(safeUserId, { verifiedUid, userEmail });
-      const result = await controller.clearBugsAndCache();
-      response.json({
-        ok: true,
-        ...result,
-        status: controller.getStatus(),
-        userId: verifiedUid,
-      });
-    } catch (error) {
-      logger.error(`Clear bugs & cache failed for user ${request.verifiedUid}`, error.stack || error.message);
-      response.status(500).json({ error: error.message || "Could not clear session cache and buffers." });
-    }
-  });
-
-  // User-facing Wipe & Release Number Lock API (Permanently clears number lock in Firebase & resets session)
-  const handleUserWipeNumber = async (request, response) => {
-    try {
-      const verifiedUid = request.verifiedUid;
-      const userEmail = request.auth.email;
-      const reason = request.body?.reason || "Wiped by user from dashboard";
-
-      const result = await wipeNumberFromAccount(verifiedUid, userEmail, reason, true);
-
-      // Disconnect and flush active WhatsApp session completely
-      const controller = getWhatsAppController(request.safeUserId, { verifiedUid, userEmail });
-      try {
-        await controller.disconnect();
-        const userSessionDir = path.join(SESSION_DIR, request.safeUserId);
-        await fs.rm(userSessionDir, { recursive: true, force: true }).catch(() => {});
-        const { writeFirestoreDocumentRest } = await import("./lib/auth.js");
-        await writeFirestoreDocumentRest("whatsapp_sessions", request.safeUserId, { files: {}, fileCount: 0, deletedAt: new Date().toISOString() }).catch(() => {});
-      } catch (discErr) {
-        logger.debug("Controller disconnect during user wipe notice", discErr.message);
-      }
-
-      response.json({
-        ok: true,
-        success: true,
-        message: "Your WhatsApp number has been released. You can now connect another number.",
-        wipedNumber: result.wipedNumber || null,
-        userId: verifiedUid,
-      });
-    } catch (error) {
-      logger.error("User wipe number error", error.stack || error.message);
-      response.status(500).json({ error: error.message || "Failed to wipe number lock." });
-    }
-  };
-
-  app.post(`${p}/user/wipe-number`, requireAuth, handleUserWipeNumber);
-  app.post(`${p}/number/wipe`, requireAuth, handleUserWipeNumber);
-  app.post(`${p}/wipe-number`, requireAuth, handleUserWipeNumber);
-
-  // Dedicated Auto-Reconnection Logs and Battery Telemetry API
-  app.get(`${p}/reconnect-logs`, requireAuth, async (request, response) => {
-    try {
-      const safeUserId = request.safeUserId;
-      const verifiedUid = request.verifiedUid;
-      const controller = getWhatsAppController(safeUserId, { verifiedUid, userEmail: request.auth.email });
-      const statusData = controller.getStatus();
-
-      response.json({
-        ok: true,
-        userId: verifiedUid,
-        botNumber: statusData.botNumber || "",
-        state: statusData.state || statusData.status,
-        battery: statusData.battery,
-        reconnectStats: statusData.reconnectStats,
-        logs: statusData.reconnectLogs || [],
-      });
-    } catch (error) {
-      logger.error("Failed to retrieve reconnect logs", error.stack || error.message);
-      response.status(500).json({ error: "Could not retrieve reconnection telemetry logs." });
-    }
-  });
-
-  // Trigger Instant Manual Reconnect (Restores from Firebase & activates socket if active license exists)
-  app.post(`${p}/reconnect`, requireAuth, async (request, response) => {
-    try {
-      const safeUserId = request.safeUserId;
-      const verifiedUid = request.verifiedUid;
-      const userEmail = request.auth.email;
-
-      // Check license
-      const licenseStatus = await getUserLicenseStatus(verifiedUid, userEmail);
-      if (!licenseStatus.hasActiveLicense) {
-        return response.status(403).json({
-          error: "Active license required to connect. Please redeem a license code first.",
-          code: "LICENSE_REQUIRED",
-          userId: verifiedUid,
-        });
-      }
-
-      const controller = getWhatsAppController(safeUserId, { verifiedUid, userEmail });
-      
-      // If already genuinely connected, respond cleanly without re-triggering
-      if (controller.isConnected()) {
-        return response.json({
-          ok: true,
-          success: true,
-          alreadyConnected: true,
-          message: "WhatsApp session is already connected.",
-          status: controller.getStatus(),
-        });
-      }
-
-      // If already in-flight connecting, inform client to prevent socket thrashing
-      if (controller.isConnecting()) {
-        return response.json({
-          ok: true,
-          success: true,
-          inProgress: true,
-          message: "A reconnection attempt is already in progress. Please wait...",
-          status: controller.getStatus(),
-        });
-      }
-
-      const result = await controller.triggerManualReconnect();
-      if (!result.success) {
-        return response.status(400).json({
-          ok: false,
-          success: false,
-          error: result.message || "No saved WhatsApp session found. Please enter your phone number and pair with a pairing code first.",
-          code: "NO_SAVED_SESSION",
-          status: controller.getStatus(),
-        });
-      }
-
-      response.json({
-        ok: true,
-        ...result,
-        status: controller.getStatus(),
-      });
-    } catch (error) {
-      logger.error("Failed to initiate manual reconnect", error.stack || error.message);
-      response.status(500).json({ error: error.message || "Could not trigger reconnect." });
     }
   });
 
@@ -595,23 +385,25 @@ for (const p of prefixes) {
         Promise.resolve(getAllWhatsAppStatuses()),
       ]);
 
+      const db = getFirebaseServerFirestore();
       const firestoreUsers = {};
-      try {
-        const [usersDocs, userLicensesDocs] = await Promise.all([
-          readFirestoreCollectionRest("users").catch(() => []),
-          readFirestoreCollectionRest("user_licenses").catch(() => []),
-        ]);
+      if (db) {
+        try {
+          const { collection, getDocs } = await import("firebase/firestore");
+          const [usersSnap, userLicensesSnap] = await Promise.all([
+            getDocs(collection(db, "users")).catch(() => ({ forEach: () => {} })),
+            getDocs(collection(db, "user_licenses")).catch(() => ({ forEach: () => {} })),
+          ]);
 
-        for (const d of usersDocs || []) {
-          const docId = d?.uid || d?.id;
-          if (docId) firestoreUsers[docId] = { ...(firestoreUsers[docId] || {}), ...d, uid: docId };
+          usersSnap.forEach((d) => {
+            if (d.data()) firestoreUsers[d.id] = { ...(firestoreUsers[d.id] || {}), ...d.data(), uid: d.id };
+          });
+          userLicensesSnap.forEach((d) => {
+            if (d.data()) firestoreUsers[d.id] = { ...(firestoreUsers[d.id] || {}), activeLicense: d.data(), uid: d.id };
+          });
+        } catch (err) {
+          logger.debug("Admin comprehensive Firestore scan notice", err.message);
         }
-        for (const d of userLicensesDocs || []) {
-          const docId = d?.uid || d?.id;
-          if (docId) firestoreUsers[docId] = { ...(firestoreUsers[docId] || {}), activeLicense: d, uid: docId };
-        }
-      } catch (err) {
-        logger.debug("Admin comprehensive Firestore scan notice", err.message);
       }
 
       const locksByUid = {};
@@ -869,7 +661,6 @@ for (const p of prefixes) {
         customers: customersList,
         referrals: referralAudit,
         whatsappSessions: whatsappList,
-        pairingInspector: getAllPairingInspectorStates(),
         recentActivity: activityEvents.slice(0, 50),
         systemHealth: {
           uptimeSeconds: Math.floor(process.uptime()),
@@ -934,565 +725,11 @@ for (const p of prefixes) {
       response.status(400).json({ error: error.message || "Failed to generate license." });
     }
   });
-
-  // ==========================================================================
-  // SUPER ADMIN — ACCOUNT & NUMBER MANAGEMENT ENDPOINTS
-  // ==========================================================================
-
-  app.get(`${p}/admin/accounts-and-numbers`, requireAuth, requireAdmin, async (_request, response) => {
-    try {
-      const firestoreUsers = {};
-      try {
-        const usersDocs = await readFirestoreCollectionRest("users").catch(() => []);
-        for (const docSnap of usersDocs || []) {
-          const docId = docSnap?.uid || docSnap?.id;
-          if (docId) firestoreUsers[docId] = docSnap;
-        }
-      } catch (err) {
-        logger.debug("Firestore users fetch notice in accounts-and-numbers", err.message);
-      }
-
-      const [licenses, numberLocks, numberHistoryList, referralAudit, auditLogsList] = await Promise.all([
-        listAllLicenses(),
-        getAllNumberLocks(),
-        getAllNumberHistory(),
-        getAdminReferralAudit().catch(() => ({ summary: {}, referrers: [] })),
-        getAdminAuditLogs().catch(() => []),
-      ]);
-
-      const whatsappList = getAllWhatsAppStatuses();
-      const wsByUid = {};
-      for (const ws of whatsappList) {
-        if (ws.verifiedUid) wsByUid[ws.verifiedUid] = ws;
-        if (ws.userId) wsByUid[ws.userId] = ws;
-      }
-
-      const locksByUid = {};
-      const locksByPhone = {};
-      for (const [phone, lock] of Object.entries(numberLocks || {})) {
-        if (lock && lock.uid) {
-          locksByUid[lock.uid] = lock;
-          locksByPhone[phone] = lock;
-        }
-      }
-
-      const referrersByUid = {};
-      for (const ref of (referralAudit?.referrers || [])) {
-        if (ref && ref.uid) referrersByUid[ref.uid] = ref;
-      }
-
-      // Group history by UID, email, and phone
-      const historyByUid = {};
-      const historyByPhone = {};
-      for (const hist of numberHistoryList || []) {
-        if (hist.uid) {
-          historyByUid[hist.uid] = historyByUid[hist.uid] || [];
-          historyByUid[hist.uid].push(hist);
-        }
-        if (hist.phoneNumber) {
-          historyByPhone[hist.phoneNumber] = historyByPhone[hist.phoneNumber] || [];
-          historyByPhone[hist.phoneNumber].push(hist);
-        }
-      }
-
-      const accountsMap = {};
-
-      // 1. Seed from Firestore users
-      for (const [uid, uData] of Object.entries(firestoreUsers)) {
-        accountsMap[uid] = {
-          uid,
-          email: uData.email || "",
-          displayName: uData.displayName || "",
-          photoURL: uData.photoURL || "",
-          createdAt: uData.createdAt || uData.joinedAt || null,
-          disabled: uData.disabled === true,
-          disabledAt: uData.disabledAt || null,
-          disabledBy: uData.disabledBy || null,
-          disabledReason: uData.disabledReason || null,
-          status: uData.disabled === true ? "DISABLED" : "ACTIVE",
-          activeLicense: uData.activeLicense || null,
-        };
-      }
-
-      // 2. Seed from licenses
-      for (const lic of licenses) {
-        if (lic.redeemedByUid) {
-          const uid = lic.redeemedByUid;
-          if (!accountsMap[uid]) {
-            accountsMap[uid] = {
-              uid,
-              email: lic.redeemedByEmail || "",
-              displayName: "",
-              createdAt: lic.redeemedAt || lic.createdAt || null,
-              disabled: false,
-              status: "ACTIVE",
-            };
-          }
-          if (!accountsMap[uid].activeLicense || new Date(lic.expiresAt || 0) > new Date(accountsMap[uid].activeLicense.expiresAt || 0)) {
-            accountsMap[uid].activeLicense = {
-              code: lic.code,
-              durationDays: lic.durationDays,
-              expiresAt: lic.expiresAt,
-              redeemedAt: lic.redeemedAt,
-              status: lic.status === "stopped" || lic.adminStopped ? "stopped" : (new Date(lic.expiresAt).getTime() > Date.now() ? "active" : "expired"),
-              adminStopped: lic.adminStopped || lic.status === "stopped",
-            };
-          }
-        }
-      }
-
-      // 3. Seed from number locks
-      for (const [phone, lock] of Object.entries(numberLocks || {})) {
-        if (lock && lock.uid) {
-          const uid = lock.uid;
-          if (!accountsMap[uid]) {
-            accountsMap[uid] = {
-              uid,
-              email: lock.userEmail || "",
-              displayName: "",
-              createdAt: lock.lockedAt || null,
-              disabled: false,
-              status: "ACTIVE",
-            };
-          }
-        }
-      }
-
-      // 4. Seed from referrers
-      for (const ref of (referralAudit?.referrers || [])) {
-        if (ref && ref.uid && !accountsMap[ref.uid]) {
-          accountsMap[ref.uid] = {
-            uid: ref.uid,
-            email: ref.email || "",
-            displayName: "",
-            createdAt: null,
-            disabled: false,
-            status: "ACTIVE",
-          };
-        }
-      }
-
-      // 5. Ensure Super Admin account is represented
-      if (!Object.values(accountsMap).some((a) => a.email.toLowerCase() === ADMIN_EMAIL.toLowerCase())) {
-        accountsMap["admin_root"] = {
-          uid: "admin_root",
-          email: ADMIN_EMAIL,
-          displayName: "Super Administrator",
-          createdAt: new Date().toISOString(),
-          disabled: false,
-          status: "ACTIVE",
-        };
-      }
-
-      const now = Date.now();
-      const accountsList = Object.values(accountsMap).map((acc) => {
-        const lock = locksByUid[acc.uid] || null;
-        const currentPhone = lock?.phoneNumber || null;
-        const currentNumberLinkedAt = lock?.lockedAt || null;
-
-        const ws = wsByUid[acc.uid] || (currentPhone ? wsByUid[currentPhone] : null) || null;
-        const refInfo = referrersByUid[acc.uid] || null;
-
-        // Collect number history for this account
-        let numberHistory = historyByUid[acc.uid] || [];
-        if (currentPhone && historyByPhone[currentPhone]) {
-          const existingIds = new Set(numberHistory.map((h) => h.id));
-          for (const h of historyByPhone[currentPhone]) {
-            if (!existingIds.has(h.id)) {
-              numberHistory.push(h);
-              existingIds.add(h.id);
-            }
-          }
-        }
-
-        // If currently locked number is not in history list yet, add synthetic current record
-        if (currentPhone && !numberHistory.some((h) => h.phoneNumber === currentPhone && h.status === "Current")) {
-          numberHistory.unshift({
-            id: `current_${acc.uid}_${currentPhone}`,
-            phoneNumber: currentPhone,
-            uid: acc.uid,
-            userEmail: acc.email,
-            action: "LINKED",
-            status: "Current",
-            linkedAt: currentNumberLinkedAt,
-            unlinkedAt: null,
-            timestamp: currentNumberLinkedAt || acc.createdAt,
-          });
-        }
-
-        numberHistory.sort((a, b) => new Date(b.timestamp || b.linkedAt || 0).getTime() - new Date(a.timestamp || a.linkedAt || 0).getTime());
-
-        // License status determination
-        let licenseInfo = {
-          code: null,
-          durationDays: null,
-          activatedDate: null,
-          expirationDate: null,
-          remainingMs: 0,
-          remainingFormatted: "No License",
-          status: "NO LICENSE",
-          isLifetime: false,
-          adminStopped: false,
-        };
-
-        if (acc.uid === "admin_root" || acc.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
-          licenseInfo = {
-            code: "ADMIN-UNLIMITED",
-            durationDays: "Unlimited",
-            activatedDate: acc.createdAt,
-            expirationDate: null,
-            remainingMs: 3153600000000,
-            remainingFormatted: "Unlimited (Admin Access)",
-            status: "ACTIVE",
-            isLifetime: true,
-            adminStopped: false,
-          };
-        } else if (acc.activeLicense) {
-          const lic = acc.activeLicense;
-          const expMs = lic.expiresAt ? new Date(lic.expiresAt).getTime() : 0;
-          const remMs = Math.max(0, expMs - now);
-
-          let statusStr = "ACTIVE";
-          if (lic.adminStopped || lic.status === "stopped") {
-            statusStr = "ADMIN STOPPED";
-          } else if (remMs <= 0) {
-            statusStr = "EXPIRED";
-          }
-
-          let remainingFormatted = "Expired";
-          if (statusStr === "ADMIN STOPPED") {
-            remainingFormatted = "Admin Stopped";
-          } else if (remMs > 0) {
-            const days = Math.floor(remMs / 86400000);
-            const hrs = Math.floor((remMs % 86400000) / 3600000);
-            const mins = Math.floor((remMs % 3600000) / 60000);
-            remainingFormatted = `${days}d ${hrs}h ${mins}m left`;
-          }
-
-          licenseInfo = {
-            code: lic.code || null,
-            durationDays: lic.durationDays || null,
-            activatedDate: lic.redeemedAt || null,
-            expirationDate: lic.expiresAt || null,
-            remainingMs: remMs,
-            remainingFormatted,
-            status: statusStr,
-            isLifetime: false,
-            adminStopped: Boolean(lic.adminStopped || lic.status === "stopped"),
-            stoppedAt: lic.stoppedAt || null,
-            stoppedReason: lic.stoppedReason || null,
-          };
-        }
-
-        const wsStatus = ws ? ws.status : currentPhone ? "disconnected" : "never_paired";
-
-        return {
-          uid: acc.uid,
-          email: acc.email,
-          displayName: acc.displayName,
-          createdAt: acc.createdAt,
-          status: acc.status || "ACTIVE",
-          disabled: Boolean(acc.disabled),
-          disabledAt: acc.disabledAt,
-          disabledBy: acc.disabledBy,
-          disabledReason: acc.disabledReason,
-          currentNumber: currentPhone,
-          currentNumberLinkedAt,
-          numberHistory,
-          license: licenseInfo,
-          whatsappStatus: wsStatus,
-          botNumber: ws?.botNumber || currentPhone || "",
-          connectedAt: ws?.connectedAt || null,
-          referrals: {
-            referralCode: refInfo?.referralCode || "",
-            referrerCode: refInfo?.referrerCode || "",
-            referredCount: refInfo?.referredCount || 0,
-            qualifyingSalesNgn: refInfo?.qualifyingSalesNgn || 0,
-            earnedDaysTotal: refInfo?.earnedDaysTotal || 0,
-            claimedDaysTotal: refInfo?.claimedDaysTotal || 0,
-            availableDays: refInfo?.availableDays || 0,
-          },
-        };
-      });
-
-      // Compute Dashboard Statistics (7 KPI Metrics)
-      const totalAccounts = accountsList.length;
-      const activeAccounts = accountsList.filter((a) => a.status === "ACTIVE").length;
-      const disabledAccounts = accountsList.filter((a) => a.status === "DISABLED").length;
-      const withCurrentNumber = accountsList.filter((a) => Boolean(a.currentNumber)).length;
-      const withoutCurrentNumber = accountsList.filter((a) => !a.currentNumber).length;
-      const totalCurrentNumberAssociations = Object.keys(numberLocks || {}).length;
-      const totalHistoricalAssociations = (numberHistoryList || []).length;
-
-      response.json({
-        success: true,
-        stats: {
-          totalAccounts,
-          activeAccounts,
-          disabledAccounts,
-          withCurrentNumber,
-          withoutCurrentNumber,
-          totalCurrentNumberAssociations,
-          totalHistoricalAssociations,
-        },
-        accounts: accountsList,
-        auditLogs: (auditLogsList || []).slice(0, 100),
-        adminEmail: ADMIN_EMAIL,
-        serverTime: new Date().toISOString(),
-      });
-    } catch (error) {
-      logger.error("Admin accounts and numbers aggregate error", error.stack || error.message);
-      response.status(500).json({ error: "Failed to retrieve accounts and numbers data." });
-    }
-  });
-
-  app.post(`${p}/admin/wipe-number`, requireAuth, requireAdmin, async (request, response) => {
-    try {
-      const { uid, reason } = request.body || {};
-      if (!uid) return response.status(400).json({ error: "Target account UID is required." });
-
-      const adminEmail = request.auth?.email || ADMIN_EMAIL;
-      const result = await wipeNumberFromAccount(uid, adminEmail, reason || "Wiped by Super Admin");
-
-      // Audit Log
-      await recordAdminAuditLog(
-        {
-          action: "NUMBER_WIPED",
-          targetUid: uid,
-          targetEmail: result.userEmail || "",
-          whatsappNumber: result.wipedNumber || "",
-          adminEmail,
-          previousState: `LOCKED (${result.wipedNumber || "None"})`,
-          newState: "UNLOCKED / NO NUMBER",
-          result: "SUCCESS",
-          note: reason || "Wiped by Super Admin via Danger Zone",
-        },
-        request.headers.authorization
-      );
-
-      response.json({
-        success: true,
-        message: `WhatsApp number (+${result.wipedNumber || "N/A"}) removed from account ${uid}.`,
-        wipedNumber: result.wipedNumber,
-        uid,
-      });
-    } catch (error) {
-      logger.error("Admin wipe number error", error.stack || error.message);
-      response.status(500).json({ error: error.message || "Failed to wipe WhatsApp number." });
-    }
-  });
-
-  app.post(`${p}/admin/stop-license`, requireAuth, requireAdmin, async (request, response) => {
-    try {
-      const { uid, licenseCode, reason } = request.body || {};
-      if (!uid && !licenseCode) {
-        return response.status(400).json({ error: "Account UID or License code is required." });
-      }
-
-      const adminEmail = request.auth?.email || ADMIN_EMAIL;
-      const result = await stopActiveLicense(uid, licenseCode, adminEmail, reason || "Stopped by Super Admin", request.headers.authorization);
-
-      // Audit Log
-      await recordAdminAuditLog(
-        {
-          action: "LICENSE_STOPPED",
-          targetUid: uid || "",
-          licenseKey: result.code || licenseCode || "",
-          adminEmail,
-          previousState: "ACTIVE",
-          newState: "ADMIN STOPPED",
-          result: "SUCCESS",
-          note: reason || "Stopped by Super Admin via Danger Zone",
-        },
-        request.headers.authorization
-      );
-
-      response.json({
-        success: true,
-        message: "License has been administratively stopped.",
-        code: result.code,
-        uid,
-      });
-    } catch (error) {
-      logger.error("Admin stop license error", error.stack || error.message);
-      response.status(500).json({ error: error.message || "Failed to stop license." });
-    }
-  });
-
-  app.post(`${p}/admin/disable-account`, requireAuth, requireAdmin, async (request, response) => {
-    try {
-      const { uid, reason } = request.body || {};
-      if (!uid) return response.status(400).json({ error: "Account UID is required." });
-
-      const adminEmail = request.auth?.email || ADMIN_EMAIL;
-      const result = await setUserAccountStatus(uid, { disabled: true, reason: reason || "Disabled by Super Admin", adminEmail }, request.headers.authorization);
-
-      // Automatically disconnect active WhatsApp session
-      await disconnectUserWhatsAppSession(uid).catch(() => {});
-
-      // Audit Log
-      await recordAdminAuditLog(
-        {
-          action: "ACCOUNT_DISABLED",
-          targetUid: uid,
-          adminEmail,
-          previousState: "ACTIVE",
-          newState: "DISABLED",
-          result: "SUCCESS",
-          note: reason || "Disabled by Super Admin via Danger Zone",
-        },
-        request.headers.authorization
-      );
-
-      response.json({
-        success: true,
-        message: `Account ${uid} has been administratively disabled.`,
-        status: result.status,
-        uid,
-      });
-    } catch (error) {
-      logger.error("Admin disable account error", error.stack || error.message);
-      response.status(500).json({ error: error.message || "Failed to disable account." });
-    }
-  });
-
-  app.post(`${p}/admin/enable-account`, requireAuth, requireAdmin, async (request, response) => {
-    try {
-      const { uid } = request.body || {};
-      if (!uid) return response.status(400).json({ error: "Account UID is required." });
-
-      const adminEmail = request.auth?.email || ADMIN_EMAIL;
-      const result = await setUserAccountStatus(uid, { disabled: false, adminEmail }, request.headers.authorization);
-
-      // Audit Log
-      await recordAdminAuditLog(
-        {
-          action: "ACCOUNT_RE_ENABLED",
-          targetUid: uid,
-          adminEmail,
-          previousState: "DISABLED",
-          newState: "ACTIVE",
-          result: "SUCCESS",
-          note: "Re-enabled by Super Admin via Danger Zone",
-        },
-        request.headers.authorization
-      );
-
-      response.json({
-        success: true,
-        message: `Account ${uid} has been re-enabled.`,
-        status: result.status,
-        uid,
-      });
-    } catch (error) {
-      logger.error("Admin enable account error", error.stack || error.message);
-      response.status(500).json({ error: error.message || "Failed to re-enable account." });
-    }
-  });
-
-  app.post(`${p}/admin/disconnect-session`, requireAuth, requireAdmin, async (request, response) => {
-    try {
-      const { uid } = request.body || {};
-      if (!uid) return response.status(400).json({ error: "Account UID is required." });
-
-      const adminEmail = request.auth?.email || ADMIN_EMAIL;
-      const result = await disconnectUserWhatsAppSession(uid);
-
-      // Audit Log
-      await recordAdminAuditLog(
-        {
-          action: "WHATSAPP_DISCONNECTED",
-          targetUid: uid,
-          adminEmail,
-          previousState: "CONNECTED / CONNECTING",
-          newState: "DISCONNECTED",
-          result: result.success ? "SUCCESS" : "FAILED",
-          note: "Disconnected by Super Admin via Danger Zone (Number lock preserved)",
-        },
-        request.headers.authorization
-      );
-
-      response.json({
-        success: true,
-        message: result.message || "WhatsApp session disconnected.",
-        uid,
-      });
-    } catch (error) {
-      logger.error("Admin disconnect session error", error.stack || error.message);
-      response.status(500).json({ error: error.message || "Failed to disconnect session." });
-    }
-  });
-
-  app.get(`${p}/admin/audit-logs`, requireAuth, requireAdmin, async (_request, response) => {
-    try {
-      const logs = await getAdminAuditLogs();
-      response.json({
-        success: true,
-        auditLogs: logs,
-        total: logs.length,
-      });
-    } catch (error) {
-      logger.error("Admin get audit logs error", error.stack || error.message);
-      response.status(500).json({ error: "Failed to list audit logs." });
-    }
-  });
-
-  app.get(`${p}/admin/pairing-inspector`, requireAuth, requireAdmin, async (_request, response) => {
-    try {
-      const inspectorData = getAllPairingInspectorStates();
-      response.json({
-        success: true,
-        ...inspectorData,
-        whatsappSessions: getAllWhatsAppStatuses(),
-        systemHealth: {
-          uptimeSeconds: Math.floor(process.uptime()),
-          serverTime: new Date().toISOString(),
-          memory: process.memoryUsage(),
-        },
-      });
-    } catch (error) {
-      logger.error("Admin pairing inspector error", error.stack || error.message);
-      response.status(500).json({ error: "Failed to load live pairing inspector data." });
-    }
-  });
-
-  app.post(`${p}/admin/system/clear-cache`, requireAuth, requireAdmin, async (request, response) => {
-    try {
-      const adminEmail = request.auth?.email || ADMIN_EMAIL;
-      const result = await clearAllSystemBugsAndCache();
-      await recordAdminAuditLog(
-        {
-          action: "SYSTEM_CACHE_FLUSHED",
-          targetUid: "ALL_SESSIONS",
-          adminEmail,
-          previousState: `Heap ${result.memoryBeforeMb} MB`,
-          newState: `Heap ${result.memoryAfterMb} MB (${result.activePreserved} active kept, ${result.flushedControllers} flushed)`,
-          result: "SUCCESS",
-          note: result.message,
-        },
-        request.headers.authorization
-      ).catch(() => {});
-
-      response.json({
-        success: true,
-        ...result,
-        pairingInspector: getAllPairingInspectorStates(),
-      });
-    } catch (error) {
-      logger.error("Admin clear system cache error", error.stack || error.message);
-      response.status(500).json({ error: error.message || "Failed to clear system bugs and cache." });
-    }
-  });
-
 }
 
 app.use((request, response, next) => {
   if (prefixes.some((p) => request.path.startsWith(`${p}/`))) {
     return response.status(404).json({ error: "API endpoint not found.", code: "ENDPOINT_NOT_FOUND" });
-  }
-  const rootIndex = path.join(rootDir, "index.html");
-  if (fs.existsSync(rootIndex)) {
-    return response.sendFile(rootIndex);
   }
   response.sendFile(path.join(publicDir, "index.html"));
 });
@@ -1502,24 +739,8 @@ app.use((error, _request, response, _next) => {
   response.status(500).json({ error: "Internal server error." });
 });
 
-// Prevent any transient Baileys or network error from crashing the server process
-process.on("uncaughtException", (err) => {
-  logger.warn("Caught uncaughtException (process kept alive)", err?.message || String(err));
-});
-
-process.on("unhandledRejection", (reason) => {
-  logger.warn("Caught unhandledRejection (process kept alive)", reason?.message || String(reason));
-});
-
 app.listen(PORT, "0.0.0.0", () => {
   logger.info("SOLVATECH BOT web server listening", String(PORT));
-  syncAllFromFirestore()
-    .then((res) => {
-      logger.info(`Firestore license sync loaded ${res.licensesCount} license(s) and ${res.userLicensesCount} user activation(s).`);
-    })
-    .catch((err) => {
-      logger.warn("Initial Firestore license sync note", err.message);
-    });
   restoreAllSessions().catch((error) => {
     logger.warn("Auto-restore session error", error.message);
   });
@@ -1528,19 +749,5 @@ app.listen(PORT, "0.0.0.0", () => {
     auditActiveSessions().catch((err) => {
       logger.debug("Background license audit notice", err.message);
     });
-  }, 30000);
-
-  // Continuous Railway / Cloud self-ping every 15 seconds so container never idles or sleeps
-  setInterval(async () => {
-    try {
-      await fetch(`http://127.0.0.1:${PORT}/api/health`).catch(() => {});
-      const publicDomain = process.env.RAILWAY_PUBLIC_DOMAIN || process.env.RAILWAY_STATIC_URL;
-      if (publicDomain) {
-        const externalUrl = publicDomain.startsWith("http")
-          ? `${publicDomain.replace(/\/$/, "")}/api/health`
-          : `https://${publicDomain.replace(/\/$/, "")}/api/health`;
-        await fetch(externalUrl).catch(() => {});
-      }
-    } catch {}
-  }, 15000);
+  }, 30000).unref();
 });
