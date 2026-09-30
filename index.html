@@ -466,10 +466,13 @@
               </div>
               <p id="phone-hint" class="hint">Enter your mobile number. Leading 0s and formatting are normalized automatically.</p>
               
-              <div class="pairing-actions-row">
+              <div class="pairing-actions-row" style="flex-wrap: wrap;">
                 <button id="pair-button" type="submit">Get Pairing Code <span>→</span></button>
                 <button id="quick-reconnect-btn" type="button" class="quick-reconnect-btn" title="Instantly reconnect your active saved WhatsApp session from Firebase without needing to enter a pairing code">
                   <span>⚡ Reconnect Active Session</span>
+                </button>
+                <button id="user-clear-cache-btn" type="button" class="quick-reconnect-btn" style="background: rgba(15,118,110,0.08); border: 1px solid rgba(15,118,110,0.3); color: var(--teal);" title="Clear bugs, flush stale pairing keys, and free memory cache while keeping your active session and locks 100% safe">
+                  <span>🧹 Clear Bugs &amp; Cache</span>
                 </button>
               </div>
             </form>
@@ -477,10 +480,51 @@
               <div class="code-heading"><span>YOUR PAIRING CODE</span><span id="code-timer" class="code-timer">EXPIRES IN 5:00</span></div>
               <div class="code-value-row"><strong id="pair-code">—</strong><button id="copy-code" class="copy-button" type="button">Copy code</button></div>
               <div id="pairing-for" class="pairing-for"></div>
-              <p>Open WhatsApp → Linked Devices → Link a device → Link with phone number. Enter this 8-character code, then keep this tab open while pairing completes.</p>
+              <p>Open WhatsApp → Linked Devices → Link a device → Link with phone number. Enter this 8-character code immediately, then keep this tab open while pairing completes.</p>
               <span id="copy-feedback" class="copy-feedback" role="status" aria-live="polite"></span>
             </div>
             <p id="error" class="error hidden" role="alert"></p>
+            <p id="cache-clear-feedback" class="license-msg hidden" style="margin-top: 10px;"></p>
+
+            <!-- LIVE 6-STAGE PAIRING INSPECTOR & DIAGNOSTICS FOR EVERY USER -->
+            <div id="user-pairing-inspector-panel" class="hidden" style="margin-top: 16px; padding: 16px; border-radius: 10px; background: rgba(16,38,34,0.03); border: 1px solid var(--line);">
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 15px;">🛰️</span>
+                  <strong style="font-size: 13px; color: var(--ink); letter-spacing: 0.02em;">LIVE WHATSAPP LINKING INSPECTOR</strong>
+                </div>
+                <span id="user-inspector-badge" class="badge" style="font-size: 10px; padding: 3px 9px;">STAGE 1 / 6</span>
+              </div>
+              <p id="user-inspector-summary" style="font-size: 12px; color: var(--muted); margin: 0 0 12px; line-height: 1.45;">
+                Real-time cryptographic handshake status between WhatsApp servers, your phone, and SolvaTech Bot:
+              </p>
+
+              <!-- 6-Stage Progress Table -->
+              <div id="user-inspector-stages-list" style="display: grid; gap: 6px; margin-bottom: 12px;"></div>
+
+              <!-- Detailed Failure Diagnostic & How-To-Fix Card (Shown if linking fails or times out) -->
+              <div id="user-inspector-failure-card" class="hidden" style="margin-top: 12px; padding: 14px; border-radius: 8px; background: #fff1f2; border: 1px solid #fecdd3; color: #881337;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; flex-wrap: wrap; margin-bottom: 6px;">
+                  <strong id="user-failure-title" style="font-size: 13px; color: #9f1239; display: flex; align-items: center; gap: 6px;">
+                    <span>⚠️</span> <span>Unable to Link Device</span>
+                  </strong>
+                  <span id="user-failure-code-pill" style="font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: #ffe4e6; color: #be123c; border: 1px solid #fda4af;">DIAGNOSTIC</span>
+                </div>
+                <p id="user-failure-detail" style="font-size: 12px; color: #881337; margin: 0 0 10px; line-height: 1.5;"></p>
+                <div style="background: rgba(255,255,255,0.85); border: 1px solid #fecdd3; border-radius: 6px; padding: 10px 12px;">
+                  <strong style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #9f1239; display: block; margin-bottom: 6px;">✅ How to Fix This &amp; Pair Successfully:</strong>
+                  <ol id="user-failure-fixes" style="margin: 0; padding-left: 18px; font-size: 12px; color: #4c0519; line-height: 1.55; display: grid; gap: 4px;"></ol>
+                </div>
+                <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+                  <button type="button" id="user-failure-retry-btn" class="license-btn" style="padding: 8px 14px; font-size: 11px; background: #be123c; color: #fff; border: none; cursor: pointer;">
+                    🔄 Clear Bugs &amp; Pair Again Now
+                  </button>
+                  <button type="button" id="user-failure-wipe-btn" class="license-btn" style="padding: 8px 14px; font-size: 11px; background: #fff; color: #9f1239; border: 1px solid #fda4af; cursor: pointer;">
+                    🗑️ Wipe &amp; Change Number
+                  </button>
+                </div>
+              </div>
+            </div>
           </article>
 
           <aside class="surface status-card" aria-live="polite">
@@ -500,7 +544,10 @@
               <strong id="status-locked-number-text" style="font-size: 13px; color: #15803d; font-family: 'DM Mono', monospace;">—</strong>
             </div>
 
-            <button id="disconnect" class="disconnect" disabled style="margin-top: 12px;">Disconnect Session</button>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px;">
+              <button id="disconnect" class="disconnect" disabled style="margin-top: 0;">Disconnect Session</button>
+              <button id="status-clear-cache-btn" type="button" class="disconnect" style="margin-top: 0; background: rgba(15,118,110,0.08); color: var(--teal); border-color: rgba(15,118,110,0.3); cursor: pointer;" title="Flush stale keys & memory cache safely">🧹 Clear Cache</button>
+            </div>
 
             <!-- Live Battery & Reconnect Health Widget in Status Card -->
             <div id="status-battery-wrap" class="status-battery-wrap">
@@ -890,6 +937,10 @@
             <button type="button" class="admin-subnav-btn" data-subtab="referrals" id="admin-subtab-btn-referrals">
               <span>🎁 Referrals</span>
               <span id="admin-count-referrals" class="admin-subnav-count">0</span>
+            </button>
+            <button type="button" class="admin-subnav-btn" data-subtab="inspector" id="admin-subtab-btn-inspector">
+              <span>🛰️ Live Pairing Inspector</span>
+              <span id="admin-count-inspectors" class="admin-subnav-count" style="background:#dbeafe; color:#1d4ed8;">0</span>
             </button>
             <button type="button" class="admin-subnav-btn" data-subtab="system" id="admin-subtab-btn-system">
               <span>⚡ WhatsApp & System</span>
@@ -1383,6 +1434,17 @@
             </div>
 
             <!-- WhatsApp Active Sessions Table -->
+            <div style="margin-bottom: 18px; padding: 16px; border-radius: 8px; background: #f0fdfa; border: 1px solid #99f6e4; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+              <div>
+                <strong style="font-size: 14px; color: #0f766e; display: flex; align-items: center; gap: 6px;">🧹 Deep Memory Flush &amp; Bug / Stale-Key Cache Cleaner</strong>
+                <p style="font-size: 12px; color: #115e59; margin: 4px 0 0;">Frees V8 heap RAM, closes orphaned WebSockets, and purges unauthenticated key fragments while keeping 100% of active sessions, locks, and Firestore data untouched.</p>
+                <p id="admin-clear-cache-feedback" class="hidden" style="font-size: 12px; font-weight: 700; color: #047857; margin: 6px 0 0;"></p>
+              </div>
+              <button type="button" id="admin-system-clear-cache-btn" class="license-btn" style="background: #0f766e; color: #fff; padding: 10px 18px; font-size: 12px; white-space: nowrap;">
+                🧹 Clear All Bugs &amp; Cache Now
+              </button>
+            </div>
+
             <div class="admin-table-container">
               <div class="admin-table-header-row">
                 <h3 class="admin-table-title">Live WhatsApp Sockets & Connected Numbers</h3>
@@ -1405,6 +1467,78 @@
                     </tr>
                   </tbody>
                 </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- SUBTAB: LIVE PAIRING INSPECTOR & DIAGNOSTICS (WATCH EVERYONE LINKING IN REAL TIME) -->
+          <div id="admin-view-inspector" class="admin-subview hidden">
+            <div class="surface" style="padding: 20px; border-radius: 8px; border: 1px solid var(--admin-card-border); margin-bottom: 20px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 14px;">
+                <div>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <h3 style="font-size: 16px; font-weight: 800; color: var(--ink); margin: 0;">🛰️ Live Admin Pairing Inspector &amp; Failure Diagnostics</h3>
+                    <span class="admin-badge badge-active">REAL-TIME STREAM</span>
+                  </div>
+                  <p style="font-size: 12px; color: var(--muted); margin: 4px 0 0;">
+                    Watch every user attempting to link their WhatsApp device in real time: see their phone number, 8-digit code, cryptographic stage (1–6), and exact failure reason if linking drops.
+                  </p>
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <button type="button" id="admin-inspector-refresh-btn" class="admin-preset-btn" style="padding: 9px 14px; font-size: 12px;">
+                    🔄 Refresh Live Stream
+                  </button>
+                  <button type="button" id="admin-inspector-clear-cache-btn" class="license-btn" style="padding: 9px 16px; font-size: 12px; background: #0f766e; color: #fff;">
+                    🧹 Clear Bugs &amp; Cache (Free RAM)
+                  </button>
+                </div>
+              </div>
+
+              <p id="admin-inspector-cache-msg" class="hidden" style="padding: 10px 12px; border-radius: 6px; background: #ecfdf5; border: 1px solid #6ee7b7; color: #065f46; font-size: 12px; font-weight: 700; margin: 0 0 14px;"></p>
+
+              <!-- Reference Legend of the 6 Cryptographic Handshake Stages -->
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 8px; margin-bottom: 18px; padding: 12px; border-radius: 8px; background: var(--admin-neutral-50); border: 1px solid var(--admin-line);">
+                <div style="font-size: 11px;"><strong>Stage 1: Socket Initiation</strong><br/><span style="color:var(--muted);">🟢 Socket Ready (WS Open)</span></div>
+                <div style="font-size: 11px;"><strong>Stage 2: Key Generation</strong><br/><span style="color:var(--muted);">🟢 8-Digit Code Displayed</span></div>
+                <div style="font-size: 11px;"><strong>Stage 3: Mobile Interaction</strong><br/><span style="color:var(--muted);">🟡 Waiting for User Input</span></div>
+                <div style="font-size: 11px;"><strong>Stage 4: Handshake Exchange</strong><br/><span style="color:var(--muted);">🔵 Handshake Received</span></div>
+                <div style="font-size: 11px;"><strong>Stage 5: Restart &amp; Reg</strong><br/><span style="color:var(--muted);">🟣 Registering Companion (515)</span></div>
+                <div style="font-size: 11px;"><strong>Stage 6: Connected</strong><br/><span style="color:var(--muted);">🟢 Device Linked &amp; Sealed</span></div>
+              </div>
+
+              <!-- Live Cards of Users Currently Pairing or Recently Failed/Linked -->
+              <h4 style="font-size: 13px; font-weight: 800; color: var(--ink); margin: 0 0 10px; text-transform: uppercase; letter-spacing: 0.04em;">
+                👥 Active &amp; Recent User Pairing Sessions
+              </h4>
+              <div id="admin-inspector-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 14px; margin-bottom: 22px;">
+                <div style="text-align: center; color: var(--muted); padding: 24px; grid-column: 1 / -1;">No pairing sessions recorded yet. When any user requests a pairing code, their live 6-stage progress will appear here automatically.</div>
+              </div>
+
+              <!-- Real-Time Global Pairing Event Log Table -->
+              <div class="admin-table-container">
+                <div class="admin-table-header-row">
+                  <h3 class="admin-table-title">📡 Live Cryptographic Handshake Event Stream (All Users)</h3>
+                </div>
+                <div class="admin-table-scroll">
+                  <table class="admin-master-table">
+                    <thead>
+                      <tr>
+                        <th>Time</th>
+                        <th>User / Email</th>
+                        <th>WhatsApp Number</th>
+                        <th>Pairing Code</th>
+                        <th>Stage</th>
+                        <th>Status Indicator</th>
+                        <th>Diagnostic / What Is Happening</th>
+                      </tr>
+                    </thead>
+                    <tbody id="admin-inspector-events-tbody">
+                      <tr>
+                        <td colspan="7" style="text-align: center; color: var(--muted); padding: 24px;">Waiting for pairing events...</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
@@ -2398,6 +2532,9 @@
         if (data.preferences) {
           updatePreferencesUI(data.preferences);
         }
+        if (typeof renderUserPairingInspector === "function") {
+          renderUserPairingInspector(data.pairingInspector || null, data);
+        }
 
         if (connected && pairingActive) {
           pairingActive = false;
@@ -3151,6 +3288,218 @@
 
       if (quickReconnectBtn) {
         quickReconnectBtn.addEventListener("click", handleQuickReconnect);
+      }
+
+      // ======================================================================
+      // USER CLEAR BUGS & CACHE + LIVE 6-STAGE PAIRING INSPECTOR & DIAGNOSTICS
+      // ======================================================================
+      const userClearCacheBtn = $("user-clear-cache-btn");
+      const statusClearCacheBtn = $("status-clear-cache-btn");
+      const cacheClearFeedback = $("cache-clear-feedback");
+      const userPairingInspectorPanel = $("user-pairing-inspector-panel");
+      const userInspectorBadge = $("user-inspector-badge");
+      const userInspectorSummary = $("user-inspector-summary");
+      const userInspectorStagesList = $("user-inspector-stages-list");
+      const userInspectorFailureCard = $("user-inspector-failure-card");
+      const userFailureTitle = $("user-failure-title");
+      const userFailureCodePill = $("user-failure-code-pill");
+      const userFailureDetail = $("user-failure-detail");
+      const userFailureFixes = $("user-failure-fixes");
+      const userFailureRetryBtn = $("user-failure-retry-btn");
+      const userFailureWipeBtn = $("user-failure-wipe-btn");
+
+      const PAIRING_STAGES_META = [
+        { num: 1, title: "Stage 1: Socket Initiation", desc: "Connecting to WhatsApp Web gateway (wss://web.whatsapp.com/ws/chat)", okLabel: "🟢 Socket Ready" },
+        { num: 2, title: "Stage 2: Key Generation", desc: "Fresh ephemeral Noise keypair generated; 8-character pairing code created", okLabel: "🟢 Code Displayed" },
+        { num: 3, title: "Stage 3: Mobile Interaction", desc: "Waiting for you to open WhatsApp > Linked Devices and enter the 8 digits", okLabel: "🟡 Waiting for User" },
+        { num: 4, title: "Stage 4: Handshake Exchange", desc: "WhatsApp mobile communicates with Meta servers & sends link_code_companion_reg", okLabel: "🔵 Handshake Received" },
+        { num: 5, title: "Stage 5: Restart & Registration", desc: "Server receives status 515 (restartRequired) and finalizes companion registration", okLabel: "🟣 Registering Companion" },
+        { num: 6, title: "Stage 6: Connected", desc: "Handshake verified, credentials sealed, bot online", okLabel: "🟢 Device Linked" },
+      ];
+
+      function renderUserPairingInspector(inspector, statusData = {}) {
+        if (!userPairingInspectorPanel || !userInspectorStagesList) return;
+
+        const isConnected = statusData.status === "connected" || statusData.connected === true;
+        const isPairing = statusData.status === "pairing" || statusData.state === "pairing";
+        const hasFailure = Boolean(inspector && inspector.failureDiagnostic);
+        const currentStage = isConnected ? 6 : (inspector?.stage || (isPairing ? 3 : 0));
+
+        if (!inspector && !isPairing && !isConnected) {
+          userPairingInspectorPanel.classList.add("hidden");
+          return;
+        }
+        if (currentStage === 0 && !hasFailure && !isPairing && !isConnected) {
+          userPairingInspectorPanel.classList.add("hidden");
+          return;
+        }
+
+        userPairingInspectorPanel.classList.remove("hidden");
+
+        if (userInspectorBadge) {
+          if (hasFailure && !isConnected) {
+            userInspectorBadge.textContent = `FAILED AT STAGE ${inspector.failureDiagnostic?.stageFailed || currentStage || 3}`;
+            userInspectorBadge.className = "badge failed";
+          } else if (isConnected || currentStage === 6) {
+            userInspectorBadge.textContent = "STAGE 6 / 6 • LINKED";
+            userInspectorBadge.className = "badge connected";
+          } else {
+            userInspectorBadge.textContent = `STAGE ${Math.max(1, currentStage)} / 6 • LIVE`;
+            userInspectorBadge.className = "badge";
+          }
+        }
+
+        if (userInspectorSummary) {
+          if (hasFailure && !isConnected) {
+            userInspectorSummary.textContent = `Linking stopped: ${inspector.failureDiagnostic.title || "Handshake interrupted"}. See exact cause and fix below:`;
+          } else if (isConnected || currentStage === 6) {
+            userInspectorSummary.textContent = `All 6 cryptographic stages completed! Your WhatsApp companion session is verified and active.`;
+          } else {
+            userInspectorSummary.textContent = inspector?.whatIsHappening || "Real-time cryptographic handshake status between WhatsApp servers, your phone, and SolvaTech Bot:";
+          }
+        }
+
+        userInspectorStagesList.innerHTML = PAIRING_STAGES_META.map((s) => {
+          const done = isConnected || currentStage > s.num || (currentStage === 6 && s.num === 6);
+          const active = !isConnected && currentStage === s.num && !hasFailure;
+          const failedHere = !isConnected && hasFailure && (inspector.failureDiagnostic?.stageFailed === s.num || (!inspector.failureDiagnostic?.stageFailed && currentStage === s.num));
+
+          let rowBg = "rgba(255,255,255,0.65)";
+          let borderCol = "var(--line)";
+          let statusPill = `<span style="font-size:11px; color:var(--muted); font-family:'DM Mono', monospace;">⚪ Pending</span>`;
+
+          if (failedHere) {
+            rowBg = "#ffe4e6";
+            borderCol = "#fda4af";
+            statusPill = `<span style="font-size:11px; font-weight:700; color:#be123c; font-family:'DM Mono', monospace;">🔴 ${inspector.failureDiagnostic?.code || "Failed Here"}</span>`;
+          } else if (done) {
+            rowBg = "rgba(15,118,110,0.06)";
+            borderCol = "rgba(15,118,110,0.28)";
+            statusPill = `<span style="font-size:11px; font-weight:700; color:var(--teal); font-family:'DM Mono', monospace;">${s.num === 3 ? "🟢 Code Entered" : s.okLabel}</span>`;
+          } else if (active) {
+            rowBg = "#fef9c3";
+            borderCol = "#fde047";
+            statusPill = `<span style="font-size:11px; font-weight:700; color:#a16207; font-family:'DM Mono', monospace;">${inspector?.statusIndicator || s.okLabel}</span>`;
+          }
+
+          return `
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding:8px 11px; border-radius:6px; background:${rowBg}; border:1px solid ${borderCol}; flex-wrap:wrap;">
+              <div style="flex:1; min-width:180px;">
+                <div style="font-size:12px; font-weight:700; color:var(--ink);">${s.title}</div>
+                <div style="font-size:11px; color:var(--muted);">${s.desc}</div>
+              </div>
+              <div>${statusPill}</div>
+            </div>
+          `;
+        }).join("");
+
+        if (userInspectorFailureCard) {
+          if (hasFailure && !isConnected) {
+            const diag = inspector.failureDiagnostic;
+            userInspectorFailureCard.classList.remove("hidden");
+            if (userFailureTitle) {
+              userFailureTitle.innerHTML = `<span>⚠️</span> <span>${diag.title || "Unable to Link WhatsApp Device"}</span>`;
+            }
+            if (userFailureCodePill) {
+              userFailureCodePill.textContent = diag.code || "LINK_FAILURE";
+            }
+            if (userFailureDetail) {
+              userFailureDetail.textContent = diag.detail || statusData.lastError || "WhatsApp closed the companion handshake before completion.";
+            }
+            if (userFailureFixes) {
+              const fixes = Array.isArray(diag.howToFix) && diag.howToFix.length > 0
+                ? diag.howToFix
+                : [
+                    "Click 'Clear Bugs & Pair Again Now' below to generate a fresh cryptographic keypair.",
+                    "Open WhatsApp > Settings > Linked Devices and remove any old linked devices (max 4 allowed).",
+                    "Ensure you are using the official WhatsApp app on stable Wi-Fi or 4G/5G without VPN.",
+                    "Enter the 8-digit code within 60 seconds and keep WhatsApp open on your phone screen."
+                  ];
+              userFailureFixes.innerHTML = fixes.map((f) => `<li>${f}</li>`).join("");
+            }
+          } else {
+            userInspectorFailureCard.classList.add("hidden");
+          }
+        }
+      }
+
+      async function handleUserClearCache(autoFocusPhone = false) {
+        const btns = [userClearCacheBtn, statusClearCacheBtn, userFailureRetryBtn].filter(Boolean);
+        btns.forEach((b) => { b.disabled = true; });
+        if (userClearCacheBtn) userClearCacheBtn.innerHTML = `<span>⏳ Clearing Bugs & Cache...</span>`;
+        if (statusClearCacheBtn) statusClearCacheBtn.textContent = "⏳ Clearing...";
+
+        try {
+          let authHeader = await getAuthHeader();
+          if (!authHeader) throw new Error("Please sign in first.");
+
+          let res = await fetch(getApiUrl("/clear-cache"), {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": authHeader,
+            },
+          });
+
+          if (res.status === 401) {
+            const refreshedToken = await getValidIdToken(true);
+            if (refreshedToken) {
+              authHeader = `Bearer ${refreshedToken}`;
+              res = await fetch(getApiUrl("/clear-cache"), {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": authHeader,
+                },
+              });
+            }
+          }
+
+          const data = await safeFetchJson(res);
+          if (!res.ok) throw new Error(data.error || "Failed to clear cache.");
+
+          showError("");
+          if (cacheClearFeedback) {
+            cacheClearFeedback.className = "license-msg success";
+            cacheClearFeedback.textContent = `✅ ${data.message || "Bugs, stale pairing keys, and socket buffers cleared! Active session & account locks are 100% intact."}`;
+            cacheClearFeedback.classList.remove("hidden");
+            setTimeout(() => cacheClearFeedback.classList.add("hidden"), 7000);
+          }
+
+          if (data.status) {
+            updateStatusUI(data.status);
+          } else {
+            refresh();
+          }
+
+          if (autoFocusPhone && phoneInput) {
+            phoneInput.scrollIntoView({ behavior: "smooth", block: "center" });
+            setTimeout(() => phoneInput.focus(), 250);
+          }
+        } catch (err) {
+          if (cacheClearFeedback) {
+            cacheClearFeedback.className = "license-msg error";
+            cacheClearFeedback.textContent = err.message || "Could not clear cache.";
+            cacheClearFeedback.classList.remove("hidden");
+          }
+        } finally {
+          btns.forEach((b) => { b.disabled = false; });
+          if (userClearCacheBtn) userClearCacheBtn.innerHTML = `<span>🧹 Clear Bugs &amp; Cache</span>`;
+          if (statusClearCacheBtn) statusClearCacheBtn.textContent = "🧹 Clear Cache";
+        }
+      }
+
+      if (userClearCacheBtn) {
+        userClearCacheBtn.addEventListener("click", () => handleUserClearCache(false));
+      }
+      if (statusClearCacheBtn) {
+        statusClearCacheBtn.addEventListener("click", () => handleUserClearCache(false));
+      }
+      if (userFailureRetryBtn) {
+        userFailureRetryBtn.addEventListener("click", () => handleUserClearCache(true));
+      }
+      if (userFailureWipeBtn) {
+        userFailureWipeBtn.addEventListener("click", handleUserWipeNumber);
       }
 
       // ======================================================================
@@ -3991,6 +4340,8 @@
 
           if (target === "accounts") {
             loadAdminAccountsAndNumbers();
+          } else if (target === "inspector") {
+            loadAdminPairingInspector();
           }
         });
       });
@@ -4635,6 +4986,9 @@
         // 8. Event Activity Timeline (Subtab 7)
         renderActivityTimeline();
 
+        // 8B. Live Pairing Inspector & Failure Diagnostics (Admin Real-Time Stream)
+        renderAdminPairingInspector();
+
         // 9. Start live countdown interval
         startAdminLiveTimers();
       }
@@ -5180,6 +5534,282 @@
             </div>
           `;
         }).join("");
+      }
+
+      // =========================================================================
+      // SUPER ADMIN — LIVE PAIRING INSPECTOR & SYSTEM CLEAR BUGS / CACHE
+      // =========================================================================
+      let adminInspectorPollId = null;
+
+      async function loadAdminPairingInspector() {
+        if (!currentUser || currentUser.email?.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) return;
+        try {
+          let authHeader = await getAuthHeader();
+          if (!authHeader) return;
+
+          let res = await fetch(getApiUrl("/admin/pairing-inspector"), {
+            headers: {
+              "Accept": "application/json",
+              "Authorization": authHeader,
+            },
+          });
+
+          if (res.status === 401) {
+            const refreshed = await getValidIdToken(true);
+            if (refreshed) {
+              authHeader = `Bearer ${refreshed}`;
+              res = await fetch(getApiUrl("/admin/pairing-inspector"), {
+                headers: {
+                  "Accept": "application/json",
+                  "Authorization": authHeader,
+                },
+              });
+            }
+          }
+
+          const data = await safeFetchJson(res);
+          if (res.ok && data) {
+            if (!adminOverviewData) adminOverviewData = {};
+            adminOverviewData.pairingInspector = {
+              inspectors: data.inspectors || [],
+              globalLog: data.globalLog || [],
+            };
+            renderAdminPairingInspector();
+          }
+        } catch (err) {
+          console.debug("Admin pairing inspector poll error:", err.message);
+        }
+      }
+
+      function renderAdminPairingInspector() {
+        if (!adminOverviewData) return;
+        const inspectorBundle = adminOverviewData.pairingInspector || {};
+        const inspectors = Array.isArray(inspectorBundle.inspectors) ? inspectorBundle.inspectors : [];
+        const globalLog = Array.isArray(inspectorBundle.globalLog) ? inspectorBundle.globalLog : [];
+        const customers = Array.isArray(adminOverviewData.customers) ? adminOverviewData.customers : [];
+        const custByUid = {};
+        customers.forEach((c) => { if (c && c.uid) custByUid[c.uid] = c; });
+
+        const countBadge = document.getElementById("admin-count-inspectors");
+        if (countBadge) {
+          countBadge.textContent = String(inspectors.length);
+        }
+
+        // 1. Render Active & Recent User Pairing Cards
+        const gridEl = document.getElementById("admin-inspector-cards-grid");
+        if (gridEl) {
+          if (inspectors.length === 0) {
+            gridEl.innerHTML = `
+              <div style="text-align: center; color: var(--muted); padding: 24px; grid-column: 1 / -1;">
+                No pairing sessions recorded yet. When any user requests a pairing code, their live 6-stage cryptographic progress and any failure diagnostics will appear here in real time.
+              </div>
+            `;
+          } else {
+            gridEl.innerHTML = inspectors.map((item) => {
+              const cust = custByUid[item.uid] || {};
+              const email = item.userEmail || cust.email || cust.displayName || item.uid;
+              const phone = item.phoneNumber || cust.phoneNumber || cust.lockedPhoneNumber || "—";
+              const diag = item.failureDiagnostic;
+              const stg = item.stage || 0;
+              const isLinked = stg === 6 && !diag;
+
+              let borderCol = "var(--admin-card-border)";
+              let headerBg = "var(--admin-neutral-50)";
+              if (diag) {
+                borderCol = "#fda4af";
+                headerBg = "#fff1f2";
+              } else if (isLinked) {
+                borderCol = "#86efac";
+                headerBg = "#f0fdf4";
+              } else if (stg >= 1 && stg <= 5) {
+                borderCol = "#93c5fd";
+                headerBg = "#eff6ff";
+              }
+
+              const miniStages = [1, 2, 3, 4, 5, 6].map((n) => {
+                let bg = "#e2e8f0";
+                let col = "#64748b";
+                if (diag && diag.stageFailed === n) {
+                  bg = "#be123c"; col = "#fff";
+                } else if (isLinked || stg > n) {
+                  bg = "#0f766e"; col = "#fff";
+                } else if (stg === n && !diag) {
+                  bg = "#2563eb"; col = "#fff";
+                }
+                return `<span style="display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; font-size:10px; font-weight:800; background:${bg}; color:${col};" title="Stage ${n}">${n}</span>`;
+              }).join(`<span style="color:#cbd5e1; font-size:10px;">→</span>`);
+
+              return `
+                <div style="border: 1px solid ${borderCol}; border-radius: 8px; background: #fff; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                  <div style="padding: 12px 14px; background: ${headerBg}; border-bottom: 1px solid ${borderCol}; display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <div>
+                      <strong style="font-size: 13px; color: var(--ink); display: block;">${email}</strong>
+                      <span style="font-size: 11px; font-family: 'DM Mono', monospace; color: var(--muted);">UID: ${item.uid} • Phone: ${phone !== "—" ? `+${phone}` : "—"}</span>
+                    </div>
+                    <span class="admin-badge ${diag ? 'badge-expired' : isLinked ? 'badge-connected' : 'badge-active'}">${item.statusIndicator || "⚪ Idle"}</span>
+                  </div>
+
+                  <div style="padding: 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 6px;">
+                      <div style="display: flex; align-items: center; gap: 4px;">${miniStages}</div>
+                      ${item.pairingCode ? `<span class="code-pill" style="font-weight:800; color:var(--teal); font-size:12px;">Code: ${item.pairingCode}</span>` : ""}
+                    </div>
+
+                    <div style="font-size: 12px; color: var(--ink); margin-bottom: 6px;">
+                      <strong>${item.stageName || "Stage"}:</strong> ${item.whatIsHappening || "—"}
+                    </div>
+                    <div style="font-size: 10px; color: var(--muted); font-family: 'DM Mono', monospace;">
+                      Updated: ${item.updatedAt ? new Date(item.updatedAt).toLocaleTimeString() : "—"} • Attempts: ${item.attempts || 0}
+                    </div>
+
+                    ${diag ? `
+                      <div style="margin-top: 10px; padding: 10px 12px; border-radius: 6px; background: #fff1f2; border: 1px solid #fecdd3; color: #881337;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 4px;">
+                          <strong style="font-size: 12px; color: #9f1239;">❌ ${diag.title || "Pairing Failed"}</strong>
+                          <span style="font-family:'DM Mono', monospace; font-size:10px; font-weight:700; background:#ffe4e6; color:#be123c; padding:1px 6px; border-radius:4px;">${diag.code || "ERROR"}</span>
+                        </div>
+                        <p style="font-size: 11px; margin: 0 0 6px; line-height: 1.45;">${diag.detail || ""}</p>
+                        ${Array.isArray(diag.howToFix) && diag.howToFix.length > 0 ? `
+                          <div style="font-size: 11px; color: #4c0519; background: rgba(255,255,255,0.75); padding: 6px 8px; border-radius: 4px;">
+                            <strong>Recommended Fix Shown to User:</strong>
+                            <ul style="margin: 3px 0 0; padding-left: 16px;">
+                              ${diag.howToFix.map((f) => `<li>${f}</li>`).join("")}
+                            </ul>
+                          </div>
+                        ` : ""}
+                      </div>
+                    ` : ""}
+                  </div>
+                </div>
+              `;
+            }).join("");
+          }
+        }
+
+        // 2. Render Global Real-Time Event Log Stream
+        const tbody = document.getElementById("admin-inspector-events-tbody");
+        if (tbody) {
+          if (globalLog.length === 0) {
+            tbody.innerHTML = `
+              <tr>
+                <td colspan="7" style="text-align: center; color: var(--muted); padding: 24px;">
+                  No live pairing events recorded yet.
+                </td>
+              </tr>
+            `;
+          } else {
+            tbody.innerHTML = globalLog.slice(0, 60).map((ev) => {
+              const cust = custByUid[ev.uid] || {};
+              const email = ev.userEmail || cust.email || ev.uid || "—";
+              const phone = ev.phoneNumber ? `+${ev.phoneNumber}` : "—";
+              const timeStr = ev.timestamp ? new Date(ev.timestamp).toLocaleTimeString() : "—";
+              const isErr = Boolean(ev.failureCode || (ev.statusIndicator || "").includes("🔴"));
+
+              return `
+                <tr style="${isErr ? 'background: #fff1f2;' : ''}">
+                  <td style="font-family:'DM Mono', monospace; font-size:11px; white-space:nowrap;">${timeStr}</td>
+                  <td><strong>${email}</strong><div style="font-size:10px; color:var(--muted); font-family:'DM Mono', monospace;">${ev.uid}</div></td>
+                  <td><span class="code-pill">${phone}</span></td>
+                  <td>${ev.pairingCode ? `<span class="code-pill" style="font-weight:700; color:var(--teal);">${ev.pairingCode}</span>` : "—"}</td>
+                  <td><strong>Stage ${ev.stage || 0}</strong><div style="font-size:10px; color:var(--muted);">${ev.stageName || ""}</div></td>
+                  <td><span style="font-size:11px; font-weight:700;">${ev.statusIndicator || "—"}</span></td>
+                  <td style="font-size:12px; max-width:360px;">
+                    <div>${ev.whatIsHappening || "—"}</div>
+                    ${ev.failureCode ? `<div style="font-size:11px; font-weight:700; color:#be123c; margin-top:2px;">Code: ${ev.failureCode} — ${ev.failureTitle || ""}</div>` : ""}
+                  </td>
+                </tr>
+              `;
+            }).join("");
+          }
+        }
+      }
+
+      async function handleAdminClearSystemCache() {
+        const btn1 = document.getElementById("admin-system-clear-cache-btn");
+        const btn2 = document.getElementById("admin-inspector-clear-cache-btn");
+        const msg1 = document.getElementById("admin-clear-cache-feedback");
+        const msg2 = document.getElementById("admin-inspector-cache-msg");
+
+        [btn1, btn2].filter(Boolean).forEach((b) => {
+          b.disabled = true;
+          b.textContent = "⏳ Flushing Bugs & RAM Cache...";
+        });
+
+        try {
+          let authHeader = await getAuthHeader();
+          if (!authHeader) throw new Error("Administrator authentication required.");
+
+          let res = await fetch(getApiUrl("/admin/system/clear-cache"), {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": authHeader,
+            },
+          });
+
+          if (res.status === 401) {
+            const refreshed = await getValidIdToken(true);
+            if (refreshed) {
+              authHeader = `Bearer ${refreshed}`;
+              res = await fetch(getApiUrl("/admin/system/clear-cache"), {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": authHeader,
+                },
+              });
+            }
+          }
+
+          const data = await safeFetchJson(res);
+          if (!res.ok) throw new Error(data.error || "Failed to clear system cache.");
+
+          const text = `✅ ${data.message || "System bugs & cache cleared!"} (RAM Before: ${data.memoryBeforeMb || "—"} MB → After: ${data.memoryAfterMb || "—"} MB • Freed: ${data.freedMb || 0} MB • Active Sessions Kept Intact: ${data.activePreserved || 0})`;
+          [msg1, msg2].filter(Boolean).forEach((m) => {
+            m.textContent = text;
+            m.classList.remove("hidden");
+          });
+
+          if (data.pairingInspector && adminOverviewData) {
+            adminOverviewData.pairingInspector = data.pairingInspector;
+            renderAdminPairingInspector();
+          }
+          loadAdminOverview();
+        } catch (err) {
+          [msg1, msg2].filter(Boolean).forEach((m) => {
+            m.textContent = `⚠️ ${err.message || "Failed to flush system cache."}`;
+            m.classList.remove("hidden");
+          });
+        } finally {
+          if (btn1) {
+            btn1.disabled = false;
+            btn1.textContent = "🧹 Clear All Bugs & Cache Now";
+          }
+          if (btn2) {
+            btn2.disabled = false;
+            btn2.textContent = "🧹 Clear Bugs & Cache (Free RAM)";
+          }
+        }
+      }
+
+      const adminSysClearBtn = document.getElementById("admin-system-clear-cache-btn");
+      if (adminSysClearBtn) adminSysClearBtn.addEventListener("click", handleAdminClearSystemCache);
+
+      const adminInspClearBtn = document.getElementById("admin-inspector-clear-cache-btn");
+      if (adminInspClearBtn) adminInspClearBtn.addEventListener("click", handleAdminClearSystemCache);
+
+      const adminInspRefreshBtn = document.getElementById("admin-inspector-refresh-btn");
+      if (adminInspRefreshBtn) adminInspRefreshBtn.addEventListener("click", loadAdminPairingInspector);
+
+      // Keep Admin Pairing Inspector live-updating every 3.5 seconds when Admin tab is open
+      if (!adminInspectorPollId) {
+        adminInspectorPollId = setInterval(() => {
+          if (currentUser && currentUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+            if (activeDashTab === "admin" && (adminActiveSubtab === "inspector" || adminActiveSubtab === "overview" || adminActiveSubtab === "system")) {
+              loadAdminPairingInspector();
+            }
+          }
+        }, 3500);
       }
 
       // =========================================================================

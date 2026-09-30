@@ -11,6 +11,8 @@ import {
   auditActiveSessions,
   getAllWhatsAppStatuses,
   disconnectUserWhatsAppSession,
+  getAllPairingInspectorStates,
+  clearAllSystemBugsAndCache,
 } from "./lib/whatsapp.js";
 import {
   getLockedNumberForUid,
@@ -296,6 +298,26 @@ for (const p of prefixes) {
     } catch (error) {
       logger.error(`Disconnect failed for verified user ${verifiedUid}`, error.stack || error.message);
       response.status(500).json({ error: "The WhatsApp session could not be cleared.", userId: verifiedUid });
+    }
+  });
+
+  // User-facing Clear Bugs & Cache endpoint (Flushes stale keys, dead sockets, and RAM buffers while preserving active linked sessions)
+  app.post(`${p}/clear-cache`, requireAuth, async (request, response) => {
+    try {
+      const safeUserId = request.safeUserId;
+      const verifiedUid = request.verifiedUid;
+      const userEmail = request.auth.email;
+      const controller = getWhatsAppController(safeUserId, { verifiedUid, userEmail });
+      const result = await controller.clearBugsAndCache();
+      response.json({
+        ok: true,
+        ...result,
+        status: controller.getStatus(),
+        userId: verifiedUid,
+      });
+    } catch (error) {
+      logger.error(`Clear bugs & cache failed for user ${request.verifiedUid}`, error.stack || error.message);
+      response.status(500).json({ error: error.message || "Could not clear session cache and buffers." });
     }
   });
 
@@ -849,6 +871,7 @@ for (const p of prefixes) {
         customers: customersList,
         referrals: referralAudit,
         whatsappSessions: whatsappList,
+        pairingInspector: getAllPairingInspectorStates(),
         recentActivity: activityEvents.slice(0, 50),
         systemHealth: {
           uptimeSeconds: Math.floor(process.uptime()),
@@ -1417,6 +1440,53 @@ for (const p of prefixes) {
     } catch (error) {
       logger.error("Admin get audit logs error", error.stack || error.message);
       response.status(500).json({ error: "Failed to list audit logs." });
+    }
+  });
+
+  app.get(`${p}/admin/pairing-inspector`, requireAuth, requireAdmin, async (_request, response) => {
+    try {
+      const inspectorData = getAllPairingInspectorStates();
+      response.json({
+        success: true,
+        ...inspectorData,
+        whatsappSessions: getAllWhatsAppStatuses(),
+        systemHealth: {
+          uptimeSeconds: Math.floor(process.uptime()),
+          serverTime: new Date().toISOString(),
+          memory: process.memoryUsage(),
+        },
+      });
+    } catch (error) {
+      logger.error("Admin pairing inspector error", error.stack || error.message);
+      response.status(500).json({ error: "Failed to load live pairing inspector data." });
+    }
+  });
+
+  app.post(`${p}/admin/system/clear-cache`, requireAuth, requireAdmin, async (request, response) => {
+    try {
+      const adminEmail = request.auth?.email || ADMIN_EMAIL;
+      const result = await clearAllSystemBugsAndCache();
+      await recordAdminAuditLog(
+        {
+          action: "SYSTEM_CACHE_FLUSHED",
+          targetUid: "ALL_SESSIONS",
+          adminEmail,
+          previousState: `Heap ${result.memoryBeforeMb} MB`,
+          newState: `Heap ${result.memoryAfterMb} MB (${result.activePreserved} active kept, ${result.flushedControllers} flushed)`,
+          result: "SUCCESS",
+          note: result.message,
+        },
+        request.headers.authorization
+      ).catch(() => {});
+
+      response.json({
+        success: true,
+        ...result,
+        pairingInspector: getAllPairingInspectorStates(),
+      });
+    } catch (error) {
+      logger.error("Admin clear system cache error", error.stack || error.message);
+      response.status(500).json({ error: error.message || "Failed to clear system bugs and cache." });
     }
   });
 
