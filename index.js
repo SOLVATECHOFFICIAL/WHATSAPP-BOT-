@@ -24,7 +24,7 @@ import {
   requireAuth,
   requireAdmin,
   createPreviewToken,
-  getFirebaseServerFirestore,
+  readFirestoreCollectionRest,
   setUserAccountStatus,
   isUserAccountDisabled,
   recordAdminAuditLog,
@@ -595,25 +595,23 @@ for (const p of prefixes) {
         Promise.resolve(getAllWhatsAppStatuses()),
       ]);
 
-      const db = getFirebaseServerFirestore();
       const firestoreUsers = {};
-      if (db) {
-        try {
-          const { collection, getDocs } = await import("firebase/firestore");
-          const [usersSnap, userLicensesSnap] = await Promise.all([
-            getDocs(collection(db, "users")).catch(() => ({ forEach: () => {} })),
-            getDocs(collection(db, "user_licenses")).catch(() => ({ forEach: () => {} })),
-          ]);
+      try {
+        const [usersDocs, userLicensesDocs] = await Promise.all([
+          readFirestoreCollectionRest("users").catch(() => []),
+          readFirestoreCollectionRest("user_licenses").catch(() => []),
+        ]);
 
-          usersSnap.forEach((d) => {
-            if (d.data()) firestoreUsers[d.id] = { ...(firestoreUsers[d.id] || {}), ...d.data(), uid: d.id };
-          });
-          userLicensesSnap.forEach((d) => {
-            if (d.data()) firestoreUsers[d.id] = { ...(firestoreUsers[d.id] || {}), activeLicense: d.data(), uid: d.id };
-          });
-        } catch (err) {
-          logger.debug("Admin comprehensive Firestore scan notice", err.message);
+        for (const d of usersDocs || []) {
+          const docId = d?.uid || d?.id;
+          if (docId) firestoreUsers[docId] = { ...(firestoreUsers[docId] || {}), ...d, uid: docId };
         }
+        for (const d of userLicensesDocs || []) {
+          const docId = d?.uid || d?.id;
+          if (docId) firestoreUsers[docId] = { ...(firestoreUsers[docId] || {}), activeLicense: d, uid: docId };
+        }
+      } catch (err) {
+        logger.debug("Admin comprehensive Firestore scan notice", err.message);
       }
 
       const locksByUid = {};
@@ -943,19 +941,15 @@ for (const p of prefixes) {
 
   app.get(`${p}/admin/accounts-and-numbers`, requireAuth, requireAdmin, async (_request, response) => {
     try {
-      const db = getFirebaseServerFirestore();
       const firestoreUsers = {};
-
-      if (db) {
-        try {
-          const { collection, getDocs } = await import("firebase/firestore");
-          const snap = await getDocs(collection(db, "users"));
-          snap.forEach((docSnap) => {
-            firestoreUsers[docSnap.id] = docSnap.data();
-          });
-        } catch (err) {
-          logger.debug("Firestore users fetch notice in accounts-and-numbers", err.message);
+      try {
+        const usersDocs = await readFirestoreCollectionRest("users").catch(() => []);
+        for (const docSnap of usersDocs || []) {
+          const docId = docSnap?.uid || docSnap?.id;
+          if (docId) firestoreUsers[docId] = docSnap;
         }
+      } catch (err) {
+        logger.debug("Firestore users fetch notice in accounts-and-numbers", err.message);
       }
 
       const [licenses, numberLocks, numberHistoryList, referralAudit, auditLogsList] = await Promise.all([

@@ -3568,7 +3568,7 @@
           const data = await safeFetchJson(res);
           if (res.ok && data.preferences) {
             updatePreferencesUI(data.preferences);
-            if (db && currentUser?.uid) {
+            if (isRealFirebaseAuth(currentUser)) {
               try {
                 await setDoc(doc(db, "user_preferences", currentUser.uid), {
                   userId: currentUser.uid,
@@ -4027,7 +4027,7 @@
             }
 
             // Directly write to Firestore from authenticated customer client as permanent source of truth
-            if (db && currentUser && currentUser.uid) {
+            if (isRealFirebaseAuth(currentUser)) {
               try {
                 const expiryDateStr = data.license?.expiresAt || data.expiresAt;
                 const daysVal = data.license?.durationDays || data.durationDays;
@@ -4431,7 +4431,7 @@
             }
 
             // Write to Firestore if accessible
-            if (db && data.license && data.license.code) {
+            if (isRealFirebaseAuth(currentUser) && data.license && data.license.code) {
               try {
                 await setDoc(doc(db, "licenses", data.license.code), data.license, { merge: true });
               } catch (fsErr) {
