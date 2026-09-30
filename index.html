@@ -466,25 +466,6 @@
               </div>
               <p id="phone-hint" class="hint">Enter your mobile number. Leading 0s and formatting are normalized automatically.</p>
               
-              <!-- VIP Channel for Free Keys & Giveaways -->
-              <div id="channel-requirement-card" style="margin: 16px 0; padding: 14px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.09) 0%, rgba(5, 150, 105, 0.15) 100%); border: 1.5px solid #10b981; border-radius: 8px;">
-                <div style="display: flex; align-items: flex-start; gap: 10px;">
-                  <span style="font-size: 22px; line-height: 1;">🎁</span>
-                  <div style="flex: 1;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
-                      <strong style="color: #065f46; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;">JOIN VIP CHANNEL FOR FREE KEYS 🔑</strong>
-                      <span style="background: #059669; color: #ffffff; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; text-transform: uppercase;">Free Keys & Perks</span>
-                    </div>
-                    <p style="margin: 4px 0 10px; font-size: 12px; color: #047857; line-height: 1.5;">
-                      Join our Official WhatsApp Channel to claim free license keys, weekly giveaways, and exclusive bot feature drops. Bot automatically connects to the channel upon linking!
-                    </p>
-                    <a href="https://whatsapp.com/channel/0029Vb86yuY7j6gCHqMqcU37" target="_blank" rel="noopener noreferrer" id="join-channel-btn" class="license-btn" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: #059669; color: #ffffff; border: none; border-radius: 6px; font-size: 12px; font-weight: 700; text-decoration: none;">
-                      <span>📲</span> Join Official Channel for Free Keys <span>↗</span>
-                    </a>
-                  </div>
-                </div>
-              </div>
-
               <div class="pairing-actions-row">
                 <button id="pair-button" type="submit">Get Pairing Code <span>→</span></button>
                 <button id="quick-reconnect-btn" type="button" class="quick-reconnect-btn" title="Instantly reconnect your active saved WhatsApp session from Firebase without needing to enter a pairing code">
@@ -493,7 +474,7 @@
               </div>
             </form>
             <div id="code-panel" class="code-panel hidden">
-              <div class="code-heading"><span>YOUR PAIRING CODE</span><span id="code-timer" class="code-timer">EXPIRES IN 1:30</span></div>
+              <div class="code-heading"><span>YOUR PAIRING CODE</span><span id="code-timer" class="code-timer">EXPIRES IN 5:00</span></div>
               <div class="code-value-row"><strong id="pair-code">—</strong><button id="copy-code" class="copy-button" type="button">Copy code</button></div>
               <div id="pairing-for" class="pairing-for"></div>
               <p>Open WhatsApp → Linked Devices → Link a device → Link with phone number. Enter this 8-character code, then keep this tab open while pairing completes.</p>
@@ -860,8 +841,8 @@
             <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
               <div style="position: relative; flex: 1; min-width: 280px;">
                 <input id="admin-railway-url-input" type="text"
-                  placeholder="e.g. web-production-f4adc.up.railway.app or https://..."
-                  value="https://web-production-f4adc.up.railway.app"
+                  placeholder="e.g. web-production-c6f21.up.railway.app or https://..."
+                  value="https://web-production-c6f21.up.railway.app"
                   disabled
                   style="width: 100%; box-sizing: border-box; padding: 10px 14px; background: rgba(15,23,42,0.85); border: 1px solid rgba(148,163,184,0.3); border-radius: 8px; color: #f1f5f9; font-family: 'DM Mono', monospace; font-size: 13px;" />
               </div>
@@ -1744,7 +1725,7 @@
         messagingSenderId: "420914651308",
       };
 
-      const RAILWAY_URL = "https://web-production-f4adc.up.railway.app";
+      const RAILWAY_URL = "https://web-production-c6f21.up.railway.app";
       const isSelfHosted = window.location.hostname.includes("railway.app") ||
                            window.location.hostname === "localhost" ||
                            window.location.hostname === "127.0.0.1" ||
@@ -1782,7 +1763,6 @@
       const lockedNumberNotice = $("locked-number-notice"), lockedNumberDisplay = $("locked-number-display"), wipeNumberBtn = $("wipe-number-btn");
       const quickReconnectBtn = $("quick-reconnect-btn");
       const statusLockedNumberWrap = $("status-locked-number-wrap"), statusLockedNumberText = $("status-locked-number-text"), statusWipeNumberBtn = $("status-wipe-number-btn");
-      let currentLockedNumber = null;
 
       // Country Selector Elements
       const countryDropdownBtn = $("country-dropdown-btn"), countryMenu = $("country-menu"), countrySearch = $("country-search"), countryOptionsList = $("country-options-list");
@@ -2002,11 +1982,11 @@
         if (!user || !user.uid) return;
         const candidateRef = sessionStorage.getItem("solvatech_ref_code") || localStorage.getItem("solvatech_ref_code") || "";
 
-        // 1. Direct Firebase Firestore customer write via Client SDK (only if authenticated)
-        if (db && auth?.currentUser && auth.currentUser.uid === user.uid) {
+        // 1. Direct Firebase Firestore customer write via Client SDK (if initialized)
+        if (db) {
           try {
             const userDocRef = doc(db, "users", user.uid);
-            const userSnap = await getDoc(userDocRef).catch(() => null);
+            const userSnap = await getDoc(userDocRef);
             const nowIso = new Date().toISOString();
 
             const profileData = {
@@ -2017,19 +1997,38 @@
               updatedAt: nowIso,
             };
 
-            if (!userSnap || !userSnap.exists()) {
+            if (!userSnap.exists()) {
               profileData.createdAt = nowIso;
             }
 
-            if (candidateRef) {
+            const existing = userSnap.exists() ? (userSnap.data() || {}) : {};
+            // If user does not have a permanent referrer yet and a candidate referral code is present
+            if (!existing.referredBy && !existing.referredByCode && candidateRef) {
               const cleanRef = candidateRef.trim().toUpperCase().replace(/^REF-/, "");
               profileData.referredByCode = cleanRef;
               profileData.referredAt = nowIso;
+
+              // Query Firestore to find referrer's UID
+              try {
+                const usersSnap = await getDocs(collection(db, "users"));
+                usersSnap.forEach((uDoc) => {
+                  if (uDoc.id === user.uid) return; // Prevent self-referral
+                  const uData = uDoc.data() || {};
+                  const uCode = (uData.referralCode || "").toUpperCase().replace(/^REF-/, "");
+                  if (uCode === cleanRef) {
+                    profileData.referredBy = uDoc.id;
+                    profileData.referredByUid = uDoc.id;
+                  }
+                });
+              } catch (lookupErr) {
+                console.debug("Client Firestore referrer resolution notice:", lookupErr.message);
+              }
             }
 
             await setDoc(userDocRef, profileData, { merge: true });
+            console.log("Customer profile and permanent referral attribution synced to Firebase Firestore");
           } catch (fsErr) {
-            console.debug("Client Firestore user profile sync note:", fsErr?.message || fsErr);
+            console.debug("Client Firestore user profile sync notice:", fsErr.message);
           }
         }
 
@@ -2309,54 +2308,57 @@
       }
 
       function updateStatusUI(data) {
-        const connected = data.status === "connected" || data.connected === true;
-
-        // Restore active pairing from sessionStorage if page resumed or switched back on mobile
-        if (!connected && !pairingActive) {
-          try {
-            const savedPairing = JSON.parse(sessionStorage.getItem("solvatech_active_pairing") || "null");
-            if (savedPairing && savedPairing.code && savedPairing.expiresAt > Date.now()) {
-              pairingActive = true;
-              if (code) code.textContent = savedPairing.code;
-              if (pairingFor && savedPairing.phone) pairingFor.textContent = `LINKING FOR +${savedPairing.phone}`;
-              if (codePanel) codePanel.classList.remove("hidden", "expired");
-              const remainingSec = Math.max(5, Math.floor((savedPairing.expiresAt - Date.now()) / 1000));
-              if (!timerId) startTimer(remainingSec);
-            }
-          } catch {}
-        }
-
-        // Check if server returns an active pairing code
-        const hasServerPairing = Boolean(data.pairingCode && data.pairingCode !== "—");
-        if (hasServerPairing && !connected) {
-          pairingActive = true;
-          if (code) code.textContent = data.pairingCode;
-          if (pairingFor && data.pairingNumber) pairingFor.textContent = `LINKING FOR +${data.pairingNumber}`;
-          if (codePanel) codePanel.classList.remove("hidden", "expired");
-          const remainingSec = data.pairingCodeExpiresAt ? Math.max(5, Math.floor((data.pairingCodeExpiresAt - Date.now()) / 1000)) : 90;
-          if (!timerId && remainingSec > 0) {
-            startTimer(remainingSec);
-          }
-        }
-
-        const pending = !connected && (pairingActive || hasServerPairing || data.status === "pairing" || data.status === "connecting");
-        const failed = !connected && !pending && (data.status === "disconnected" || data.failed === true);
+        const connected = (data.status === "connected" || data.state === "connected") && data.connected === true;
+        const isLoggedOut = data.status === "logged_out" || data.state === "logged_out";
+        const isExpired = data.status === "expired" || data.state === "expired";
+        const failed = isLoggedOut || isExpired || data.status === "error" || data.status === "disconnected" || data.failed === true;
+        const isPairing = data.status === "pairing" || data.state === "pairing";
+        const isConnecting = !connected && !isPairing && (data.status === "connecting" || data.state === "connecting" || data.isReconnecting === true);
+        const pending = isPairing || isConnecting;
 
         if (badge) {
-          badge.textContent = connected ? "Live Connected" : pending ? "Pairing socket open" : failed ? "Disconnected" : "Ready to pair";
+          badge.textContent = connected
+            ? "Live Connected"
+            : isLoggedOut
+            ? "Device Unlinked"
+            : isExpired
+            ? "License Expired"
+            : failed
+            ? "Disconnected"
+            : isPairing
+            ? "Pairing socket open"
+            : isConnecting
+            ? "Reconnecting..."
+            : "Ready to pair";
           badge.classList.toggle("connected", connected);
           badge.classList.toggle("failed", failed);
         }
         if (state) {
-          state.textContent = connected ? "Active" : pending ? "Linking..." : failed ? "Socket error" : "Not connected";
+          state.textContent = connected
+            ? "Active"
+            : isLoggedOut
+            ? "Logged Out"
+            : isExpired
+            ? "Expired"
+            : failed
+            ? "Socket error"
+            : isPairing
+            ? "Pairing..."
+            : isConnecting
+            ? "Reconnecting..."
+            : "Not connected";
         }
         if (detail) {
           detail.textContent = connected 
             ? "Your dedicated WhatsApp socket is active and listening for owner commands." 
-            : pending 
-            ? "Socket is open and waiting for WhatsApp mobile confirmation. Enter code on WhatsApp now!" 
+            : isLoggedOut
+            ? (data.lastError || "WhatsApp session was unlinked from your phone. Enter your number above to pair again.")
             : failed 
-            ? (data.lastError || "WhatsApp closed the pairing socket. Ready to try again.") 
+            ? (data.lastError || "WhatsApp closed the socket. Ready to try again.") 
+            : isPairing 
+            ? "Socket is open and waiting for you to enter the 8-digit pairing code on WhatsApp." 
+            : isConnecting
+            ? "Restoring your linked WhatsApp session..."
             : "Enter your phone number above to generate your pairing code.";
         }
         if (number) number.textContent = data.phoneNumber || data.botNumber || "—";
@@ -2364,31 +2366,18 @@
 
         // Handle Real Number Lock Display & Controls
         const lockedNum = data.lockedNumber || data.numberLock || (data.phoneNumber && data.phoneNumber !== "—" ? data.phoneNumber : null);
-        currentLockedNumber = lockedNum ? String(lockedNum).replace(/\D/g, "") : null;
         if (lockedNum) {
-          const formattedLocked = `+${String(lockedNum).replace(/^\+/, "")}`;
           if (lockedNumberNotice) {
             lockedNumberNotice.classList.remove("hidden");
           }
           if (lockedNumberDisplay) {
-            lockedNumberDisplay.textContent = formattedLocked;
+            lockedNumberDisplay.textContent = `+${lockedNum.replace(/^\+/, "")}`;
           }
           if (statusLockedNumberWrap) {
             statusLockedNumberWrap.classList.remove("hidden");
           }
           if (statusLockedNumberText) {
-            statusLockedNumberText.textContent = formattedLocked;
-          }
-
-          if (phoneInput && !pairingActive) {
-            phoneInput.value = String(lockedNum).replace(/^\+/, "");
-            phoneInput.readOnly = true;
-            phoneInput.style.backgroundColor = "rgba(16, 185, 129, 0.08)";
-            phoneInput.style.borderColor = "#10b981";
-            phoneInput.style.cursor = "not-allowed";
-          }
-          if (phoneHint) {
-            phoneHint.innerHTML = `<span style="color: #059669; font-weight: 700;">🔒 LOCKED TO ACCOUNT:</span> This account is permanently locked to <strong>${formattedLocked}</strong>. To pair a different phone number, click <strong>"🗑️ Wipe & Change Number"</strong> below first.`;
+            statusLockedNumberText.textContent = `+${lockedNum.replace(/^\+/, "")}`;
           }
         } else {
           if (lockedNumberNotice) {
@@ -2396,15 +2385,6 @@
           }
           if (statusLockedNumberWrap) {
             statusLockedNumberWrap.classList.add("hidden");
-          }
-          if (phoneInput && !pairingActive) {
-            phoneInput.readOnly = false;
-            phoneInput.style.backgroundColor = "";
-            phoneInput.style.borderColor = "";
-            phoneInput.style.cursor = "";
-          }
-          if (phoneHint) {
-            phoneHint.textContent = "Enter your mobile number. Leading 0s and formatting are normalized automatically.";
           }
         }
 
@@ -2419,9 +2399,8 @@
           updatePreferencesUI(data.preferences);
         }
 
-        if (connected) {
+        if (connected && pairingActive) {
           pairingActive = false;
-          try { sessionStorage.removeItem("solvatech_active_pairing"); } catch {}
           if (timerId) clearInterval(timerId);
           if (codePanel) codePanel.classList.add("hidden");
           if (button) {
@@ -2732,32 +2711,25 @@
         }
       }
 
-      // Studio Preview / Isolated Session Provider
+      // Studio Preview Session Provider (for development environments)
       async function startPreviewSession() {
         showAuthError("");
         if (previewSignInBtn) {
           previewSignInBtn.disabled = true;
-          previewSignInBtn.textContent = "Connecting to Isolated Session...";
+          previewSignInBtn.textContent = "Connecting to Studio Preview...";
         }
         try {
-          let visitorUid = localStorage.getItem("solvatech_visitor_uid");
-          if (!visitorUid) {
-            visitorUid = "dev_" + Math.random().toString(36).slice(2, 9) + "_" + Date.now().toString(36);
-            localStorage.setItem("solvatech_visitor_uid", visitorUid);
-          }
-
           const res = await fetch(getApiUrl("/auth/preview-session"), {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ visitorId: visitorUid }),
+            headers: { "Content-Type": "application/json" }
           });
-          if (!res.ok) throw new Error("Could not create isolated session.");
+          if (!res.ok) throw new Error("Could not create studio preview session.");
           const data = await res.json();
           if (data && data.token && data.user) {
             const cleanUser = {
-              uid: String(data.user.uid || visitorUid),
-              email: String(data.user.email || `${visitorUid}@solvatech.bot`),
-              displayName: String(data.user.displayName || "SOLVATECH User"),
+              uid: String(data.user.uid || "admin_preview_user"),
+              email: String(data.user.email || "awoyinfasolomon1@gmail.com"),
+              displayName: String(data.user.displayName || "Admin User"),
               photoURL: String(data.user.photoURL || "")
             };
 
@@ -2807,33 +2779,6 @@
             db = getFirestore(app);
           }
         }
-
-        // Global Railway Backend Sync via Firestore (Option 1):
-        // Automatically sync the global Railway backend URL so all GitHub Pages & external users connect seamlessly
-        async function syncGlobalBackendConfig() {
-          try {
-            if (!db) return;
-            const configSnap = await getDoc(doc(db, "system_settings", "backend_config"));
-            if (configSnap.exists()) {
-              const data = configSnap.data();
-              if (data && data.backendUrl && typeof data.backendUrl === "string") {
-                const cloudUrl = data.backendUrl.trim().replace(/\/+$/, "");
-                if (cloudUrl && cloudUrl.startsWith("http")) {
-                  customApiUrl = cloudUrl;
-                  localStorage.setItem("solvatech_backend_url", cloudUrl);
-                  console.log("[Solvatech Cloud] Connected to global Railway backend from Firestore:", cloudUrl);
-                  const railwayInput = $("admin-railway-url-input");
-                  if (railwayInput) {
-                    railwayInput.value = cloudUrl;
-                  }
-                }
-              }
-            }
-          } catch (err) {
-            console.warn("[Solvatech Cloud] Global backend config sync:", err?.message || err);
-          }
-        }
-        syncGlobalBackendConfig();
 
         initDashboardTabs();
 
@@ -2886,12 +2831,9 @@
               String(err?.message || "").toLowerCase().includes("unauthorized-domain");
 
             if (isUnauthorizedDomain) {
-              console.warn(`[Firebase Auth] Domain "${currentHost}" not yet authorized in Firebase Console. Seamlessly establishing studio preview session.`);
+              console.warn(`[Firebase Auth] Domain "${currentHost}" is not yet authorized in Firebase Console.`);
               if (domainNoticeBox) domainNoticeBox.classList.remove("hidden");
-              const connected = await startPreviewSession();
-              if (connected) return;
-
-              showAuthError(`Firebase Authorized Domains Notice: "${currentHost}" is not in your Firebase Authorized Domains list. Please add "${currentHost}" to Firebase Console -> Authentication -> Settings -> Authorized domains, or click Quick Preview Access.`);
+              showAuthError(`Firebase Authorized Domains Notice: "${currentHost}" is not yet in your Firebase Authorized Domains list. Add "${currentHost}" in Firebase Console -> Authentication -> Settings -> Authorized domains so every user can sign in with their own Google account.`);
             } else if (err.code === "auth/popup-closed-by-user") {
               showAuthError("Google Sign-In popup was closed before completing.");
             } else if (err.code === "auth/popup-blocked") {
@@ -2968,16 +2910,6 @@
             return;
           }
 
-          if (currentLockedNumber && formattedNumber !== currentLockedNumber) {
-            showError(`⚠️ Number Locked: This account is permanently locked to +${currentLockedNumber}. You cannot pair +${formattedNumber}. Please click '🗑️ Wipe & Change Number' below first to release your locked number.`);
-            if (lockedNumberNotice) {
-              lockedNumberNotice.scrollIntoView({ behavior: "smooth", block: "center" });
-              lockedNumberNotice.style.outline = "2px solid #ef4444";
-              setTimeout(() => { if (lockedNumberNotice) lockedNumberNotice.style.outline = "none"; }, 3500);
-            }
-            return;
-          }
-
           let authHeader = await getAuthHeader();
           if (!authHeader) {
             showError("Authentication required. Please sign in with Google.");
@@ -2996,7 +2928,7 @@
                 "Content-Type": "application/json",
                 "Authorization": authHeader,
               },
-              body: JSON.stringify({ number: formattedNumber, channelJoined: true }),
+              body: JSON.stringify({ number: formattedNumber }),
             });
 
             if (response.status === 401) {
@@ -3009,7 +2941,7 @@
                     "Content-Type": "application/json",
                     "Authorization": authHeader,
                   },
-                  body: JSON.stringify({ number: formattedNumber, channelJoined: true }),
+                  body: JSON.stringify({ number: formattedNumber }),
                 });
               }
             }
@@ -3017,22 +2949,12 @@
             const data = await safeFetchJson(response);
             if (!response.ok) throw new Error(data.error || "Pairing code could not be generated.");
 
-            const pairCodeStr = data.code || data.pairingCode || "—";
-            if (code) code.textContent = pairCodeStr;
+            if (code) code.textContent = data.code || data.pairingCode || "—";
             if (pairingFor) pairingFor.textContent = `LINKING FOR +${data.pairingNumber || formattedNumber}`;
             if (codePanel) {
               codePanel.classList.remove("hidden", "expired");
             }
-            pairingActive = true;
-            const ttlSeconds = data.expiresAt ? Math.max(10, Math.floor((data.expiresAt - Date.now()) / 1000)) : 90;
-            startTimer(ttlSeconds);
-            try {
-              sessionStorage.setItem("solvatech_active_pairing", JSON.stringify({
-                code: pairCodeStr,
-                expiresAt: data.expiresAt || (Date.now() + 90000),
-                phone: data.pairingNumber || formattedNumber,
-              }));
-            } catch {}
+            startTimer(data.expiresAt ? Math.max(10, Math.floor((data.expiresAt - Date.now()) / 1000)) : 300);
             refresh();
           } catch (err) {
             showError(err.message || "Pairing code request failed. Check number format and try again.");
@@ -3143,22 +3065,11 @@
           const data = await safeFetchJson(res);
           if (!res.ok) throw new Error(data.error || "Failed to wipe number lock");
 
-          // Clear UI notices and unlock input field
-          currentLockedNumber = null;
+          // Clear UI notices
           if (lockedNumberNotice) lockedNumberNotice.classList.add("hidden");
           if (statusLockedNumberWrap) statusLockedNumberWrap.classList.add("hidden");
           if (codePanel) codePanel.classList.add("hidden");
-          if (phoneInput) {
-            phoneInput.value = "";
-            phoneInput.readOnly = false;
-            phoneInput.style.backgroundColor = "";
-            phoneInput.style.borderColor = "";
-            phoneInput.style.cursor = "";
-            phoneInput.focus();
-          }
-          if (phoneHint) {
-            phoneHint.textContent = "Enter your mobile number. Leading 0s and formatting are normalized automatically.";
-          }
+          if (phoneInput) phoneInput.value = "";
 
           showError("");
           alert(data.message || "Your WhatsApp number has been released. You can now connect another number.");
@@ -3217,10 +3128,12 @@
           }
 
           const data = await safeFetchJson(res);
-          if (!res.ok) {
-            throw new Error(data.error || "Reconnection request failed. Ensure your license is active and number is paired.");
+          if (!res.ok || data.success === false) {
+            if (data.status) updateStatusUI(data.status);
+            throw new Error(data.error || data.message || "Reconnection request failed. Ensure your license is active and number is paired.");
           }
 
+          showError("");
           if (data.status) {
             updateStatusUI(data.status);
           }
@@ -3295,7 +3208,7 @@
           const data = await safeFetchJson(res);
           if (res.ok && data.preferences) {
             updatePreferencesUI(data.preferences);
-            if (db && auth?.currentUser && auth.currentUser.uid === currentUser?.uid) {
+            if (db && currentUser?.uid) {
               try {
                 await setDoc(doc(db, "user_preferences", currentUser.uid), {
                   userId: currentUser.uid,
@@ -3754,7 +3667,7 @@
             }
 
             // Directly write to Firestore from authenticated customer client as permanent source of truth
-            if (db && auth?.currentUser && auth.currentUser.uid === currentUser?.uid) {
+            if (db && currentUser && currentUser.uid) {
               try {
                 const expiryDateStr = data.license?.expiresAt || data.expiresAt;
                 const daysVal = data.license?.durationDays || data.durationDays;
@@ -3960,10 +3873,6 @@
 
       function openReferralModal() {
         if (!refModalOverlay) return;
-        // Never interrupt pairing or active device linking!
-        if (pairingActive || (codePanel && !codePanel.classList.contains("hidden")) || activeDashTab === "pair") {
-          return;
-        }
         const link = getUserReferralLink();
         if (refModalLinkInput) refModalLinkInput.value = link;
         refModalOverlay.classList.remove("hidden");
@@ -4023,23 +3932,35 @@
       let referralReminderIntervalId = null;
       function initReferralModalTimers() {
         if (!currentUser) return;
+        const welcomeDone = sessionStorage.getItem("solvatech_ref_welcome_shown");
+        if (!welcomeDone) {
+          setTimeout(() => {
+            if (currentUser && (!authView || authView.classList.contains("hidden"))) {
+              openReferralModal();
+              sessionStorage.setItem("solvatech_ref_welcome_shown", "true");
+            }
+          }, 2500);
+        }
+
         if (referralReminderIntervalId) {
           clearInterval(referralReminderIntervalId);
         }
-        // Only run passive referral timer if user is not in the middle of pairing
+
+        // Interval to check for tasteful 1-3 minute activity reminder
         referralReminderIntervalId = setInterval(() => {
           if (!currentUser) return;
-          if (pairingActive || (codePanel && !codePanel.classList.contains("hidden")) || activeDashTab === "pair" || activeDashTab === "admin") return;
           if (!refModalOverlay || !refModalOverlay.classList.contains("hidden")) return;
+          if (activeDashTab === "admin") return; // Never interrupt admin work
 
           const dismissedAt = parseInt(sessionStorage.getItem("solvatech_ref_modal_dismissed_at") || "0", 10);
           const reminderCount = parseInt(sessionStorage.getItem("solvatech_ref_reminder_count") || "0", 10);
 
-          if (Date.now() - dismissedAt > 300000 && reminderCount < 1) {
+          // Require at least 2.5 minutes (150,000ms) cooldown and maximum 2 reminders per session
+          if (Date.now() - dismissedAt > 150000 && reminderCount < 2) {
             sessionStorage.setItem("solvatech_ref_reminder_count", String(reminderCount + 1));
             openReferralModal();
           }
-        }, 60000);
+        }, 30000);
       }
 
       // =========================================================================
@@ -4202,7 +4123,7 @@
         if (!urlInput || !lockBtn || !unlockBtn) return;
 
         // Current saved URL or default
-        const activeUrl = localStorage.getItem("solvatech_backend_url") || "https://web-production-f4adc.up.railway.app";
+        const activeUrl = localStorage.getItem("solvatech_backend_url") || "https://web-production-c6f21.up.railway.app";
         urlInput.value = activeUrl;
 
         // Default state: Automatically locked forever unless explicitly unlocked
@@ -4266,29 +4187,18 @@
             rawVal = "https://" + rawVal;
           }
           rawVal = rawVal.replace(/\/+$/, "");
+          urlInput.value = rawVal;
+
           localStorage.setItem("solvatech_backend_url", rawVal);
           localStorage.removeItem("solvatech_railway_unlocked");
           customApiUrl = rawVal;
-
-          // Save globally in Firestore for all GitHub/web users (Option 1)
-          if (db) {
-            setDoc(doc(db, "system_settings", "backend_config"), {
-              backendUrl: rawVal,
-              updatedAt: new Date().toISOString(),
-              updatedBy: auth?.currentUser?.email || "admin",
-            }, { merge: true }).then(() => {
-              console.log("[Solvatech Cloud] Saved global Railway backend URL to Firestore:", rawVal);
-            }).catch((err) => {
-              console.warn("[Solvatech Cloud] Could not save global backend URL to Firestore:", err?.message || err);
-            });
-          }
 
           setLockedState(true);
 
           if (feedback) {
             feedback.style.display = "block";
             feedback.style.color = "#4ade80";
-            feedback.innerHTML = `✅ <strong>Railway deployment saved to Cloud & locked forever!</strong> All GitHub and web users are now automatically routed to <code>${rawVal}</code>.`;
+            feedback.innerHTML = `✅ <strong>Railway deployment automatically locked forever!</strong> Bot calls routed to <code>${rawVal}</code>.`;
           }
 
           testRailwayConnection(rawVal);

@@ -379,7 +379,7 @@ for (const p of prefixes) {
 
       const controller = getWhatsAppController(safeUserId, { verifiedUid, userEmail });
       
-      // If already connected, respond cleanly without re-triggering
+      // If already genuinely connected, respond cleanly without re-triggering
       if (controller.isConnected()) {
         return response.json({
           ok: true,
@@ -401,13 +401,15 @@ for (const p of prefixes) {
         });
       }
 
-      // If idle or not connected, restore from Firestore and connect; otherwise triggerManualReconnect()
-      let result;
-      if (controller.getStatus().status === "idle" || !controller.isConnected()) {
-        const conn = await controller.start();
-        result = { success: Boolean(conn), message: "Reconnection process started.", status: controller.getStatus().status };
-      } else {
-        result = await controller.triggerManualReconnect();
+      const result = await controller.triggerManualReconnect();
+      if (!result.success) {
+        return response.status(400).json({
+          ok: false,
+          success: false,
+          error: result.message || "No saved WhatsApp session found. Please enter your phone number and pair with a pairing code first.",
+          code: "NO_SAVED_SESSION",
+          status: controller.getStatus(),
+        });
       }
 
       response.json({
