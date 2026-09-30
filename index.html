@@ -1335,23 +1335,28 @@ PORT=8000</pre>
         messagingSenderId: "420914651308",
       };
 
+      const FALLBACK_PRODUCTION_BACKEND = "https://web-production-c6f21.up.railway.app";
       const isSelfHosted = window.location.hostname.includes("railway.app") ||
                            window.location.hostname === "localhost" ||
                            window.location.hostname === "127.0.0.1" ||
                            window.location.hostname.includes("run.app");
-      const DEFAULT_BACKEND_URL = isSelfHosted ? window.location.origin : (localStorage.getItem("solvatech_backend_url") || window.location.origin);
+      const DEFAULT_BACKEND_URL = isSelfHosted ? window.location.origin : FALLBACK_PRODUCTION_BACKEND;
       let customApiUrl = localStorage.getItem("solvatech_backend_url") || "";
       if (customApiUrl && (
         customApiUrl.includes("3c1de8") ||
+        customApiUrl.includes("215ab") ||
         customApiUrl.includes("localhost:5000") ||
         (isSelfHosted && customApiUrl !== window.location.origin) ||
-        (!isSelfHosted && (customApiUrl.includes(window.location.hostname) || customApiUrl.includes("solvatech.name.ng")))
+        (!isSelfHosted && (customApiUrl.includes(window.location.hostname) || customApiUrl.includes("solvatech.name.ng") || customApiUrl.includes("github.io")))
       )) {
         try { localStorage.removeItem("solvatech_backend_url"); } catch (e) {}
         customApiUrl = "";
       }
       function getApiUrl(endpoint) {
-        const baseUrl = (customApiUrl || DEFAULT_BACKEND_URL).replace(/\/$/, "");
+        let baseUrl = (customApiUrl || DEFAULT_BACKEND_URL).replace(/\/$/, "");
+        if (!isSelfHosted && (baseUrl.includes("solvatech.name.ng") || baseUrl.includes("github.io") || baseUrl === window.location.origin)) {
+          baseUrl = FALLBACK_PRODUCTION_BACKEND;
+        }
         const cleanEndpoint = endpoint.startsWith("/bot-api") ? endpoint.replace(/^\/bot-api/, "") : endpoint;
         return `${baseUrl}/bot-api${cleanEndpoint.startsWith("/") ? cleanEndpoint : "/" + cleanEndpoint}`;
       }
@@ -1360,7 +1365,11 @@ PORT=8000</pre>
       // DYNAMIC BACKEND & SECRETS CONTROLLER (STORED IN FIRESTORE)
       // =========================================================================
       function getActiveBackendUrl() {
-        return (customApiUrl || DEFAULT_BACKEND_URL).replace(/\/$/, "");
+        let active = (customApiUrl || DEFAULT_BACKEND_URL).replace(/\/$/, "");
+        if (!isSelfHosted && (active.includes("solvatech.name.ng") || active.includes("github.io") || active === window.location.origin)) {
+          active = FALLBACK_PRODUCTION_BACKEND;
+        }
+        return active;
       }
 
       async function fetchBackendUrlFromFirestore() {
@@ -2111,6 +2120,10 @@ PORT=8000`;
           if (text) data = JSON.parse(text);
         } catch {
           if (text.trim().startsWith("<")) {
+            if (!isSelfHosted) {
+              customApiUrl = FALLBACK_PRODUCTION_BACKEND;
+              try { localStorage.setItem("solvatech_backend_url", FALLBACK_PRODUCTION_BACKEND); } catch (e) {}
+            }
             throw new Error("Server returned an HTML page instead of JSON. Please verify your backend API connection.");
           }
           throw new Error(`Invalid response from server (${res.status}).`);
@@ -2406,7 +2419,8 @@ PORT=8000`;
           }
 
           try {
-            let response = await fetch(getApiUrl("/pair"), {
+            let targetUrl = getApiUrl("/pair");
+            let response = await fetch(targetUrl, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -2419,7 +2433,7 @@ PORT=8000`;
               const refreshedToken = await getValidIdToken(true);
               if (refreshedToken) {
                 authHeader = `Bearer ${refreshedToken}`;
-                response = await fetch(getApiUrl("/pair"), {
+                response = await fetch(targetUrl, {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",
@@ -2430,7 +2444,32 @@ PORT=8000`;
               }
             }
 
-            const data = await safeFetchJson(response);
+            let data;
+            const text = await response.text();
+            try {
+              data = text ? JSON.parse(text) : {};
+            } catch {
+              if (text.trim().startsWith("<") && !targetUrl.includes("railway.app")) {
+                // Auto-retry with resilient fallback backend
+                customApiUrl = FALLBACK_PRODUCTION_BACKEND;
+                try { localStorage.setItem("solvatech_backend_url", FALLBACK_PRODUCTION_BACKEND); } catch (e) {}
+                const fallbackUrl = `${FALLBACK_PRODUCTION_BACKEND}/bot-api/pair`;
+                const retryRes = await fetch(fallbackUrl, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": authHeader,
+                  },
+                  body: JSON.stringify({ number: formattedNumber }),
+                });
+                const retryText = await retryRes.text();
+                data = JSON.parse(retryText);
+                response = retryRes;
+              } else {
+                throw new Error("Invalid response from server. Please try again.");
+              }
+            }
+
             if (!response.ok) throw new Error(data.error || "Pairing code could not be generated.");
 
             if (code) code.textContent = data.code || data.pairingCode || "—";
