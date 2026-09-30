@@ -46,15 +46,77 @@ import {
   normalizedUser,
   unwrapMediaMessage,
 } from "../lib/helpers.js";
-import { isAdmin, isOwner, participantJid, resolveManualWarnTarget } from "../lib/permissions.js";
+import { isAdmin, isBotAdmin, isOwner, participantJid, resolveManualWarnTarget } from "../lib/permissions.js";
 import { logger } from "../lib/logger.js";
-import {
-  doesSessionMatchParticipant,
-  extractParticipantTargetDetails,
-  findEligibleAdminSessionsForGroup,
-  executeManualWarn,
-  scheduleAutoDeleteNotice,
-} from "../lib/whatsapp.js";
+import warn from "./warn.js";
+
+function scheduleAutoDeleteNotice(sock, chatId, key, delayMs = 4000) {
+  if (!sock || !chatId || !key) return;
+  setTimeout(async () => {
+    try {
+      await sock.sendMessage(chatId, {
+        delete: typeof key === "object" ? key : { remoteJid: chatId, id: key },
+      });
+    } catch {}
+  }, delayMs);
+}
+
+function extractParticipantTargetDetails(p, metadata) {
+  if (!p) return null;
+  const id = typeof p === "string" ? p : (p.id || p.jid || "");
+  const phoneNumber = typeof p === "object" ? (p.phoneNumber || "") : "";
+  const lid = typeof p === "object" ? (p.lid || "") : "";
+  return { id, phoneNumber, lid, jid: id };
+}
+
+function doesSessionMatchParticipant(session, targetInfo) {
+  if (!session || !targetInfo) return false;
+  const botNum = session.getBotNumber ? session.getBotNumber() : "";
+  const sock = session.getSocket ? session.getSocket() : session.sock;
+  const sockId = sock?.user?.id;
+  const sockLid = sock?.user?.lid;
+  const targetNum = extractParticipantNumber(targetInfo.id || targetInfo.jid || targetInfo.phoneNumber);
+  if (botNum && targetNum && botNum === targetNum) return true;
+  if (sockId && (targetInfo.id === sockId || targetInfo.jid === sockId)) return true;
+  if (sockLid && (targetInfo.lid === sockLid || targetInfo.id === sockLid)) return true;
+  return false;
+}
+
+async function findEligibleAdminSessionsForGroup(chatId, botNum, currentSession) {
+  const sessions = [];
+  const sock = currentSession?.getSocket ? currentSession.getSocket() : currentSession?.sock;
+  if (sock) {
+    try {
+      const metadata = await sock.groupMetadata(chatId);
+      const botJid = [
+        sock.user?.id,
+        sock.user?.lid,
+        sock.user?.phoneNumber,
+      ].filter(Boolean).map(normalizedUser);
+      if (isBotAdmin(metadata, botJid)) {
+        sessions.push({
+          sock,
+          metadata,
+          userId: currentSession.userId || "default",
+        });
+      }
+    } catch {}
+  }
+  return sessions;
+}
+
+async function executeManualWarn({ sock, chatId, sender, senderJids, args = [], message, userId = "default" }) {
+  return warn({
+    sock,
+    chatId,
+    sender,
+    senderJids,
+    args,
+    message,
+    reply: (text, extra) => sock.sendMessage(chatId, { text, ...extra }),
+    userId,
+  });
+}
 
 import alive from "./alive.js";
 import ping from "./ping.js";
