@@ -2077,22 +2077,45 @@
         return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
       }
 
+      let fastPairPollId = null;
+      function stopFastPairPoll() {
+        if (fastPairPollId) {
+          clearInterval(fastPairPollId);
+          fastPairPollId = null;
+        }
+      }
+
       function startTimer(value) {
         if (timerId) clearInterval(timerId);
+        stopFastPairPoll();
         expiresAt = Date.now() + value * 1000;
         pairingActive = true;
         const tick = () => {
           const left = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
-          if (timer) timer.textContent = `EXPIRES IN ${formatTime(left)}`;
+          if (timer && !timer.dataset.handshakeActive) {
+            timer.textContent = `EXPIRES IN ${formatTime(left)}`;
+          }
           if (left <= 0) {
             pairingActive = false;
             clearInterval(timerId);
+            stopFastPairPoll();
             if (codePanel) codePanel.classList.add("expired");
-            if (timer) timer.textContent = "PAIRING CODE EXPIRED";
+            if (timer) {
+              delete timer.dataset.handshakeActive;
+              timer.textContent = "PAIRING CODE EXPIRED";
+            }
           }
         };
         tick();
         timerId = setInterval(tick, 1000);
+        // Poll status every 1.5s during active pairing so Stage 4 -> 5 -> 6 (Active) updates immediately
+        fastPairPollId = setInterval(() => {
+          if (!pairingActive) {
+            stopFastPairPoll();
+            return;
+          }
+          refresh();
+        }, 1500);
       }
 
       async function getValidIdToken(forceRefresh = false) {
@@ -2453,17 +2476,21 @@
       }
 
       function updateStatusUI(data) {
-        const connected = (data.status === "connected" || data.state === "connected") && data.connected === true;
+        const inspStage = data.pairingInspector?.stage || 0;
+        const isHandshakeInProgress = (inspStage === 4 || inspStage === 5) && !data.pairingInspector?.failureDiagnostic;
+        const connected = ((data.status === "connected" || data.state === "connected") && data.connected === true) || (inspStage === 6 && data.connected === true);
         const isLoggedOut = data.status === "logged_out" || data.state === "logged_out";
         const isExpired = data.status === "expired" || data.state === "expired";
-        const failed = isLoggedOut || isExpired || data.status === "error" || data.status === "disconnected" || data.failed === true;
-        const isPairing = data.status === "pairing" || data.state === "pairing";
+        const failed = !connected && !isHandshakeInProgress && (isLoggedOut || isExpired || data.status === "error" || data.status === "disconnected" || data.failed === true);
+        const isPairing = !connected && (data.status === "pairing" || data.state === "pairing" || isHandshakeInProgress);
         const isConnecting = !connected && !isPairing && (data.status === "connecting" || data.state === "connecting" || data.isReconnecting === true);
         const pending = isPairing || isConnecting;
 
         if (badge) {
           badge.textContent = connected
             ? "Live Connected"
+            : isHandshakeInProgress
+            ? (inspStage === 5 ? "Finalizing Registration (515)..." : "Handshake Accepted...")
             : isLoggedOut
             ? "Device Unlinked"
             : isExpired
@@ -2481,6 +2508,8 @@
         if (state) {
           state.textContent = connected
             ? "Active"
+            : isHandshakeInProgress
+            ? "Verifying..."
             : isLoggedOut
             ? "Logged Out"
             : isExpired
@@ -2493,9 +2522,16 @@
             ? "Reconnecting..."
             : "Not connected";
         }
+        const orbitEl = $("orbit");
+        if (orbitEl) {
+          orbitEl.classList.toggle("connected", connected);
+          orbitEl.style.color = connected ? "var(--teal)" : failed ? "#be123c" : pending ? "var(--orange)" : "";
+        }
         if (detail) {
           detail.textContent = connected 
-            ? "Your dedicated WhatsApp socket is active and listening for owner commands." 
+            ? "Your dedicated WhatsApp socket is active, online, and listening for owner commands." 
+            : isHandshakeInProgress
+            ? (data.pairingInspector?.stageDetail || "8-digit code accepted on phone! Completing cryptographic companion registration...")
             : isLoggedOut
             ? (data.lastError || "WhatsApp session was unlinked from your phone. Enter your number above to pair again.")
             : failed 
@@ -2506,11 +2542,69 @@
             ? "Restoring your linked WhatsApp session..."
             : "Enter your phone number above to generate your pairing code.";
         }
-        if (number) number.textContent = data.phoneNumber || data.botNumber || "—";
+        const activePhone = data.phoneNumber || data.botNumber || "";
+        if (number) {
+          number.textContent = activePhone && activePhone !== "—"
+            ? `+${String(activePhone).replace(/^\+/, "")}`
+            : "—";
+        }
         if (disconnect) disconnect.disabled = !connected && !pending;
 
+        // Update 4-Step Guided Onboarding Stepper (Step 3: Connect Phone & Step 4: Use Commands)
+        const stepCard3El = $("step-card-3"), step3NumEl = $("step-3-num"), step3StatusEl = $("step-3-status");
+        const stepCard4El = $("step-card-4"), step4NumEl = $("step-4-num"), step4StatusEl = $("step-4-status");
+        if (stepCard3El && step3StatusEl) {
+          if (connected) {
+            stepCard3El.classList.add("completed");
+            stepCard3El.classList.remove("warning-step", "expired");
+            if (step3NumEl) step3NumEl.textContent = "✓";
+            step3StatusEl.textContent = activePhone ? `Linked (+${String(activePhone).replace(/^\+/, "")}) ✓` : "Linked & Active ✓";
+            step3StatusEl.style.color = "#15803d";
+          } else if (isHandshakeInProgress) {
+            stepCard3El.classList.remove("completed", "expired");
+            stepCard3El.classList.add("warning-step");
+            if (step3NumEl) step3NumEl.textContent = "3";
+            step3StatusEl.textContent = "Finalizing Link...";
+            step3StatusEl.style.color = "#2563eb";
+          } else if (isPairing || isConnecting) {
+            stepCard3El.classList.remove("completed", "expired");
+            stepCard3El.classList.add("warning-step");
+            if (step3NumEl) step3NumEl.textContent = "3";
+            step3StatusEl.textContent = isPairing ? "Enter 8-Digit Code..." : "Reconnecting...";
+            step3StatusEl.style.color = "#ca8a04";
+          } else {
+            stepCard3El.classList.remove("completed", "warning-step", "expired");
+            if (step3NumEl) step3NumEl.textContent = "3";
+            step3StatusEl.textContent = "Ready to Pair";
+            step3StatusEl.style.color = "";
+          }
+        }
+        if (stepCard4El && step4StatusEl) {
+          if (connected) {
+            stepCard4El.classList.add("completed");
+            if (step4NumEl) step4NumEl.textContent = "✓";
+            step4StatusEl.textContent = "Online & Listening ✓";
+            step4StatusEl.style.color = "#15803d";
+          } else {
+            stepCard4El.classList.remove("completed");
+            if (step4NumEl) step4NumEl.textContent = "4";
+            step4StatusEl.textContent = "Bot Controls";
+            step4StatusEl.style.color = "";
+          }
+        }
+
+        // Reflect Stage 4/5 handshake inside the code panel while finalizing
+        if (isHandshakeInProgress && timer) {
+          timer.dataset.handshakeActive = "true";
+          timer.textContent = inspStage === 5
+            ? "CODE ACCEPTED • FINALIZING 515..."
+            : "CODE ACCEPTED • VERIFYING...";
+        } else if (timer && timer.dataset.handshakeActive) {
+          delete timer.dataset.handshakeActive;
+        }
+
         // Handle Real Number Lock Display & Controls
-        const lockedNum = data.lockedNumber || data.numberLock || (data.phoneNumber && data.phoneNumber !== "—" ? data.phoneNumber : null);
+        const lockedNum = data.lockedNumber || data.numberLock || (activePhone && activePhone !== "—" ? activePhone : null);
         if (lockedNum) {
           if (lockedNumberNotice) {
             lockedNumberNotice.classList.remove("hidden");
@@ -2547,10 +2641,13 @@
           renderUserPairingInspector(data.pairingInspector || null, data);
         }
 
-        if (connected && pairingActive) {
+        if (connected) {
           pairingActive = false;
           if (timerId) clearInterval(timerId);
+          stopFastPairPoll();
+          if (timer) delete timer.dataset.handshakeActive;
           if (codePanel) codePanel.classList.add("hidden");
+          showError("");
           if (button) {
             button.disabled = false;
             button.textContent = "Get Pairing Code →";
