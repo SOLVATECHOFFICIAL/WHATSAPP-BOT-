@@ -1,4 +1,4 @@
-import { addWarning, getGroupSettings } from "../lib/database.js";
+import { addWarning, getGroupSettings, setWarningLimit } from "../lib/database.js";
 import { requireAdmin } from "../lib/command-tools.js";
 import { assertAdmin, isAdmin, resolveGroupTargetJids } from "../lib/permissions.js";
 
@@ -20,9 +20,20 @@ export default async function warn({
     sock.user?.phoneNumber,
   ].filter(Boolean));
 
+  const sub = String(args[0] || "").toLowerCase();
+  const val = String(args[1] || "").toLowerCase();
+  if (sub === "limit" || sub === "setlimit") {
+    const limitNum = parseInt(val, 10);
+    if (!limitNum || isNaN(limitNum) || limitNum < 1 || limitNum > 10) {
+      return reply("❌ *Invalid parameter:* Please specify a valid warning limit between *1* and *10*.\n_Example: *.warn limit 3* or *.warns limit 4*_");
+    }
+    const newLimit = await setWarningLimit(chatId, limitNum, userId);
+    return reply(`✅ *Group Warning Threshold Updated:* *${newLimit}* violations before removal.\n_Synced to Firebase Firestore._`);
+  }
+
   const resolved = resolveGroupTargetJids(metadata, message, args);
   if (!resolved || !resolved.canonicalJid) {
-    return reply("❌ *Target Missing:* Please tag or reply to the member you want to warn.\n_Usage: *.warn @user [reason]*_");
+    return reply("❌ *Target Missing:* Please tag or reply to the member you want to warn.\n_Usage: *.warn @user [reason]* or *.warn limit <1-10>*_");
   }
 
   const targetJid = resolved.canonicalJid;
@@ -35,7 +46,7 @@ export default async function warn({
   }
 
   const reason = args.filter((a) => !a.startsWith("@")).join(" ").trim() || "Violation of group rules";
-  const result = await addWarning(chatId, targetJid, userId);
+  const result = await addWarning(chatId, targetJid, userId, reason);
 
   const mentions = [...new Set([targetJid, resolved.mentionJid].filter(Boolean))];
 

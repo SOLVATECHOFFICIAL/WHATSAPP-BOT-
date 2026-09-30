@@ -22,8 +22,8 @@ export default async function warns({
   // 1. Setting warning limit: .warns limit <N>
   if (sub === "limit" || sub === "setlimit") {
     const limitNum = parseInt(val, 10);
-    if (!limitNum || isNaN(limitNum) || limitNum < 1 || limitNum > 20) {
-      return reply("❌ *Invalid parameter:* Please specify a valid warning limit between *1* and *20*.\n_Example: *.warns limit 3*_");
+    if (!limitNum || isNaN(limitNum) || limitNum < 1 || limitNum > 10) {
+      return reply("❌ *Invalid parameter:* Please specify a valid warning limit between *1* and *10*.\n_Example: *.warns limit 3* or *.warn limit 4*_");
     }
     const newLimit = await setWarningLimit(chatId, limitNum, userId);
     return reply(`✅ *Group Warning Threshold Updated:* *${newLimit}* violations before removal.\n_Synced to Firebase Firestore._`);
