@@ -308,10 +308,14 @@ for (const p of prefixes) {
 
       const result = await wipeNumberFromAccount(verifiedUid, userEmail, reason, true);
 
-      // Disconnect and flush active WhatsApp session
+      // Disconnect and flush active WhatsApp session completely
       const controller = getWhatsAppController(request.safeUserId, { verifiedUid, userEmail });
       try {
         await controller.disconnect();
+        const userSessionDir = path.join(SESSION_DIR, request.safeUserId);
+        await fs.rm(userSessionDir, { recursive: true, force: true }).catch(() => {});
+        const { writeFirestoreDocumentRest } = await import("./lib/auth.js");
+        await writeFirestoreDocumentRest("whatsapp_sessions", request.safeUserId, { files: {}, fileCount: 0, deletedAt: new Date().toISOString() }).catch(() => {});
       } catch (discErr) {
         logger.debug("Controller disconnect during user wipe notice", discErr.message);
       }

@@ -1782,6 +1782,7 @@
       const lockedNumberNotice = $("locked-number-notice"), lockedNumberDisplay = $("locked-number-display"), wipeNumberBtn = $("wipe-number-btn");
       const quickReconnectBtn = $("quick-reconnect-btn");
       const statusLockedNumberWrap = $("status-locked-number-wrap"), statusLockedNumberText = $("status-locked-number-text"), statusWipeNumberBtn = $("status-wipe-number-btn");
+      let currentLockedNumber = null;
 
       // Country Selector Elements
       const countryDropdownBtn = $("country-dropdown-btn"), countryMenu = $("country-menu"), countrySearch = $("country-search"), countryOptionsList = $("country-options-list");
@@ -2363,18 +2364,31 @@
 
         // Handle Real Number Lock Display & Controls
         const lockedNum = data.lockedNumber || data.numberLock || (data.phoneNumber && data.phoneNumber !== "—" ? data.phoneNumber : null);
+        currentLockedNumber = lockedNum ? String(lockedNum).replace(/\D/g, "") : null;
         if (lockedNum) {
+          const formattedLocked = `+${String(lockedNum).replace(/^\+/, "")}`;
           if (lockedNumberNotice) {
             lockedNumberNotice.classList.remove("hidden");
           }
           if (lockedNumberDisplay) {
-            lockedNumberDisplay.textContent = `+${lockedNum.replace(/^\+/, "")}`;
+            lockedNumberDisplay.textContent = formattedLocked;
           }
           if (statusLockedNumberWrap) {
             statusLockedNumberWrap.classList.remove("hidden");
           }
           if (statusLockedNumberText) {
-            statusLockedNumberText.textContent = `+${lockedNum.replace(/^\+/, "")}`;
+            statusLockedNumberText.textContent = formattedLocked;
+          }
+
+          if (phoneInput && !pairingActive) {
+            phoneInput.value = String(lockedNum).replace(/^\+/, "");
+            phoneInput.readOnly = true;
+            phoneInput.style.backgroundColor = "rgba(16, 185, 129, 0.08)";
+            phoneInput.style.borderColor = "#10b981";
+            phoneInput.style.cursor = "not-allowed";
+          }
+          if (phoneHint) {
+            phoneHint.innerHTML = `<span style="color: #059669; font-weight: 700;">🔒 LOCKED TO ACCOUNT:</span> This account is permanently locked to <strong>${formattedLocked}</strong>. To pair a different phone number, click <strong>"🗑️ Wipe & Change Number"</strong> below first.`;
           }
         } else {
           if (lockedNumberNotice) {
@@ -2382,6 +2396,15 @@
           }
           if (statusLockedNumberWrap) {
             statusLockedNumberWrap.classList.add("hidden");
+          }
+          if (phoneInput && !pairingActive) {
+            phoneInput.readOnly = false;
+            phoneInput.style.backgroundColor = "";
+            phoneInput.style.borderColor = "";
+            phoneInput.style.cursor = "";
+          }
+          if (phoneHint) {
+            phoneHint.textContent = "Enter your mobile number. Leading 0s and formatting are normalized automatically.";
           }
         }
 
@@ -2945,6 +2968,16 @@
             return;
           }
 
+          if (currentLockedNumber && formattedNumber !== currentLockedNumber) {
+            showError(`⚠️ Number Locked: This account is permanently locked to +${currentLockedNumber}. You cannot pair +${formattedNumber}. Please click '🗑️ Wipe & Change Number' below first to release your locked number.`);
+            if (lockedNumberNotice) {
+              lockedNumberNotice.scrollIntoView({ behavior: "smooth", block: "center" });
+              lockedNumberNotice.style.outline = "2px solid #ef4444";
+              setTimeout(() => { if (lockedNumberNotice) lockedNumberNotice.style.outline = "none"; }, 3500);
+            }
+            return;
+          }
+
           let authHeader = await getAuthHeader();
           if (!authHeader) {
             showError("Authentication required. Please sign in with Google.");
@@ -3110,11 +3143,22 @@
           const data = await safeFetchJson(res);
           if (!res.ok) throw new Error(data.error || "Failed to wipe number lock");
 
-          // Clear UI notices
+          // Clear UI notices and unlock input field
+          currentLockedNumber = null;
           if (lockedNumberNotice) lockedNumberNotice.classList.add("hidden");
           if (statusLockedNumberWrap) statusLockedNumberWrap.classList.add("hidden");
           if (codePanel) codePanel.classList.add("hidden");
-          if (phoneInput) phoneInput.value = "";
+          if (phoneInput) {
+            phoneInput.value = "";
+            phoneInput.readOnly = false;
+            phoneInput.style.backgroundColor = "";
+            phoneInput.style.borderColor = "";
+            phoneInput.style.cursor = "";
+            phoneInput.focus();
+          }
+          if (phoneHint) {
+            phoneHint.textContent = "Enter your mobile number. Leading 0s and formatting are normalized automatically.";
+          }
 
           showError("");
           alert(data.message || "Your WhatsApp number has been released. You can now connect another number.");
