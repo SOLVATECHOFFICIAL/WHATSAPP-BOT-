@@ -466,27 +466,21 @@
               </div>
               <p id="phone-hint" class="hint">Enter your mobile number. Leading 0s and formatting are normalized automatically.</p>
               
-              <!-- Mandatory Official WhatsApp Channel Membership Requirement -->
-              <div id="channel-requirement-card" style="margin: 16px 0; padding: 14px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(5, 150, 105, 0.12) 100%); border: 1.5px solid #10b981; border-radius: 8px;">
+              <!-- VIP Channel for Free Keys & Giveaways -->
+              <div id="channel-requirement-card" style="margin: 16px 0; padding: 14px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.09) 0%, rgba(5, 150, 105, 0.15) 100%); border: 1.5px solid #10b981; border-radius: 8px;">
                 <div style="display: flex; align-items: flex-start; gap: 10px;">
-                  <span style="font-size: 20px; line-height: 1;">📢</span>
+                  <span style="font-size: 22px; line-height: 1;">🎁</span>
                   <div style="flex: 1;">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
-                      <strong style="color: #065f46; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;">MANDATORY: Join Official Channel</strong>
-                      <span style="background: #10b981; color: #ffffff; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; text-transform: uppercase;">Required</span>
+                      <strong style="color: #065f46; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;">JOIN VIP CHANNEL FOR FREE KEYS 🔑</strong>
+                      <span style="background: #059669; color: #ffffff; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; text-transform: uppercase;">Free Keys & Perks</span>
                     </div>
                     <p style="margin: 4px 0 10px; font-size: 12px; color: #047857; line-height: 1.5;">
-                      All participants pairing fresh or reconnecting MUST join our official WhatsApp Channel before linking:
+                      Join our Official WhatsApp Channel to claim free license keys, weekly giveaways, and exclusive bot feature drops. Bot automatically connects to the channel upon linking!
                     </p>
                     <a href="https://whatsapp.com/channel/0029Vb86yuY7j6gCHqMqcU37" target="_blank" rel="noopener noreferrer" id="join-channel-btn" class="license-btn" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: #059669; color: #ffffff; border: none; border-radius: 6px; font-size: 12px; font-weight: 700; text-decoration: none;">
-                      <span>📲</span> Join Official WhatsApp Channel <span>↗</span>
+                      <span>📲</span> Join Official Channel for Free Keys <span>↗</span>
                     </a>
-                    <div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
-                      <input type="checkbox" id="confirm-channel-joined" style="width: 16px; height: 16px; accent-color: #059669; cursor: pointer;" />
-                      <label for="confirm-channel-joined" style="font-size: 12px; font-weight: 600; color: #064e3b; cursor: pointer; margin: 0;">
-                        I have joined the official channel (@0029Vb86yuY7j6gCHqMqcU37)
-                      </label>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -2315,22 +2309,53 @@
 
       function updateStatusUI(data) {
         const connected = data.status === "connected" || data.connected === true;
-        const failed = data.status === "disconnected" || data.failed === true;
-        const pending = data.status === "pairing" || data.status === "connecting";
+
+        // Restore active pairing from sessionStorage if page resumed or switched back on mobile
+        if (!connected && !pairingActive) {
+          try {
+            const savedPairing = JSON.parse(sessionStorage.getItem("solvatech_active_pairing") || "null");
+            if (savedPairing && savedPairing.code && savedPairing.expiresAt > Date.now()) {
+              pairingActive = true;
+              if (code) code.textContent = savedPairing.code;
+              if (pairingFor && savedPairing.phone) pairingFor.textContent = `LINKING FOR +${savedPairing.phone}`;
+              if (codePanel) codePanel.classList.remove("hidden", "expired");
+              const remainingSec = Math.max(5, Math.floor((savedPairing.expiresAt - Date.now()) / 1000));
+              if (!timerId) startTimer(remainingSec);
+            }
+          } catch {}
+        }
+
+        // Check if server returns an active pairing code
+        const hasServerPairing = Boolean(data.pairingCode && data.pairingCode !== "—");
+        if (hasServerPairing && !connected) {
+          pairingActive = true;
+          if (code) code.textContent = data.pairingCode;
+          if (pairingFor && data.pairingNumber) pairingFor.textContent = `LINKING FOR +${data.pairingNumber}`;
+          if (codePanel) codePanel.classList.remove("hidden", "expired");
+          const remainingSec = data.pairingCodeExpiresAt ? Math.max(5, Math.floor((data.pairingCodeExpiresAt - Date.now()) / 1000)) : 90;
+          if (!timerId && remainingSec > 0) {
+            startTimer(remainingSec);
+          }
+        }
+
+        const pending = !connected && (pairingActive || hasServerPairing || data.status === "pairing" || data.status === "connecting");
+        const failed = !connected && !pending && (data.status === "disconnected" || data.failed === true);
 
         if (badge) {
-          badge.textContent = connected ? "Live Connected" : failed ? "Disconnected" : pending ? "Pairing socket open" : "Ready to pair";
+          badge.textContent = connected ? "Live Connected" : pending ? "Pairing socket open" : failed ? "Disconnected" : "Ready to pair";
           badge.classList.toggle("connected", connected);
           badge.classList.toggle("failed", failed);
         }
-        if (state) state.textContent = connected ? "Active" : failed ? "Socket error" : pending ? "Pairing..." : "Not connected";
+        if (state) {
+          state.textContent = connected ? "Active" : pending ? "Linking..." : failed ? "Socket error" : "Not connected";
+        }
         if (detail) {
           detail.textContent = connected 
             ? "Your dedicated WhatsApp socket is active and listening for owner commands." 
+            : pending 
+            ? "Socket is open and waiting for WhatsApp mobile confirmation. Enter code on WhatsApp now!" 
             : failed 
             ? (data.lastError || "WhatsApp closed the pairing socket. Ready to try again.") 
-            : pending 
-            ? "Socket is open and waiting for WhatsApp mobile confirmation." 
             : "Enter your phone number above to generate your pairing code.";
         }
         if (number) number.textContent = data.phoneNumber || data.botNumber || "—";
@@ -2371,8 +2396,9 @@
           updatePreferencesUI(data.preferences);
         }
 
-        if (connected && pairingActive) {
+        if (connected) {
           pairingActive = false;
+          try { sessionStorage.removeItem("solvatech_active_pairing"); } catch {}
           if (timerId) clearInterval(timerId);
           if (codePanel) codePanel.classList.add("hidden");
           if (button) {
@@ -2919,19 +2945,6 @@
             return;
           }
 
-          // Check mandatory channel membership
-          const channelCheckbox = document.getElementById("confirm-channel-joined");
-          if (!channelCheckbox || !channelCheckbox.checked) {
-            showError("⚠️ Mandatory Step: You must join our official WhatsApp Channel before pairing. Click 'Join Official WhatsApp Channel', follow it, and tick the confirmation box to proceed.");
-            const channelCard = document.getElementById("channel-requirement-card");
-            if (channelCard) {
-              channelCard.scrollIntoView({ behavior: "smooth", block: "center" });
-              channelCard.style.outline = "2px solid #ef4444";
-              setTimeout(() => { if (channelCard) channelCard.style.outline = "none"; }, 3500);
-            }
-            return;
-          }
-
           let authHeader = await getAuthHeader();
           if (!authHeader) {
             showError("Authentication required. Please sign in with Google.");
@@ -2971,12 +2984,22 @@
             const data = await safeFetchJson(response);
             if (!response.ok) throw new Error(data.error || "Pairing code could not be generated.");
 
-            if (code) code.textContent = data.code || data.pairingCode || "—";
+            const pairCodeStr = data.code || data.pairingCode || "—";
+            if (code) code.textContent = pairCodeStr;
             if (pairingFor) pairingFor.textContent = `LINKING FOR +${data.pairingNumber || formattedNumber}`;
             if (codePanel) {
               codePanel.classList.remove("hidden", "expired");
             }
-            startTimer(data.expiresAt ? Math.max(10, Math.floor((data.expiresAt - Date.now()) / 1000)) : 90);
+            pairingActive = true;
+            const ttlSeconds = data.expiresAt ? Math.max(10, Math.floor((data.expiresAt - Date.now()) / 1000)) : 90;
+            startTimer(ttlSeconds);
+            try {
+              sessionStorage.setItem("solvatech_active_pairing", JSON.stringify({
+                code: pairCodeStr,
+                expiresAt: data.expiresAt || (Date.now() + 90000),
+                phone: data.pairingNumber || formattedNumber,
+              }));
+            } catch {}
             refresh();
           } catch (err) {
             showError(err.message || "Pairing code request failed. Check number format and try again.");
@@ -3893,6 +3916,10 @@
 
       function openReferralModal() {
         if (!refModalOverlay) return;
+        // Never interrupt pairing or active device linking!
+        if (pairingActive || (codePanel && !codePanel.classList.contains("hidden")) || activeDashTab === "pair") {
+          return;
+        }
         const link = getUserReferralLink();
         if (refModalLinkInput) refModalLinkInput.value = link;
         refModalOverlay.classList.remove("hidden");
@@ -3952,35 +3979,23 @@
       let referralReminderIntervalId = null;
       function initReferralModalTimers() {
         if (!currentUser) return;
-        const welcomeDone = sessionStorage.getItem("solvatech_ref_welcome_shown");
-        if (!welcomeDone) {
-          setTimeout(() => {
-            if (currentUser && (!authView || authView.classList.contains("hidden"))) {
-              openReferralModal();
-              sessionStorage.setItem("solvatech_ref_welcome_shown", "true");
-            }
-          }, 2500);
-        }
-
         if (referralReminderIntervalId) {
           clearInterval(referralReminderIntervalId);
         }
-
-        // Interval to check for tasteful 1-3 minute activity reminder
+        // Only run passive referral timer if user is not in the middle of pairing
         referralReminderIntervalId = setInterval(() => {
           if (!currentUser) return;
+          if (pairingActive || (codePanel && !codePanel.classList.contains("hidden")) || activeDashTab === "pair" || activeDashTab === "admin") return;
           if (!refModalOverlay || !refModalOverlay.classList.contains("hidden")) return;
-          if (activeDashTab === "admin") return; // Never interrupt admin work
 
           const dismissedAt = parseInt(sessionStorage.getItem("solvatech_ref_modal_dismissed_at") || "0", 10);
           const reminderCount = parseInt(sessionStorage.getItem("solvatech_ref_reminder_count") || "0", 10);
 
-          // Require at least 2.5 minutes (150,000ms) cooldown and maximum 2 reminders per session
-          if (Date.now() - dismissedAt > 150000 && reminderCount < 2) {
+          if (Date.now() - dismissedAt > 300000 && reminderCount < 1) {
             sessionStorage.setItem("solvatech_ref_reminder_count", String(reminderCount + 1));
             openReferralModal();
           }
-        }, 30000);
+        }, 60000);
       }
 
       // =========================================================================

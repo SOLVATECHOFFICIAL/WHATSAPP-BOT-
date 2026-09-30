@@ -254,17 +254,6 @@ for (const p of prefixes) {
     const userEmail = request.auth.email;
 
     try {
-      // Mandatory Official WhatsApp Channel membership check
-      const channelJoined = Boolean(request.body?.channelJoined || request.headers["x-channel-joined"] === "true");
-      if (!channelJoined) {
-        return response.status(403).json({
-          error: "Mandatory requirement: You must join our official WhatsApp Channel before pairing. Please click 'Join Channel Now' and confirm before generating your pairing code.",
-          code: "CHANNEL_MEMBERSHIP_REQUIRED",
-          channelUrl: "https://whatsapp.com/channel/0029Vb86yuY7j6gCHqMqcU37",
-          userId: verifiedUid,
-        });
-      }
-
       // License enforcement: Admin (awoyinfasolomon1@gmail.com) has automatic unlimited active status.
       // Normal users must have an active, non-expired license.
       const licenseStatus = await getUserLicenseStatus(verifiedUid, userEmail);
