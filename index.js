@@ -178,8 +178,19 @@ for (const p of prefixes) {
       getUserLicenseStatus(verifiedUid, userEmail),
     ]);
 
+    const currentStatus = controller.getStatus();
+    if (
+      license?.hasActiveLicense &&
+      (currentStatus.status === "disconnected" || currentStatus.status === "idle") &&
+      controller.hasSavedSession()
+    ) {
+      controller.ensureConnected().catch(() => {});
+    }
+
+    const latestStatus = controller.getStatus();
     response.json({
-      ...controller.getStatus(),
+      ...latestStatus,
+      phoneNumber: latestStatus.botNumber || lockedNumber || "",
       lockedNumber,
       license,
       userId: verifiedUid,
@@ -190,6 +201,31 @@ for (const p of prefixes) {
         photoURL: request.auth.photoURL,
       },
     });
+  });
+
+  app.post(`${p}/reconnect`, requireAuth, async (request, response) => {
+    const safeUserId = request.safeUserId;
+    const verifiedUid = request.verifiedUid;
+    const userEmail = request.auth.email;
+    const controller = getWhatsAppController(safeUserId, { verifiedUid, userEmail });
+    try {
+      await controller.start();
+      response.json({ ok: true, ...controller.getStatus(), userId: verifiedUid });
+    } catch (error) {
+      response.status(500).json({ error: error.message || "Reconnect failed.", userId: verifiedUid });
+    }
+  });
+
+  app.post(`${p}/clear-cache`, requireAuth, async (request, response) => {
+    const safeUserId = request.safeUserId;
+    const verifiedUid = request.verifiedUid;
+    const controller = getWhatsAppController(safeUserId, { verifiedUid, userEmail: request.auth.email });
+    try {
+      await controller.disconnect();
+      response.json({ ok: true, status: "idle", message: "Session cache cleared.", userId: verifiedUid });
+    } catch (error) {
+      response.status(500).json({ error: error.message || "Could not clear cache.", userId: verifiedUid });
+    }
   });
 
   app.get(`${p}/user/profile`, requireAuth, (request, response) => {
@@ -720,6 +756,51 @@ for (const p of prefixes) {
     } catch (error) {
       logger.error("Admin list licenses error", error.stack || error.message);
       response.status(500).json({ error: "Failed to list licenses." });
+    }
+  });
+
+  app.get(`${p}/admin/backend-url`, requireAuth, requireAdmin, async (_request, response) => {
+    try {
+      let railwayUrl = process.env.RAILWAY_URL || "";
+      const db = getFirebaseServerFirestore();
+      if (db) {
+        try {
+          const { doc, getDoc } = await import("firebase/firestore");
+          const snap = await getDoc(doc(db, "system_config", "backend"));
+          if (snap.exists() && snap.data()?.railwayUrl) {
+            railwayUrl = snap.data().railwayUrl;
+          }
+        } catch (e) {
+          logger.debug("Firestore backend-url read notice", e.message);
+        }
+      }
+      response.json({ success: true, railwayUrl });
+    } catch (error) {
+      response.status(500).json({ error: "Failed to get backend URL." });
+    }
+  });
+
+  app.post(`${p}/admin/backend-url`, requireAuth, requireAdmin, async (request, response) => {
+    try {
+      const url = String(request.body?.railwayUrl || request.body?.url || "").trim();
+      process.env.RAILWAY_URL = url;
+      const db = getFirebaseServerFirestore();
+      if (db) {
+        try {
+          const { doc, setDoc } = await import("firebase/firestore");
+          await setDoc(doc(db, "system_config", "backend"), {
+            railwayUrl: url,
+            updatedAt: new Date().toISOString(),
+            updatedBy: request.auth.email || "admin",
+          }, { merge: true });
+          logger.info(`Admin updated system Railway backend URL in Firestore: ${url}`);
+        } catch (e) {
+          logger.warn("Could not save backend URL to Firestore", e.message);
+        }
+      }
+      response.json({ success: true, railwayUrl: url, message: "Railway backend URL successfully saved to Firestore." });
+    } catch (error) {
+      response.status(500).json({ error: error.message || "Failed to update backend URL." });
     }
   });
 

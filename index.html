@@ -94,11 +94,6 @@
         <span><strong>SOLVATECH BOT</strong><small>BY SOLVATECHOFFICIAL</small></span>
       </a>
       <div id="topbar-right" class="topbar-actions">
-        <button id="railway-topbar-btn" class="railway-topbar-btn" type="button" title="Configure Railway Backend URL & 6 Secret Keys">
-          <span class="railway-icon">🚂</span>
-          <span class="railway-status-dot" id="topbar-railway-status-dot"></span>
-          <span>RAILWAY LINK</span>
-        </button>
         <button id="pwa-install-topbar-btn" class="pwa-topbar-install-btn pwa-hide-standalone hidden" type="button" title="Install SOLVATECH BOT app">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
           <span>INSTALL APP</span>
@@ -1228,115 +1223,12 @@ PORT=8000</pre>
               <div class="railway-step-card">
                 <div class="railway-step-num">4</div>
                 <div class="railway-step-text">
-                  <strong>Link in this Console:</strong> Paste your Railway domain into the <strong>Active Railway Backend URL</strong> field above and click <strong>"Save & Link Backend"</strong>. Your frontend is instantly connected!
+                  <strong>Link in this Console:</strong> Paste your Railway domain into the <strong>Active Railway Backend URL</strong> field above and click <strong>"Save & Link Backend"</strong>. Your frontend is instantly connected and synced to Firestore!
                 </div>
               </div>
             </div>
           </div>
         </section>
-
-        <!-- RAILWAY CONFIGURATION MODAL (ACCESSIBLE ANYWHERE) -->
-        <div id="railway-config-modal" class="admin-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="railway-modal-title">
-          <div class="admin-modal-box" style="max-width: 640px;">
-            <div class="admin-modal-header">
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 20px;">🚂</span>
-                <div>
-                  <h3 id="railway-modal-title" class="admin-modal-title" style="margin: 0; font-size: 15px;">Railway Backend & Secret Keys</h3>
-                  <small style="color: var(--muted); font-size: 11px;">Configure your backend URL and view all 6 secret keys</small>
-                </div>
-              </div>
-              <button id="railway-modal-close-btn" type="button" class="admin-modal-close-btn">&times;</button>
-            </div>
-            <div class="admin-modal-body" style="padding: 20px;">
-              <!-- Backend URL Group -->
-              <div style="margin-bottom: 20px;">
-                <label style="display: block; font-size: 12px; font-weight: 700; color: var(--ink); margin-bottom: 6px;">
-                  Active Railway Backend URL:
-                </label>
-                <div class="railway-input-group">
-                  <input
-                    type="url"
-                    id="modal-railway-url-input"
-                    class="railway-url-input"
-                    placeholder="https://web-production-xxxx.up.railway.app"
-                    spellcheck="false"
-                  />
-                  <button type="button" id="modal-railway-save-btn" class="railway-action-btn">
-                    Save & Link
-                  </button>
-                  <button type="button" id="modal-railway-ping-btn" class="railway-action-btn railway-btn-secondary">
-                    Test
-                  </button>
-                  <button type="button" id="modal-railway-reset-btn" class="railway-action-btn railway-btn-secondary">
-                    Reset
-                  </button>
-                </div>
-                <div id="modal-railway-alert" class="hidden" style="margin-top: 10px; padding: 8px 12px; border-radius: 6px; font-size: 12px;"></div>
-              </div>
-
-              <!-- RAW Editor Copy Block -->
-              <div style="margin-bottom: 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 6px;">
-                  <strong style="font-size: 12px; color: var(--ink);">All 6 Secret Keys for Railway (RAW Format):</strong>
-                  <button type="button" id="modal-copy-all-railway-btn" class="railway-copy-btn" style="background:#0284c7; padding: 5px 12px;">
-                    📋 Copy All for Railway
-                  </button>
-                </div>
-                <pre class="railway-raw-block" style="margin: 0; font-size: 11px;">FIREBASE_PROJECT_ID=gen-lang-client-0324946831
-FIREBASE_API_KEY=AIzaSyA_g2ek4ziXSE9m4VD5-5PfKpKJjAobYFg
-FIREBASE_AUTH_DOMAIN=gen-lang-client-0324946831.firebaseapp.com
-FIREBASE_DATABASE_ID=ai-studio-whatsappbot-da9a52de-41e7-4365-a5b4-8aec9332642c
-FIREBASE_STORAGE_BUCKET=gen-lang-client-0324946831.firebasestorage.app
-FIREBASE_APP_ID=1:420914651308:web:ae4cb5d7632401c1a83f09
-BOT_API_PREFIX=/bot-api
-BOT_DATA_DIR=/app/runtime
-PORT=8000</pre>
-              </div>
-
-              <!-- Table of Keys -->
-              <div>
-                <strong style="display: block; font-size: 12px; color: var(--ink); margin-bottom: 8px;">Individual Secret Keys:</strong>
-                <div style="max-height: 220px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 6px;">
-                  <table class="railway-secrets-table" style="margin-top: 0;">
-                    <tbody>
-                      <tr>
-                        <td><strong>PROJECT_ID</strong></td>
-                        <td><code class="railway-key-code">gen-lang-client-0324946831</code></td>
-                        <td><button type="button" class="railway-copy-btn" data-copy="gen-lang-client-0324946831">Copy</button></td>
-                      </tr>
-                      <tr>
-                        <td><strong>API_KEY</strong></td>
-                        <td><code class="railway-key-code">AIzaSyA_g2ek4ziXSE9m4VD5-5PfKpKJjAobYFg</code></td>
-                        <td><button type="button" class="railway-copy-btn" data-copy="AIzaSyA_g2ek4ziXSE9m4VD5-5PfKpKJjAobYFg">Copy</button></td>
-                      </tr>
-                      <tr>
-                        <td><strong>AUTH_DOMAIN</strong></td>
-                        <td><code class="railway-key-code">gen-lang-client-0324946831.firebaseapp.com</code></td>
-                        <td><button type="button" class="railway-copy-btn" data-copy="gen-lang-client-0324946831.firebaseapp.com">Copy</button></td>
-                      </tr>
-                      <tr>
-                        <td><strong>DATABASE_ID</strong></td>
-                        <td><code class="railway-key-code">ai-studio-whatsappbot-da9a52de-41e7-4365-a5b4-8aec9332642c</code></td>
-                        <td><button type="button" class="railway-copy-btn" data-copy="ai-studio-whatsappbot-da9a52de-41e7-4365-a5b4-8aec9332642c">Copy</button></td>
-                      </tr>
-                      <tr>
-                        <td><strong>STORAGE_BUCKET</strong></td>
-                        <td><code class="railway-key-code">gen-lang-client-0324946831.firebasestorage.app</code></td>
-                        <td><button type="button" class="railway-copy-btn" data-copy="gen-lang-client-0324946831.firebasestorage.app">Copy</button></td>
-                      </tr>
-                      <tr>
-                        <td><strong>APP_ID</strong></td>
-                        <td><code class="railway-key-code">1:420914651308:web:ae4cb5d7632401c1a83f09</code></td>
-                        <td><button type="button" class="railway-copy-btn" data-copy="1:420914651308:web:ae4cb5d7632401c1a83f09">Copy</button></td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
 
         <!-- ADMIN RECORD DETAIL INSPECTION MODAL -->
         <div id="admin-detail-modal" class="admin-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="admin-modal-title">
@@ -1443,16 +1335,16 @@ PORT=8000</pre>
         messagingSenderId: "420914651308",
       };
 
-      const RAILWAY_URL = "https://web-production-215ab.up.railway.app";
       const isSelfHosted = window.location.hostname.includes("railway.app") ||
                            window.location.hostname === "localhost" ||
                            window.location.hostname === "127.0.0.1" ||
                            window.location.hostname.includes("run.app");
-      const DEFAULT_BACKEND_URL = isSelfHosted ? window.location.origin : RAILWAY_URL;
+      const DEFAULT_BACKEND_URL = isSelfHosted ? window.location.origin : (localStorage.getItem("solvatech_backend_url") || window.location.origin);
       let customApiUrl = localStorage.getItem("solvatech_backend_url") || "";
       if (customApiUrl && (
         customApiUrl.includes("3c1de8") ||
         customApiUrl.includes("localhost:5000") ||
+        (isSelfHosted && customApiUrl !== window.location.origin) ||
         (!isSelfHosted && (customApiUrl.includes(window.location.hostname) || customApiUrl.includes("solvatech.name.ng")))
       )) {
         try { localStorage.removeItem("solvatech_backend_url"); } catch (e) {}
@@ -1465,28 +1357,44 @@ PORT=8000</pre>
       }
 
       // =========================================================================
-      // RAILWAY BACKEND & SECRETS MANAGER
+      // DYNAMIC BACKEND & SECRETS CONTROLLER (STORED IN FIRESTORE)
       // =========================================================================
       function getActiveBackendUrl() {
         return (customApiUrl || DEFAULT_BACKEND_URL).replace(/\/$/, "");
       }
 
+      async function fetchBackendUrlFromFirestore() {
+        if (!db) return;
+        try {
+          const snap = await getDoc(doc(db, "system_config", "backend"));
+          if (snap.exists() && snap.data()?.railwayUrl) {
+            const remoteUrl = snap.data().railwayUrl.replace(/\/+$/, "");
+            if (remoteUrl && remoteUrl.startsWith("http")) {
+              if (remoteUrl !== customApiUrl) {
+                customApiUrl = remoteUrl;
+                try { localStorage.setItem("solvatech_backend_url", remoteUrl); } catch (e) {}
+                syncRailwayInputs();
+                testBackendHealth(false);
+              }
+            }
+          }
+        } catch (err) {
+          console.debug("Firestore backend URL lookup notice:", err.message);
+        }
+      }
+
       function syncRailwayInputs() {
         const active = getActiveBackendUrl();
         const adminInput = $("admin-railway-url-input");
-        const modalInput = $("modal-railway-url-input");
         if (adminInput && document.activeElement !== adminInput) adminInput.value = active;
-        if (modalInput && document.activeElement !== modalInput) modalInput.value = active;
       }
 
       function updateBackendStatusUI(status, message) {
         // status: 'online' | 'offline' | 'checking'
-        const topDot = $("topbar-railway-status-dot");
         const adminDot = $("railway-dot-admin");
         const adminText = $("railway-status-text-admin");
         const adminBadge = $("railway-status-badge-admin");
 
-        if (topDot) topDot.className = `railway-status-dot ${status}`;
         if (adminDot) adminDot.className = `railway-status-dot ${status}`;
         if (adminText) adminText.textContent = message;
         if (adminBadge) {
@@ -1546,6 +1454,15 @@ PORT=8000</pre>
           try { localStorage.removeItem("solvatech_backend_url"); } catch (e) {}
           customApiUrl = "";
           syncRailwayInputs();
+          if (db) {
+            try {
+              await setDoc(doc(db, "system_config", "backend"), {
+                railwayUrl: "",
+                updatedAt: new Date().toISOString(),
+                updatedBy: currentUser?.email || "admin"
+              }, { merge: true });
+            } catch (e) {}
+          }
           if (targetAlert) {
             targetAlert.className = "";
             targetAlert.style.display = "block";
@@ -1569,13 +1486,42 @@ PORT=8000</pre>
         customApiUrl = trimmed;
         syncRailwayInputs();
 
+        // 1. Direct Firestore write as permanent single source of truth
+        if (db) {
+          try {
+            await setDoc(doc(db, "system_config", "backend"), {
+              railwayUrl: trimmed,
+              updatedAt: new Date().toISOString(),
+              updatedBy: currentUser?.email || "admin"
+            }, { merge: true });
+            console.log("Railway backend URL saved directly to Firestore system_config/backend");
+          } catch (fsErr) {
+            console.warn("Could not write backend URL to Firestore:", fsErr.message);
+          }
+        }
+
+        // 2. Also notify backend server
+        try {
+          const authHeader = await getAuthHeader();
+          if (authHeader) {
+            await fetch(getApiUrl("/admin/backend-url"), {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": authHeader,
+              },
+              body: JSON.stringify({ railwayUrl: trimmed }),
+            }).catch(() => {});
+          }
+        } catch (e) {}
+
         if (targetAlert) {
           targetAlert.className = "";
           targetAlert.style.display = "block";
           targetAlert.style.background = "#dcfce7";
           targetAlert.style.border = "1px solid #86efac";
           targetAlert.style.color = "#15803d";
-          targetAlert.innerHTML = `<strong>✓ Saved!</strong> Linking frontend to <code>${trimmed}</code>. Testing connection...`;
+          targetAlert.innerHTML = `<strong>✓ Saved & Synced to Firestore!</strong> Linking frontend to <code>${trimmed}</code>. Testing connection...`;
         }
 
         await testBackendHealth(true, alertTargetId);
@@ -1584,28 +1530,6 @@ PORT=8000</pre>
       function initRailwayManager() {
         syncRailwayInputs();
         testBackendHealth();
-
-        const topbarBtn = $("railway-topbar-btn");
-        const modal = $("railway-config-modal");
-        const modalCloseBtn = $("railway-modal-close-btn");
-
-        if (topbarBtn && modal) {
-          topbarBtn.addEventListener("click", () => {
-            modal.classList.remove("hidden");
-            syncRailwayInputs();
-            testBackendHealth(false);
-          });
-        }
-
-        if (modalCloseBtn && modal) {
-          modalCloseBtn.addEventListener("click", () => modal.classList.add("hidden"));
-        }
-
-        if (modal) {
-          modal.addEventListener("click", (e) => {
-            if (e.target === modal) modal.classList.add("hidden");
-          });
-        }
 
         async function copyContent(text, btn) {
           try {
@@ -1650,11 +1574,6 @@ PORT=8000`;
           adminCopyAllBtn.addEventListener("click", () => copyContent(rawCodeText, adminCopyAllBtn));
         }
 
-        const modalCopyAllBtn = $("modal-copy-all-railway-btn");
-        if (modalCopyAllBtn) {
-          modalCopyAllBtn.addEventListener("click", () => copyContent(rawCodeText, modalCopyAllBtn));
-        }
-
         const adminSaveBtn = $("admin-railway-save-btn");
         const adminPingBtn = $("admin-railway-ping-btn");
         const adminResetBtn = $("admin-railway-reset-btn");
@@ -1668,21 +1587,6 @@ PORT=8000`;
         }
         if (adminResetBtn) {
           adminResetBtn.addEventListener("click", () => applyRailwayBackendUrl("", "admin-railway-alert"));
-        }
-
-        const modalSaveBtn = $("modal-railway-save-btn");
-        const modalPingBtn = $("modal-railway-ping-btn");
-        const modalResetBtn = $("modal-railway-reset-btn");
-        const modalInput = $("modal-railway-url-input");
-
-        if (modalSaveBtn && modalInput) {
-          modalSaveBtn.addEventListener("click", () => applyRailwayBackendUrl(modalInput.value, "modal-railway-alert"));
-        }
-        if (modalPingBtn) {
-          modalPingBtn.addEventListener("click", () => testBackendHealth(true, "modal-railway-alert"));
-        }
-        if (modalResetBtn) {
-          modalResetBtn.addEventListener("click", () => applyRailwayBackendUrl("", "modal-railway-alert"));
         }
       }
 
@@ -2004,8 +1908,11 @@ PORT=8000`;
             ? "Socket is open and waiting for WhatsApp mobile confirmation." 
             : "Enter your phone number above to generate your pairing code.";
         }
-        if (number) number.textContent = data.phoneNumber || "—";
+        if (number) number.textContent = data.botNumber || data.phoneNumber || data.lockedNumber || "—";
         if (disconnect) disconnect.disabled = !connected && !pending;
+        if (data.license) {
+          updateLicenseUI(data.license);
+        }
 
         if (connected && pairingActive) {
           pairingActive = false;
@@ -2354,6 +2261,7 @@ PORT=8000`;
 
         initDashboardTabs();
         initRailwayManager();
+        fetchBackendUrlFromFirestore();
 
         onAuthStateChanged(auth, (user) => {
           if (user) {
@@ -2720,6 +2628,26 @@ PORT=8000`;
           }
         } catch (err) {
           console.debug("License poll error:", err.message);
+          if (currentUser?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+            updateLicenseUI({ isAdmin: true, status: "active", durationDays: "Unlimited", hasActiveLicense: true });
+          } else if (db && currentUser?.uid) {
+            try {
+              const snap = await getDoc(doc(db, "user_licenses", currentUser.uid));
+              if (snap.exists()) {
+                const lic = snap.data() || {};
+                const expMs = lic.expiresAt ? new Date(lic.expiresAt).getTime() : 0;
+                const isAct = expMs > Date.now();
+                updateLicenseUI({
+                  hasActiveLicense: isAct,
+                  status: isAct ? "active" : "expired",
+                  durationDays: lic.durationDays,
+                  expiresAt: lic.expiresAt,
+                });
+              } else {
+                updateLicenseUI({ hasActiveLicense: false, status: "none" });
+              }
+            } catch {}
+          }
         }
       }
 
