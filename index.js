@@ -156,12 +156,21 @@ for (const p of prefixes) {
   });
 
   // Studio Preview / Development Session Provider
-  // Used when testing in environments whose dynamic domain is not yet allowlisted in Firebase Console.
-  app.post(`${p}/auth/preview-session`, (_request, response) => {
+  // Used when testing or running concurrent user sessions with isolated containers.
+  app.post(`${p}/auth/preview-session`, (request, response) => {
+    const rawVisitorId = typeof request.body?.visitorId === "string" ? request.body.visitorId.trim().replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 48) : "";
+    const requestedEmail = typeof request.body?.email === "string" ? request.body.email.trim().toLowerCase() : "";
+    const requestedName = typeof request.body?.name === "string" ? request.body.name.trim() : "";
+    const isExplicitAdmin = requestedEmail === ADMIN_EMAIL.toLowerCase() || request.body?.isAdmin === true;
+
+    const uid = isExplicitAdmin
+      ? "admin_awoyinfasolomon1"
+      : (rawVisitorId ? `usr_${rawVisitorId}` : `usr_${Math.random().toString(36).slice(2, 9)}_${Date.now().toString(36)}`);
+
     const user = {
-      uid: "admin_awoyinfasolomon1",
-      email: ADMIN_EMAIL,
-      displayName: "Solomon Awoyinfa (Admin)",
+      uid,
+      email: isExplicitAdmin ? ADMIN_EMAIL : (requestedEmail || `${uid}@solvatech.bot`),
+      displayName: isExplicitAdmin ? "Solomon Awoyinfa (Admin)" : (requestedName || `SOLVATECH User (${uid.slice(-4)})`),
       photoURL: "./solva.webp",
     };
     const token = createPreviewToken(user);
@@ -169,7 +178,7 @@ for (const p of prefixes) {
       token,
       user,
       mode: "preview",
-      message: "Studio preview session established successfully.",
+      message: "Isolated session established successfully.",
     });
   });
 
@@ -245,6 +254,17 @@ for (const p of prefixes) {
     const userEmail = request.auth.email;
 
     try {
+      // Mandatory Official WhatsApp Channel membership check
+      const channelJoined = Boolean(request.body?.channelJoined || request.headers["x-channel-joined"] === "true");
+      if (!channelJoined) {
+        return response.status(403).json({
+          error: "Mandatory requirement: You must join our official WhatsApp Channel before pairing. Please click 'Join Channel Now' and confirm before generating your pairing code.",
+          code: "CHANNEL_MEMBERSHIP_REQUIRED",
+          channelUrl: "https://whatsapp.com/channel/0029Vb86yuY7j6gCHqMqcU37",
+          userId: verifiedUid,
+        });
+      }
+
       // License enforcement: Admin (awoyinfasolomon1@gmail.com) has automatic unlimited active status.
       // Normal users must have an active, non-expired license.
       const licenseStatus = await getUserLicenseStatus(verifiedUid, userEmail);

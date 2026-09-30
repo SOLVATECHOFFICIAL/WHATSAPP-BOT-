@@ -6,6 +6,7 @@ const settingByCommand = {
   antibot: "antiBot",
   antistatus: "antiStatusMention",
   antistatusmention: "antiStatusMention",
+  antisticker: "antiSticker",
 };
 
 const settingByName = {
@@ -17,6 +18,8 @@ const settingByName = {
   antistatus: "antiStatusMention",
   statusmention: "antiStatusMention",
   antistatusmention: "antiStatusMention",
+  sticker: "antiSticker",
+  antisticker: "antiSticker",
 };
 
 export default async function anti({
@@ -57,6 +60,7 @@ export default async function anti({
       `┃ 🔗 *Anti-Link:* ${current.antiLink ? "🟢 *ENABLED (ON)*" : "🔴 *DISABLED (OFF)*"}`,
       `┃ 🤖 *Anti-Bot:* ${current.antiBot ? "🟢 *ENABLED (ON)*" : "🔴 *DISABLED (OFF)*"}`,
       `┃ 📢 *Anti-Status-Mention:* ${current.antiStatusMention ? "🟢 *ENABLED (ON)*" : "🔴 *DISABLED (OFF)*"}`,
+      `┃ 🎨 *Anti-Sticker:* ${current.antiSticker ? "🟢 *ENABLED (ON)*" : "🔴 *DISABLED (OFF)*"}`,
       `┃ ⚠️ *Shared Warning Limit:* *${current.warningLimit || 3}* _violations_`,
       "",
       "╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯",
@@ -66,6 +70,7 @@ export default async function anti({
       "│ • *.antilink on/off* — _Auto-delete external group links & warn_",
       "│ • *.antibot on/off* — _Auto-remove unauthorized bot accounts_",
       "│ • *.antistatus on/off* — _Auto-remove status group mentions & warn_",
+      "│ • *.antisticker on/off* — _Auto-delete stickers sent by non-admins_",
       "│ • *.anti limit <N>* — _Set max warning limit (e.g. *.anti limit 3*)_",
       "│",
       "╰───────────────────────────────",
@@ -78,6 +83,7 @@ export default async function anti({
   let displayName = "Anti-Link";
   if (setting === "antiBot") displayName = "Anti-Bot";
   if (setting === "antiStatusMention") displayName = "Anti-Status-Mention";
+  if (setting === "antiSticker") displayName = "Anti-Sticker";
 
   await reply(`✅ *${displayName} Protection:* ${enabled ? "🟢 *ENABLED (ON)*" : "🔴 *DISABLED (OFF)*"}\n_Settings saved and synced to Firebase._`);
 }

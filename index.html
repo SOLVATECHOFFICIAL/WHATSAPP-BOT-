@@ -466,6 +466,31 @@
               </div>
               <p id="phone-hint" class="hint">Enter your mobile number. Leading 0s and formatting are normalized automatically.</p>
               
+              <!-- Mandatory Official WhatsApp Channel Membership Requirement -->
+              <div id="channel-requirement-card" style="margin: 16px 0; padding: 14px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(5, 150, 105, 0.12) 100%); border: 1.5px solid #10b981; border-radius: 8px;">
+                <div style="display: flex; align-items: flex-start; gap: 10px;">
+                  <span style="font-size: 20px; line-height: 1;">📢</span>
+                  <div style="flex: 1;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+                      <strong style="color: #065f46; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;">MANDATORY: Join Official Channel</strong>
+                      <span style="background: #10b981; color: #ffffff; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; text-transform: uppercase;">Required</span>
+                    </div>
+                    <p style="margin: 4px 0 10px; font-size: 12px; color: #047857; line-height: 1.5;">
+                      All participants pairing fresh or reconnecting MUST join our official WhatsApp Channel before linking:
+                    </p>
+                    <a href="https://whatsapp.com/channel/0029Vb86yuY7j6gCHqMqcU37" target="_blank" rel="noopener noreferrer" id="join-channel-btn" class="license-btn" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: #059669; color: #ffffff; border: none; border-radius: 6px; font-size: 12px; font-weight: 700; text-decoration: none;">
+                      <span>📲</span> Join Official WhatsApp Channel <span>↗</span>
+                    </a>
+                    <div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
+                      <input type="checkbox" id="confirm-channel-joined" style="width: 16px; height: 16px; accent-color: #059669; cursor: pointer;" />
+                      <label for="confirm-channel-joined" style="font-size: 12px; font-weight: 600; color: #064e3b; cursor: pointer; margin: 0;">
+                        I have joined the official channel (@0029Vb86yuY7j6gCHqMqcU37)
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div class="pairing-actions-row">
                 <button id="pair-button" type="submit">Get Pairing Code <span>→</span></button>
                 <button id="quick-reconnect-btn" type="button" class="quick-reconnect-btn" title="Instantly reconnect your active saved WhatsApp session from Firebase without needing to enter a pairing code">
@@ -474,7 +499,7 @@
               </div>
             </form>
             <div id="code-panel" class="code-panel hidden">
-              <div class="code-heading"><span>YOUR PAIRING CODE</span><span id="code-timer" class="code-timer">EXPIRES IN 5:00</span></div>
+              <div class="code-heading"><span>YOUR PAIRING CODE</span><span id="code-timer" class="code-timer">EXPIRES IN 1:30</span></div>
               <div class="code-value-row"><strong id="pair-code">—</strong><button id="copy-code" class="copy-button" type="button">Copy code</button></div>
               <div id="pairing-for" class="pairing-for"></div>
               <p>Open WhatsApp → Linked Devices → Link a device → Link with phone number. Enter this 8-character code, then keep this tab open while pairing completes.</p>
@@ -2658,25 +2683,32 @@
         }
       }
 
-      // Studio Preview Session Provider (for development environments)
+      // Studio Preview / Isolated Session Provider
       async function startPreviewSession() {
         showAuthError("");
         if (previewSignInBtn) {
           previewSignInBtn.disabled = true;
-          previewSignInBtn.textContent = "Connecting to Studio Preview...";
+          previewSignInBtn.textContent = "Connecting to Isolated Session...";
         }
         try {
+          let visitorUid = localStorage.getItem("solvatech_visitor_uid");
+          if (!visitorUid) {
+            visitorUid = "dev_" + Math.random().toString(36).slice(2, 9) + "_" + Date.now().toString(36);
+            localStorage.setItem("solvatech_visitor_uid", visitorUid);
+          }
+
           const res = await fetch(getApiUrl("/auth/preview-session"), {
             method: "POST",
-            headers: { "Content-Type": "application/json" }
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ visitorId: visitorUid }),
           });
-          if (!res.ok) throw new Error("Could not create studio preview session.");
+          if (!res.ok) throw new Error("Could not create isolated session.");
           const data = await res.json();
           if (data && data.token && data.user) {
             const cleanUser = {
-              uid: String(data.user.uid || "admin_preview_user"),
-              email: String(data.user.email || "awoyinfasolomon1@gmail.com"),
-              displayName: String(data.user.displayName || "Admin User"),
+              uid: String(data.user.uid || visitorUid),
+              email: String(data.user.email || `${visitorUid}@solvatech.bot`),
+              displayName: String(data.user.displayName || "SOLVATECH User"),
               photoURL: String(data.user.photoURL || "")
             };
 
@@ -2887,6 +2919,19 @@
             return;
           }
 
+          // Check mandatory channel membership
+          const channelCheckbox = document.getElementById("confirm-channel-joined");
+          if (!channelCheckbox || !channelCheckbox.checked) {
+            showError("⚠️ Mandatory Step: You must join our official WhatsApp Channel before pairing. Click 'Join Official WhatsApp Channel', follow it, and tick the confirmation box to proceed.");
+            const channelCard = document.getElementById("channel-requirement-card");
+            if (channelCard) {
+              channelCard.scrollIntoView({ behavior: "smooth", block: "center" });
+              channelCard.style.outline = "2px solid #ef4444";
+              setTimeout(() => { if (channelCard) channelCard.style.outline = "none"; }, 3500);
+            }
+            return;
+          }
+
           let authHeader = await getAuthHeader();
           if (!authHeader) {
             showError("Authentication required. Please sign in with Google.");
@@ -2905,7 +2950,7 @@
                 "Content-Type": "application/json",
                 "Authorization": authHeader,
               },
-              body: JSON.stringify({ number: formattedNumber }),
+              body: JSON.stringify({ number: formattedNumber, channelJoined: true }),
             });
 
             if (response.status === 401) {
@@ -2918,7 +2963,7 @@
                     "Content-Type": "application/json",
                     "Authorization": authHeader,
                   },
-                  body: JSON.stringify({ number: formattedNumber }),
+                  body: JSON.stringify({ number: formattedNumber, channelJoined: true }),
                 });
               }
             }
@@ -2931,7 +2976,7 @@
             if (codePanel) {
               codePanel.classList.remove("hidden", "expired");
             }
-            startTimer(data.expiresAt ? Math.max(10, Math.floor((data.expiresAt - Date.now()) / 1000)) : 300);
+            startTimer(data.expiresAt ? Math.max(10, Math.floor((data.expiresAt - Date.now()) / 1000)) : 90);
             refresh();
           } catch (err) {
             showError(err.message || "Pairing code request failed. Check number format and try again.");
