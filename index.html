@@ -1838,6 +1838,7 @@
       import {
         getFirestore,
         initializeFirestore,
+        setLogLevel,
         doc,
         setDoc,
         getDoc,
@@ -1846,6 +1847,12 @@
         query,
         orderBy
       } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+
+      try {
+        if (typeof setLogLevel === "function") {
+          setLogLevel("silent");
+        }
+      } catch (e) {}
 
       const $ = (id) => document.getElementById(id);
       
@@ -2112,12 +2119,16 @@
         return token ? `Bearer ${token}` : null;
       }
 
+      function isRealFirebaseAuth(user = currentUser) {
+        return Boolean(db && auth && auth.currentUser && user && user.type !== "preview" && auth.currentUser.uid === user.uid);
+      }
+
       async function syncUserProfile(user) {
         if (!user || !user.uid) return;
         const candidateRef = sessionStorage.getItem("solvatech_ref_code") || localStorage.getItem("solvatech_ref_code") || "";
 
-        // 1. Direct Firebase Firestore customer write via Client SDK (if initialized)
-        if (db) {
+        // 1. Direct Firebase Firestore customer write via Client SDK (if signed in with real Firebase Auth)
+        if (isRealFirebaseAuth(user)) {
           try {
             const userDocRef = doc(db, "users", user.uid);
             const userSnap = await getDoc(userDocRef);
@@ -2674,7 +2685,7 @@
         });
 
         // Ensure active tab is valid (fallback from admin if not admin)
-        const isUserAdmin = currentUser && currentUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+        const isUserAdmin = currentUser && ADMIN_EMAILS_SET.has((currentUser.email || "").trim().toLowerCase());
         if (activeDashTab === "admin" && !isUserAdmin) {
           activeDashTab = "pair";
         }
