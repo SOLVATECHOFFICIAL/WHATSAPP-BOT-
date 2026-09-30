@@ -8,6 +8,7 @@ import { logger } from "./lib/logger.js";
 import { getWhatsAppController, restoreAllSessions, auditActiveSessions, getAllWhatsAppStatuses } from "./lib/whatsapp.js";
 import { getLockedNumberForUid, getAllNumberLocks } from "./lib/number-lock.js";
 import { requireAuth, requireAdmin, createPreviewToken, getFirebaseServerFirestore } from "./lib/auth.js";
+import { getUserPreferences, setUserPreferences } from "./lib/database.js";
 import {
   createLicenseRecord,
   listAllLicenses,
@@ -188,11 +189,13 @@ for (const p of prefixes) {
     }
 
     const latestStatus = controller.getStatus();
+    const preferences = await getUserPreferences(safeUserId);
     response.json({
       ...latestStatus,
       phoneNumber: latestStatus.botNumber || lockedNumber || "",
       lockedNumber,
       license,
+      preferences,
       userId: verifiedUid,
       user: {
         uid: request.auth.uid,
@@ -201,6 +204,19 @@ for (const p of prefixes) {
         photoURL: request.auth.photoURL,
       },
     });
+  });
+
+  app.get(`${p}/user/preferences`, requireAuth, async (request, response) => {
+    const safeUserId = request.safeUserId;
+    const prefs = await getUserPreferences(safeUserId);
+    response.json({ ok: true, preferences: prefs, userId: request.verifiedUid });
+  });
+
+  app.post(`${p}/user/preferences`, requireAuth, async (request, response) => {
+    const safeUserId = request.safeUserId;
+    const patch = request.body || {};
+    const updated = await setUserPreferences(safeUserId, patch);
+    response.json({ ok: true, preferences: updated, userId: request.verifiedUid });
   });
 
   app.post(`${p}/reconnect`, requireAuth, async (request, response) => {

@@ -226,6 +226,27 @@
           </div>
         </div>
 
+        <!-- Privacy & Auto Message Recovery Switch -->
+        <div class="privacy-controls-surface" style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="font-size: 26px; line-height: 1;">🛡️</div>
+            <div>
+              <div style="font-weight: 700; font-size: 14px; color: var(--text); display: flex; align-items: center; gap: 6px;">
+                <span>Auto Deleted-Message Recovery</span>
+                <span style="font-size: 10px; background: rgba(16,185,129,0.15); color: #059669; padding: 2px 6px; border-radius: 4px; font-weight: 800;">PERSONAL DM</span>
+              </div>
+              <div style="font-size: 12px; color: var(--muted); margin-top: 2px;">When enabled, any deleted message or media from your groups & chats is automatically recovered and forwarded directly to your personal WhatsApp DM with zero group traces.</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span id="auto-deleted-status-label" style="font-size: 11px; font-weight: 700; letter-spacing: 0.05em; color: #10b981; background: rgba(16,185,129,0.1); padding: 4px 8px; border-radius: 6px;">ENABLED</span>
+            <label class="switch-toggle" style="position: relative; display: inline-block; width: 48px; height: 26px; margin: 0; cursor: pointer;">
+              <input type="checkbox" id="auto-deleted-toggle" checked style="opacity: 0; width: 0; height: 0;">
+              <span class="slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #10b981; transition: .3s; border-radius: 26px;"></span>
+            </label>
+          </div>
+        </div>
+
         <section class="hero">
           <p class="eyebrow">WHATSAPP MULTI-DEVICE • LIVE PAIRING CONSOLE</p>
           <h1>Connect your phone.<br /><em>Start your session.</em></h1>
@@ -1612,6 +1633,41 @@ PORT=8000`;
       const form = $("pair-form"), button = $("pair-button"), codePanel = $("code-panel"), code = $("pair-code");
       const error = $("error"), state = $("state"), badge = $("badge"), detail = $("detail"), number = $("connected-number"), disconnect = $("disconnect");
       const copyButton = $("copy-code"), copyFeedback = $("copy-feedback"), timer = $("code-timer"), pairingFor = $("pairing-for");
+      const autoDeletedToggle = $("auto-deleted-toggle"), autoDeletedStatusLabel = $("auto-deleted-status-label");
+
+      function updateAutoDeletedUI(enabled) {
+        if (autoDeletedToggle && autoDeletedToggle !== document.activeElement) autoDeletedToggle.checked = enabled;
+        if (autoDeletedStatusLabel) {
+          autoDeletedStatusLabel.textContent = enabled ? "ENABLED (TO DM)" : "DISABLED";
+          autoDeletedStatusLabel.style.color = enabled ? "#10b981" : "#94a3b8";
+          autoDeletedStatusLabel.style.background = enabled ? "rgba(16,185,129,0.1)" : "rgba(148,163,184,0.15)";
+        }
+      }
+
+      if (autoDeletedToggle) {
+        autoDeletedToggle.addEventListener("change", async () => {
+          const enabled = autoDeletedToggle.checked;
+          updateAutoDeletedUI(enabled);
+          if (currentUser?.uid && db) {
+            try {
+              await setDoc(doc(db, "user_preferences", currentUser.uid), {
+                autoDeletedToDm: enabled,
+                updatedAt: new Date().toISOString()
+              }, { merge: true });
+            } catch {}
+          }
+          try {
+            const authHeader = await getAuthHeader();
+            if (authHeader) {
+              await fetch(getApiUrl("/user/preferences"), {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": authHeader },
+                body: JSON.stringify({ autoDeletedToDm: enabled })
+              });
+            }
+          } catch {}
+        });
+      }
 
       // Country Selector Elements
       const countryDropdownBtn = $("country-dropdown-btn"), countryMenu = $("country-menu"), countrySearch = $("country-search"), countryOptionsList = $("country-options-list");
@@ -1921,6 +1977,9 @@ PORT=8000`;
         if (disconnect) disconnect.disabled = !connected && !pending;
         if (data.license) {
           updateLicenseUI(data.license);
+        }
+        if (data.preferences) {
+          updateAutoDeletedUI(data.preferences.autoDeletedToDm !== false);
         }
 
         if (connected && pairingActive) {
